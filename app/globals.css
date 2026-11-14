@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-yellow: #FFCC00;
+  --primary-yellow-hover: #FFC001;
+  --dark-charcoal: #141720;
+  --dark-black: #000000;
+  --border-color: #E9E9E9;
+  --text-muted: #7B8091;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: #141720;
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Header Skewed Buttons */
+.btn-login-skew {
+  position: relative;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  clip-path: polygon(12% 0%, 100% 0%, 88% 100%, 0% 100%);
+  transition: all 0.25s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-login-skew:hover {
+  background-color: #FFCC00;
+  color: #000000;
+}
+
+.btn-register-skew {
+  position: relative;
+  background-color: #FFCC00;
+  color: #000000;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  clip-path: polygon(12% 0%, 100% 0%, 88% 100%, 0% 100%);
+  transition: all 0.25s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-register-skew:hover {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Nav Item Dual Yellow Dots Hover Indicator */
+.nav-dots-container {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  height: 4px;
+  margin-bottom: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nav-dots-container span {
+  width: 4px;
+  height: 4px;
+  background-color: #FFCC00;
+  border-radius: 50%;
+  display: block;
+}
+
+.nav-item-link:hover .nav-dots-container,
+.nav-item-link.active .nav-dots-container {
+  opacity: 1;
+}
+
+/* OTS Linear Button */
+.btn-ots-yellow {
+  background: linear-gradient(180deg, #FFDD33 0%, #FFCC00 100%);
+  color: #000000;
+  font-weight: 700;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.25);
+}
+
+.btn-ots-yellow:hover {
+  background: #000000;
+  color: #FFCC00;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.btn-ots-dark {
+  background: #141720;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-ots-dark:hover {
+  background: #FFCC00;
+  color: #000000;
+}
+
+/* Taxi Pattern Stripe */
+.taxi-pattern-stripe {
+  height: 18px;
+  background: repeating-linear-gradient(
+    90deg,
+    #FFCC00,
+    #FFCC00 24px,
+    #000000 24px,
+    #000000 48px
+  );
+  width: 100%;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cccccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FFCC00;
+}
