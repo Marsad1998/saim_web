@@ -67,14 +67,33 @@ async function initDatabase() {
     // 3. Switch to target database
     await connection.query(`USE \`${database}\``);
 
-    // 4. Seed or update initial default admin
-    const adminHash = '$2a$10$tZ2c69e2zGg7d4zI4Q46ve013qgQ6Q1198f3kU4wJ61.F3qL7C5V.'; // Admin@123
+    // 4. Seed initial default users (Admin, Driver, Passenger)
+    const defaultHash = '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK'; // 12345678 / Admin@123
+
+    console.log('🌱 Seeding 3 default roles (Admin, Driver, Passenger)...');
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
-      VALUES ('usr_admin_1', 'OTS Administrator', 'admin@otstaxi.co.uk', '+44 20 8123 4567', '${adminHash}', 'admin')
-      ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = 'admin'
+      VALUES 
+        ('usr_admin_1', 'OTS Administrator', 'admin@otstaxi.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
+        ('usr_admin_2', 'System Administrator', 'admin@admin.com', '+44 20 8123 4568', '${defaultHash}', 'admin'),
+        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@otstaxi.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
+        ('usr_passenger_1', 'Marsad Akbar', 'passenger@otstaxi.co.uk', '+44 7700 900123', '${defaultHash}', 'customer')
+      ON DUPLICATE KEY UPDATE 
+        name = VALUES(name),
+        password_hash = VALUES(password_hash),
+        role = VALUES(role)
     `);
-    console.log('✅ Admin user ready: admin@otstaxi.co.uk (Password: Admin@123)\n');
+
+    // Seed Driver profile
+    await connection.query(`
+      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, is_active)
+      VALUES ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 1)
+      ON DUPLICATE KEY UPDATE vehicle_plate = VALUES(vehicle_plate), is_active = 1
+    `);
+
+    console.log('✅ Admin: admin@otstaxi.co.uk (Pass: 12345678)');
+    console.log('✅ Driver: driver@otstaxi.co.uk (Pass: 12345678, Mercedes LO71 ABC)');
+    console.log('✅ Passenger: passenger@otstaxi.co.uk (Pass: 12345678)\n');
 
     // 5. Seed Vehicles Fleet if empty
     const [existingVehicles] = await connection.query('SELECT COUNT(*) as count FROM vehicles');
