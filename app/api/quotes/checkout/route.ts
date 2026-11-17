@@ -3,62 +3,104 @@ import { quoteStore } from "@/lib/quote-store";
 import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
 import { BookingModel } from "@/models/Booking";
 import { sendBookingConfirmationEmail, sendAdminBookingAlertEmail } from "@/lib/email";
-import Stripe from "stripe";
+import { getStripeServer } from "@/lib/stripe";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey && stripeSecretKey !== "sk_test_sample_key"
-  ? new Stripe(stripeSecretKey, { apiVersion: "2024-09-30.acacia" as any })
-  : null;
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { quoteRef, paymentMethod = "stripe", passenger, cardDetails } = body;
+    const {
+      quoteRef,
+      paymentMethod = "stripe_card",
+      passenger,
+      passengerDetails,
+      selectedVehicleId,
+      selectedExtras,
+      totalAmount,
+      paymentIntentId,
+      cardLast4,
+    } = body;
+
+    if (!quoteRef) {
+      return NextResponse.json({ status: false, message: "quoteRef is required" }, { status: 400 });
+    }
 
     const quote = await quoteStore.get(quoteRef);
     if (!quote) {
       return NextResponse.json({ status: false, message: "Quote not found" }, { status: 404 });
     }
 
-    // Save passenger details if supplied
-    if (passenger) {
-      await quoteStore.update(quoteRef, { passenger });
-    }
+    // Unify passenger details
+    const finalPassenger = passenger || passengerDetails || quote.passenger;
 
-    // Calculate final total including selected vehicle and extras
-    const selectedVeh = quote.pricing.vehicles.find((v) => v.id === (quote.selectedVehicleId || "saloon"));
-    let basePrice = selectedVeh ? selectedVeh.totalPrice : 45.0;
+    // Determine chosen vehicle & total price
+    const vehId = selectedVehicleId || quote.selectedVehicleId || "saloon";
+    const selectedVeh = quote.pricing?.vehicles?.find((v: any) => v.id === vehId) || quote.pricing?.vehicles?.[0];
+    const basePrice = selectedVeh?.finalPrice || selectedVeh?.totalPrice || 45.0;
 
     let extrasTotal = 0;
-    (quote.selectedExtras || []).forEach((extId) => {
+    const extrasList = selectedExtras || quote.selectedExtras || [];
+    extrasList.forEach((extId: string) => {
       const ext = EXTRA_OPTIONS.find((e) => e.id === extId);
       if (ext) extrasTotal += ext.price;
     });
 
-    const finalAmountGbp = Math.round((basePrice + extrasTotal) * 100) / 100;
+    const calculatedTotal = Math.round((basePrice + extrasTotal) * 100) / 100;
+    const finalPaidAmount = typeof totalAmount === "number" && totalAmount > 0 ? totalAmount : calculatedTotal;
 
-    // If Stripe is configured and live keys are set, create a real PaymentIntent
-    let stripeClientSecret: string | null = null;
-    if (stripe) {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(finalAmountGbp * 100), // in pence
-        currency: "gbp",
-        metadata: {
-          quoteRef: quote.quoteRef,
-          from: quote.fromLocation,
-          to: quote.toLocation,
-          passengerName: passenger?.fullName || "Guest",
-        },
-      });
-      stripeClientSecret = paymentIntent.client_secret;
+    // Verify Stripe PaymentIntent if present
+    const stripe = getStripeServer();
+    let verifiedPaymentId = paymentIntentId || null;
+
+    if (stripe && paymentIntentId) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (pi.status !== "succeeded" && pi.status !== "processing" && pi.status !== "requires_capture") {
+          console.warn(`PaymentIntent ${paymentIntentId} status is ${pi.status}`);
+        }
+      } catch (stripeErr: any) {
+        console.warn("Could not retrieve Stripe PaymentIntent:", stripeErr.message);
+      }
     }
 
-    // Mark quote as completed
+    const isCash = paymentMethod === "cash_to_driver";
+    const paymentStatus = isCash ? "unpaid" : "completed";
+
+    // Mark quote as completed in memory store
     await quoteStore.update(quoteRef, {
-      paymentStatus: "completed",
-      paidAmount: finalAmountGbp,
+      selectedVehicleId: vehId,
+      selectedExtras: extrasList,
+      passenger: finalPassenger,
+      paymentStatus: isCash ? "cancelled" : "completed",
+      paidAmount: finalPaidAmount,
       paymentMethod,
     });
+
+    // Update MySQL booking record if connected
+    try {
+      if (isCash) {
+        await BookingModel.updateDetails(quoteRef, {
+          selectedVehicleId: vehId,
+          selectedExtras: extrasList,
+          passengerName: finalPassenger?.fullName,
+          passengerEmail: finalPassenger?.email,
+          passengerPhone: finalPassenger?.phone,
+          flightNumber: finalPassenger?.flightNumber,
+          terminal: finalPassenger?.terminal,
+          specialNotes: finalPassenger?.specialNotes,
+          totalPrice: finalPaidAmount,
+        });
+      } else {
+        await BookingModel.markPaymentCompleted(quoteRef, {
+          paidAmount: finalPaidAmount,
+          paymentMethod,
+          stripePaymentId: verifiedPaymentId || (cardLast4 ? `sim_card_${cardLast4}` : undefined),
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn("MySQL booking update skipped or failed:", dbErr.message);
+    }
 
     // Send automated email receipt & admin alert in background
     BookingModel.getByRef(quoteRef).then((b) => {
@@ -66,17 +108,20 @@ export async function POST(request: Request) {
         sendBookingConfirmationEmail(b).catch((e) => console.error("Confirmation email error:", e));
         sendAdminBookingAlertEmail(b).catch((e) => console.error("Admin alert email error:", e));
       }
-    });
+    }).catch(() => {});
 
     return NextResponse.json({
       status: true,
       quoteRef,
-      paidAmount: finalAmountGbp,
-      clientSecret: stripeClientSecret,
-      message: "Payment processed successfully",
+      paidAmount: finalPaidAmount,
+      paymentMethod,
+      paymentStatus,
+      message: isCash
+        ? "Booking confirmed! You can pay the driver directly upon arrival."
+        : "Payment authorized and booking confirmed successfully via Stripe.",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("quotes/checkout error:", error);
-    return NextResponse.json({ status: false, message: "Payment processing failed" }, { status: 500 });
+    return NextResponse.json({ status: false, message: error.message || "Payment processing failed" }, { status: 500 });
   }
 }

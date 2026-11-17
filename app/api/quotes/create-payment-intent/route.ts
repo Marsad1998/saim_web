@@ -1,0 +1,94 @@
+import { NextResponse } from "next/server";
+import { quoteStore } from "@/lib/quote-store";
+import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
+import { getStripeServer, getStripePublishableKey } from "@/lib/stripe";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { quoteRef, selectedVehicleId, selectedExtras = [] } = body;
+
+    if (!quoteRef) {
+      return NextResponse.json({ status: false, message: "quoteRef is required" }, { status: 400 });
+    }
+
+    const quote = await quoteStore.get(quoteRef);
+    if (!quote) {
+      return NextResponse.json({ status: false, message: "Quote not found" }, { status: 404 });
+    }
+
+    // Determine chosen vehicle & total price
+    const vehId = selectedVehicleId || quote.selectedVehicleId || "saloon";
+    const selectedVeh = quote.pricing?.vehicles?.find((v: any) => v.id === vehId) || quote.pricing?.vehicles?.[0];
+    const basePrice = selectedVeh?.finalPrice || selectedVeh?.totalPrice || 45.0;
+
+    let extrasTotal = 0;
+    const extrasList = selectedExtras.length > 0 ? selectedExtras : (quote.selectedExtras || []);
+    extrasList.forEach((extId: string) => {
+      const ext = EXTRA_OPTIONS.find((e) => e.id === extId);
+      if (ext) extrasTotal += ext.price;
+    });
+
+    const finalAmount = Math.round((basePrice + extrasTotal) * 100) / 100;
+    const currency = (quote.currency || "gbp").toLowerCase();
+
+    // Check if Stripe is live/configured
+    const stripe = getStripeServer();
+    const pubKey = getStripePublishableKey();
+
+    if (stripe && pubKey) {
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(finalAmount * 100), // in smallest currency unit (pence)
+          currency,
+          automatic_payment_methods: {
+            enabled: true,
+          },
+          description: `OTS Taxi Booking Transfer - Ref: ${quote.quoteRef}`,
+          metadata: {
+            quoteRef: quote.quoteRef,
+            from: quote.fromLocation,
+            to: quote.toLocation,
+            passengerName: quote.passenger?.fullName || "Guest Passenger",
+            passengerEmail: quote.passenger?.email || "",
+            vehicle: selectedVeh?.name || vehId,
+          },
+        });
+
+        return NextResponse.json({
+          status: true,
+          configured: true,
+          publishableKey: pubKey,
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id,
+          amount: finalAmount,
+          currency: currency.toUpperCase(),
+        });
+      } catch (stripeErr: any) {
+        console.error("Stripe create-payment-intent API error:", stripeErr.message);
+        // Fall back gracefully to mock mode if Stripe throws e.g. invalid key
+        return NextResponse.json({
+          status: true,
+          configured: false,
+          amount: finalAmount,
+          currency: currency.toUpperCase(),
+          fallbackReason: stripeErr.message,
+        });
+      }
+    }
+
+    // Fallback mode when keys are test placeholders or not set yet
+    return NextResponse.json({
+      status: true,
+      configured: false,
+      amount: finalAmount,
+      currency: currency.toUpperCase(),
+      message: "Stripe test mode active",
+    });
+  } catch (error: any) {
+    console.error("create-payment-intent route error:", error);
+    return NextResponse.json({ status: false, message: error.message || "Failed to create payment session" }, { status: 500 });
+  }
+}
