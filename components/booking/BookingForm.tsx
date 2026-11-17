@@ -206,7 +206,7 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
             </button>
           </div>
 
-          {/* Swap Button (desktop center, mobile between) */}
+          {/* Swap Button (desktop center, mobile row) */}
           <div className="hidden md:flex absolute left-1/2 top-7 -translate-x-1/2 z-10">
             <button
               type="button"
@@ -215,6 +215,17 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
               className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md text-gray-600 hover:text-black hover:bg-ots-yellow flex items-center justify-center transition-transform hover:rotate-180"
             >
               <ArrowUpDown className="w-4 h-4 rotate-90" />
+            </button>
+          </div>
+
+          <div className="flex md:hidden justify-end -my-1 z-10">
+            <button
+              type="button"
+              onClick={handleSwap}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-ots-yellow text-gray-700 hover:text-black rounded-xl text-xs font-bold flex items-center space-x-1.5 transition min-h-[36px]"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>Swap Locations</span>
             </button>
           </div>
 

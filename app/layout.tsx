@@ -4,6 +4,7 @@ import { AppProvider } from '@/components/context/AppContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import MobileDrawer from '@/components/layout/MobileDrawer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import UserDrawer from '@/components/layout/UserDrawer';
 import CountryModal from '@/components/layout/CountryModal';
 
@@ -21,7 +22,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#FFCC00',
+  viewportFit: 'cover',
+  themeColor: '#141720',
 };
 
 export default function RootLayout({
@@ -39,7 +41,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-poppins bg-[#f8f9fa] text-gray-800 antialiased min-h-screen flex flex-col selection:bg-ots-yellow selection:text-black">
+      <body className="font-poppins bg-[#f8f9fa] text-gray-800 antialiased min-h-screen flex flex-col selection:bg-ots-yellow selection:text-black pb-20 lg:pb-0">
         <AppProvider>
           <Header />
           <main className="flex-grow">
@@ -47,6 +49,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <MobileDrawer />
+          <MobileBottomNav />
           <UserDrawer />
           <CountryModal />
         </AppProvider>

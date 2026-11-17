@@ -216,10 +216,10 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center space-x-2 border-b border-gray-200">
+        <div className="flex items-center space-x-2 border-b border-gray-200 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => setActiveTab('bookings')}
-            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors ${
+            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap min-h-[44px] ${
               activeTab === 'bookings'
                 ? 'border-ots-yellow text-gray-900'
                 : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -231,7 +231,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab('drivers')}
-            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors ${
+            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap min-h-[44px] ${
               activeTab === 'drivers'
                 ? 'border-ots-yellow text-gray-900'
                 : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -243,7 +243,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab('inquiries')}
-            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors ${
+            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap min-h-[44px] ${
               activeTab === 'inquiries'
                 ? 'border-ots-yellow text-gray-900'
                 : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -301,79 +301,144 @@ export default function AdminPage() {
                 No bookings match your selected filter.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-200">
-                      <th className="p-4">Ref &amp; Date</th>
-                      <th className="p-4">Route Details</th>
-                      <th className="p-4">Customer Info</th>
-                      <th className="p-4">Vehicle &amp; Fare</th>
-                      <th className="p-4">Status &amp; Driver</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredBookings.map((b) => (
-                      <tr key={b.quote_ref} className="hover:bg-gray-50/70 transition-colors">
-                        {/* Ref & Date */}
-                        <td className="p-4 align-top whitespace-nowrap">
-                          <span className="font-mono font-bold text-gray-900 block text-sm">
+              <div>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-200">
+                        <th className="p-4">Ref &amp; Date</th>
+                        <th className="p-4">Route Details</th>
+                        <th className="p-4">Customer Info</th>
+                        <th className="p-4">Vehicle &amp; Fare</th>
+                        <th className="p-4">Status &amp; Driver</th>
+                        <th className="p-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredBookings.map((b) => (
+                        <tr key={b.quote_ref} className="hover:bg-gray-50/70 transition-colors">
+                          {/* Ref & Date */}
+                          <td className="p-4 align-top whitespace-nowrap">
+                            <span className="font-mono font-bold text-gray-900 block text-sm">
+                              {b.quote_ref}
+                            </span>
+                            <span className="text-gray-500 text-[11px] block mt-0.5">
+                              {b.pickup_date} at {b.pickup_time}
+                            </span>
+                          </td>
+
+                          {/* Route */}
+                          <td className="p-4 align-top max-w-xs">
+                            <div className="space-y-1">
+                              <div className="text-gray-900 font-medium truncate" title={b.from_location}>
+                                📍 {b.from_location}
+                              </div>
+                              <div className="text-gray-600 font-medium truncate" title={b.to_location}>
+                                🏁 {b.to_location}
+                              </div>
+                              {b.flight_number && (
+                                <span className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                                  Flight {b.flight_number} {b.terminal ? `(T${b.terminal})` : ''}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Customer */}
+                          <td className="p-4 align-top whitespace-nowrap">
+                            <span className="font-bold text-gray-900 block">
+                              {b.passenger_name || 'Guest'}
+                            </span>
+                            <span className="text-gray-500 text-[11px] block">
+                              {b.passenger_phone || 'No phone'}
+                            </span>
+                            <span className="text-gray-400 text-[10px] block">
+                              {b.passenger_email || ''}
+                            </span>
+                          </td>
+
+                          {/* Vehicle & Price */}
+                          <td className="p-4 align-top whitespace-nowrap">
+                            <span className="font-semibold text-gray-800 uppercase block text-[11px]">
+                              {b.selected_vehicle_id}
+                            </span>
+                            <span className="text-sm font-extrabold text-gray-900 block mt-0.5">
+                              £{Number(b.total_price || 0).toFixed(2)}
+                            </span>
+                            <span className={`text-[10px] font-bold ${
+                              b.payment_status === 'completed' ? 'text-green-700' : 'text-amber-700'
+                            }`}>
+                              {b.payment_status === 'completed' ? '● Paid' : '○ Unpaid'}
+                            </span>
+                          </td>
+
+                          {/* Status & Driver */}
+                          <td className="p-4 align-top">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mb-2 ${
+                              b.booking_status === 'confirmed'
+                                ? 'bg-green-100 text-green-800'
+                                : b.booking_status === 'completed'
+                                ? 'bg-blue-100 text-blue-800'
+                                : b.booking_status === 'assigned'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {b.booking_status}
+                            </span>
+
+                            {/* Driver Assignment Dropdown */}
+                            <div className="mt-1">
+                              <select
+                                value={b.driver_id || ''}
+                                onChange={(e) => handleUpdateBooking(b.quote_ref, { driverId: e.target.value })}
+                                className="w-full text-[11px] p-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none"
+                              >
+                                <option value="">-- Assign Driver --</option>
+                                {drivers.map((d) => (
+                                  <option key={d.id} value={d.id}>
+                                    {d.driver_name || d.id} ({d.vehicle_plate})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="p-4 align-top text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <button
+                                onClick={() => handleUpdateBooking(b.quote_ref, { status: 'completed' })}
+                                title="Mark as Completed"
+                                className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-700 font-bold rounded-lg border border-green-200"
+                              >
+                                Complete
+                              </button>
+                              <Link
+                                href={`/booking-confirmation?ref=${b.quote_ref}`}
+                                target="_blank"
+                                className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg border border-gray-200"
+                              >
+                                Voucher
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile App-like Card View */}
+                <div className="md:hidden divide-y divide-gray-100">
+                  {filteredBookings.map((b) => (
+                    <div key={b.quote_ref} className="p-4 space-y-3 hover:bg-gray-50/50 transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono font-bold text-gray-900 text-sm">
                             {b.quote_ref}
                           </span>
-                          <span className="text-gray-500 text-[11px] block mt-0.5">
-                            {b.pickup_date} at {b.pickup_time}
-                          </span>
-                        </td>
-
-                        {/* Route */}
-                        <td className="p-4 align-top max-w-xs">
-                          <div className="space-y-1">
-                            <div className="text-gray-900 font-medium truncate" title={b.from_location}>
-                              📍 {b.from_location}
-                            </div>
-                            <div className="text-gray-600 font-medium truncate" title={b.to_location}>
-                              🏁 {b.to_location}
-                            </div>
-                            {b.flight_number && (
-                              <span className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                                Flight {b.flight_number} {b.terminal ? `(T${b.terminal})` : ''}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Customer */}
-                        <td className="p-4 align-top whitespace-nowrap">
-                          <span className="font-bold text-gray-900 block">
-                            {b.passenger_name || 'Guest'}
-                          </span>
-                          <span className="text-gray-500 text-[11px] block">
-                            {b.passenger_phone || 'No phone'}
-                          </span>
-                          <span className="text-gray-400 text-[10px] block">
-                            {b.passenger_email || ''}
-                          </span>
-                        </td>
-
-                        {/* Vehicle & Price */}
-                        <td className="p-4 align-top whitespace-nowrap">
-                          <span className="font-semibold text-gray-800 uppercase block text-[11px]">
-                            {b.selected_vehicle_id}
-                          </span>
-                          <span className="text-sm font-extrabold text-gray-900 block mt-0.5">
-                            £{Number(b.total_price || 0).toFixed(2)}
-                          </span>
-                          <span className={`text-[10px] font-bold ${
-                            b.payment_status === 'completed' ? 'text-green-700' : 'text-amber-700'
-                          }`}>
-                            {b.payment_status === 'completed' ? '● Paid' : '○ Unpaid'}
-                          </span>
-                        </td>
-
-                        {/* Status & Driver */}
-                        <td className="p-4 align-top">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mb-2 ${
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                             b.booking_status === 'confirmed'
                               ? 'bg-green-100 text-green-800'
                               : b.booking_status === 'completed'
@@ -384,47 +449,80 @@ export default function AdminPage() {
                           }`}>
                             {b.booking_status}
                           </span>
+                        </div>
+                        <span className="text-sm font-extrabold text-gray-900">
+                          £{Number(b.total_price || 0).toFixed(2)}
+                        </span>
+                      </div>
 
-                          {/* Driver Assignment Dropdown */}
-                          <div className="mt-1">
-                            <select
-                              value={b.driver_id || ''}
-                              onChange={(e) => handleUpdateBooking(b.quote_ref, { driverId: e.target.value })}
-                              className="w-full text-[11px] p-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none"
-                            >
-                              <option value="">-- Assign Driver --</option>
-                              {drivers.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                  {d.driver_name || d.id} ({d.vehicle_plate})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
+                      <div className="text-xs text-gray-500 flex items-center space-x-2">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{b.pickup_date} at {b.pickup_time}</span>
+                        <span>•</span>
+                        <span className="capitalize">{b.selected_vehicle_id}</span>
+                      </div>
 
-                        {/* Actions */}
-                        <td className="p-4 align-top text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end space-x-1.5">
-                            <button
-                              onClick={() => handleUpdateBooking(b.quote_ref, { status: 'completed' })}
-                              title="Mark as Completed"
-                              className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-700 font-bold rounded-lg border border-green-200"
-                            >
-                              Complete
-                            </button>
-                            <Link
-                              href={`/booking-confirmation?ref=${b.quote_ref}`}
-                              target="_blank"
-                              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg border border-gray-200"
-                            >
-                              Voucher
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      {/* Route */}
+                      <div className="space-y-1.5 text-xs bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-3.5 h-3.5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span className="font-medium text-gray-900 truncate">{b.from_location}</span>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <span className="font-medium text-gray-900 truncate">{b.to_location}</span>
+                        </div>
+                      </div>
+
+                      {/* Passenger & Driver Assign */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase font-bold">Passenger</span>
+                          <span className="font-bold text-gray-900 truncate block">{b.passenger_name || 'Guest'}</span>
+                          {b.passenger_phone && (
+                            <a href={`tel:${b.passenger_phone}`} className="text-blue-600 font-mono text-[11px] block">
+                              {b.passenger_phone}
+                            </a>
+                          )}
+                        </div>
+
+                        <div>
+                          <span className="text-gray-400 block text-[10px] uppercase font-bold">Assigned Driver</span>
+                          <select
+                            value={b.driver_id || ''}
+                            onChange={(e) => handleUpdateBooking(b.quote_ref, { driverId: e.target.value })}
+                            className="w-full text-xs p-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none min-h-[38px] font-medium"
+                          >
+                            <option value="">-- Assign --</option>
+                            {drivers.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.driver_name || d.id} ({d.vehicle_plate})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Mobile Actions */}
+                      <div className="flex items-center justify-between pt-1">
+                        <Link
+                          href={`/booking-confirmation?ref=${b.quote_ref}`}
+                          target="_blank"
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg min-h-[36px] flex items-center"
+                        >
+                          View Voucher
+                        </Link>
+
+                        <button
+                          onClick={() => handleUpdateBooking(b.quote_ref, { status: 'completed' })}
+                          className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg min-h-[36px] flex items-center"
+                        >
+                          Mark Completed
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

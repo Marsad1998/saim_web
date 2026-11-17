@@ -16,11 +16,13 @@ import StepVehicles from '@/components/booking/funnel/StepVehicles';
 import StepDetails from '@/components/booking/funnel/StepDetails';
 import StepPayment from '@/components/booking/funnel/StepPayment';
 import { StoredQuote } from '@/lib/quote-store';
+import { useApp } from '@/components/context/AppContext';
 
 export default function QuoteBookingPage() {
   const params = useParams();
   const router = useRouter();
   const quoteRef = params.quoteRef as string;
+  const { formatPrice } = useApp();
 
   const [quote, setQuote] = useState<StoredQuote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +121,7 @@ export default function QuoteBookingPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Progress Stepper Bar */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-3xl mx-auto">
             {steps.map((s) => {
               const Icon = s.icon;
@@ -129,7 +131,7 @@ export default function QuoteBookingPage() {
               return (
                 <div
                   key={s.num}
-                  className={`flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 rounded-xl border transition-all ${
+                  className={`flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-4 rounded-xl border transition-all ${
                     isCurrent
                       ? 'bg-white border-ots-yellow shadow-md ring-2 ring-ots-yellow/30'
                       : isCompleted
@@ -161,6 +163,28 @@ export default function QuoteBookingPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Mobile Sticky Trip Glance Header */}
+        <div className="lg:hidden mb-6 bg-[#141720] text-white p-4 rounded-2xl shadow-md border border-neutral-800">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 pr-3">
+              <span className="text-[10px] uppercase font-bold text-ots-yellow tracking-wider block">
+                {quote.quoteRef} • {quote.pickUpDate}
+              </span>
+              <div className="text-xs font-semibold text-white truncate mt-0.5">
+                {quote.fromLocation.split(',')[0]} ➔ {quote.toLocation.split(',')[0]}
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <span className="text-[10px] text-gray-400 block">Total Fixed</span>
+              <span className="text-lg font-black text-ots-yellow">
+                {formatPrice(
+                  (quote.pricing?.vehicles?.find((v: any) => v.id === selectedVehicleId) || quote.pricing?.vehicles?.[0])?.finalPrice || 0
+                )}
+              </span>
+            </div>
           </div>
         </div>
 

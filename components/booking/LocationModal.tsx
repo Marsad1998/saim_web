@@ -98,25 +98,31 @@ export default function LocationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/75 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl bg-white text-neutral-900 rounded-2xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 border border-gray-100">
+      {/* Modal Dialog / Mobile Bottom Sheet */}
+      <div className="relative w-full sm:max-w-xl bg-white text-neutral-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[92vh] sm:max-h-[85vh] flex flex-col border border-gray-100 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
         
+        {/* Mobile Pull Handle */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1 bg-neutral-900">
+          <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-neutral-100 bg-neutral-900 text-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 bg-neutral-900 text-white">
           <div className="flex items-center space-x-2">
             <MapPin className="w-5 h-5 text-ots-yellow" />
             <h3 className="text-base font-bold">{title}</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition"
+            className="p-2 -mr-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close location search"
           >
             <X className="w-5 h-5" />
           </button>
