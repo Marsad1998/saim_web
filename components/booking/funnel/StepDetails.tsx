@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { StoredQuote } from '@/lib/quote-store';
+import { useApp } from '@/components/context/AppContext';
 
 interface StepDetailsProps {
   quote: StoredQuote;
@@ -27,22 +28,25 @@ export default function StepDetails({
   onNext,
   initialData = {},
 }: StepDetailsProps) {
-  const [fullName, setFullName] = useState(initialData.fullName || '');
-  const [email, setEmail] = useState(initialData.email || '');
-  const [phoneCountry, setPhoneCountry] = useState(initialData.phoneCountry || '+44');
-  const [phone, setPhone] = useState(initialData.phone || '');
-  const [flightNumber, setFlightNumber] = useState(initialData.flightNumber || '');
-  const [terminal, setTerminal] = useState(initialData.terminal || '');
-  const [pickupBufferMinutes, setPickupBufferMinutes] = useState(initialData.pickupBufferMinutes || 45);
-  const [specialNotes, setSpecialNotes] = useState(initialData.specialNotes || '');
+  const { user } = useApp();
+  const safeData = initialData || {};
+
+  const [fullName, setFullName] = useState(safeData.fullName || user?.name || '');
+  const [email, setEmail] = useState(safeData.email || user?.email || '');
+  const [phoneCountry, setPhoneCountry] = useState(safeData.phoneCountry || '+44');
+  const [phone, setPhone] = useState(safeData.phone || user?.phone || '');
+  const [flightNumber, setFlightNumber] = useState(safeData.flightNumber || '');
+  const [terminal, setTerminal] = useState(safeData.terminal || '');
+  const [pickupBufferMinutes, setPickupBufferMinutes] = useState(safeData.pickupBufferMinutes || 45);
+  const [specialNotes, setSpecialNotes] = useState(safeData.specialNotes || '');
   
   // Return flight if return journey
-  const [returnFlightNumber, setReturnFlightNumber] = useState(initialData.returnFlightNumber || '');
+  const [returnFlightNumber, setReturnFlightNumber] = useState(safeData.returnFlightNumber || '');
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const isAirportPickup = quote.fromLocation.toLowerCase().includes('airport');
-  const isAirportDropoff = quote.toLocation.toLowerCase().includes('airport');
+  const isAirportPickup = Boolean(quote?.fromLocation?.toLowerCase()?.includes('airport'));
+  const isAirportDropoff = Boolean(quote?.toLocation?.toLowerCase()?.includes('airport'));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

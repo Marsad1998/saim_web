@@ -32,7 +32,7 @@ export default function QuoteBookingPage() {
   // Selections
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('saloon');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [passengerDetails, setPassengerDetails] = useState<any>(null);
+  const [passengerDetails, setPassengerDetails] = useState<any>(undefined);
 
   useEffect(() => {
     async function loadQuote() {
@@ -185,7 +185,7 @@ export default function QuoteBookingPage() {
             {activeStep === 2 && (
               <StepDetails
                 quote={quote}
-                initialData={passengerDetails}
+                initialData={passengerDetails || undefined}
                 onBack={() => {
                   setActiveStep(1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
