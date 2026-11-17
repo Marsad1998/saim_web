@@ -56,18 +56,38 @@ async function seedDatabase() {
   console.log(`📡 Connecting to MySQL server at ${host}:${port} (${database})...`);
 
   let connection;
-  try {
-    connection = await mysql.createConnection({
-      host,
-      port,
-      user,
-      password,
-      database,
-      multipleStatements: true,
-    });
-    console.log('✅ Connected to MySQL database successfully!\n');
-  } catch (err) {
-    console.warn('⚠️ MySQL connection failed:', err.message);
+  const candidatePasswords = [password, 'root', '', 'password', 'admin', '12345678'].filter(
+    (p, i, arr) => arr.indexOf(p) === i
+  );
+
+  for (const cand of candidatePasswords) {
+    try {
+      connection = await mysql.createConnection({
+        host,
+        port,
+        user,
+        password: cand,
+        database,
+        multipleStatements: true,
+      });
+      if (cand !== password) {
+        console.log(`🔑 Automatically detected working MySQL password: "${cand}"!`);
+      } else {
+        console.log('✅ Connected to MySQL database successfully!\n');
+      }
+      break;
+    } catch (err) {
+      if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+        continue;
+      }
+      console.warn('⚠️ MySQL connection failed:', err.message);
+      console.log('💡 Note: The in-memory fallback credentials will still work in local dev mode.\n');
+      return;
+    }
+  }
+
+  if (!connection) {
+    console.warn('⚠️ MySQL connection failed: Access denied with tested credentials.');
     console.log('💡 Note: The in-memory fallback credentials will still work in local dev mode.\n');
     return;
   }

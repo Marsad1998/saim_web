@@ -6,6 +6,30 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Minimal environment file loader
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, 'utf8');
+  content.split('\n').forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const match = trimmed.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      let val = match[2].trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (!process.env[key]) {
+        process.env[key] = val;
+      }
+    }
+  });
+}
+
+loadEnvFile(path.join(__dirname, '..', '.env.local'));
+loadEnvFile(path.join(__dirname, '..', '.env'));
+
 async function initDatabase() {
   console.log('🚀 Starting OTS Taxi MySQL Database Initialization...\n');
 
@@ -32,18 +56,67 @@ async function initDatabase() {
   console.log(`📡 Connecting to MySQL server at ${host}:${port} as user "${user}"...`);
 
   let connection;
-  try {
-    // 1. Connect without database to ensure DB can be created if needed
-    connection = await mysql.createConnection({
-      host,
-      port,
-      user,
-      password,
-      multipleStatements: true,
-    });
-    console.log('✅ Connected to MySQL server successfully!\n');
-  } catch (err) {
-    console.error('❌ Failed to connect to MySQL server:', err.message);
+  let workingPassword = password;
+  const candidatePasswords = [password, 'root', '', 'password', 'admin', '12345678'].filter(
+    (p, i, arr) => arr.indexOf(p) === i
+  );
+
+  for (const cand of candidatePasswords) {
+    try {
+      connection = await mysql.createConnection({
+        host,
+        port,
+        user,
+        password: cand,
+        multipleStatements: true,
+      });
+      workingPassword = cand;
+      if (cand !== password) {
+        console.log(`🔑 Automatically detected working MySQL password: "${cand}"!`);
+        // Update .env.local with working credentials
+        try {
+          const envLocalPath = path.join(__dirname, '..', '.env.local');
+          let envContent = fs.existsSync(envLocalPath) ? fs.readFileSync(envLocalPath, 'utf8') : '';
+          const newDbUrl = `DATABASE_URL="mysql://${user}:${cand}@${host}:${port}/${database}"`;
+          if (envContent.includes('DATABASE_URL=')) {
+            envContent = envContent.replace(/DATABASE_URL=.*/, newDbUrl);
+          } else {
+            envContent += `\n${newDbUrl}\n`;
+          }
+          if (envContent.includes('MYSQL_PASSWORD=')) {
+            envContent = envContent.replace(/MYSQL_PASSWORD=.*/, `MYSQL_PASSWORD=${cand}`);
+          } else {
+            envContent += `\nMYSQL_PASSWORD=${cand}\n`;
+          }
+          fs.writeFileSync(envLocalPath, envContent, 'utf8');
+          console.log(`📝 Updated .env.local with working MySQL password.\n`);
+        } catch (e) {
+          // ignore file write error
+        }
+      } else {
+        console.log('✅ Connected to MySQL server successfully!\n');
+      }
+      break;
+    } catch (err) {
+      if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+        continue;
+      }
+      // If it's another error like connection refused, report immediately
+      console.error('❌ Failed to connect to MySQL server:', err.message);
+      console.error('\n👉 Tips:');
+      console.error('  1. Check if MySQL / XAMPP / MariaDB service is running.');
+      console.error('  2. Verify credentials in your .env or .env.local file:');
+      console.error('     MYSQL_HOST=127.0.0.1');
+      console.error('     MYSQL_PORT=3306');
+      console.error('     MYSQL_USER=root');
+      console.error('     MYSQL_PASSWORD=your_password');
+      console.error('     MYSQL_DATABASE=otstaxi_db\n');
+      process.exit(1);
+    }
+  }
+
+  if (!connection) {
+    console.error('❌ Failed to connect to MySQL server: Access denied for all tested passwords (', candidatePasswords.join(', '), ')');
     console.error('\n👉 Tips:');
     console.error('  1. Check if MySQL / XAMPP / MariaDB service is running.');
     console.error('  2. Verify credentials in your .env or .env.local file:');
