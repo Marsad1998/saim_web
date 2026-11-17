@@ -1,33 +1,30 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { IBooking } from "@/models/Booking";
+import { getSystemSettings } from "./system-settings";
 
-// Email configuration from environment variables
-const smtpHost = process.env.SMTP_HOST;
-const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-const smtpUser = process.env.SMTP_USER;
-const smtpPass = process.env.SMTP_PASS;
-const fromEmail = process.env.SMTP_FROM || '"OTS Taxi UK" <no-reply@otstaxi.co.uk>';
-const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "admin@otstaxi.co.uk";
+async function getTransporter(): Promise<{ transporter: Transporter | null; fromEmail: string; adminEmail: string }> {
+  const settings = await getSystemSettings();
+  const fromEmail = settings.smtp_from || '"OTS Taxi UK" <no-reply@otstaxi.co.uk>';
+  const adminEmail = settings.admin_email || "admin@otstaxi.co.uk";
 
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter | null {
-  if (transporter) return transporter;
-
-  if (smtpHost && smtpUser && smtpPass) {
-    transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-    return transporter;
+  if (settings.smtp_host && settings.smtp_user && settings.smtp_pass) {
+    try {
+      const transport = nodemailer.createTransport({
+        host: settings.smtp_host,
+        port: settings.smtp_port,
+        secure: settings.smtp_port === 465,
+        auth: {
+          user: settings.smtp_user,
+          pass: settings.smtp_pass,
+        },
+      });
+      return { transporter: transport, fromEmail, adminEmail };
+    } catch {
+      return { transporter: null, fromEmail, adminEmail };
+    }
   }
 
-  return null;
+  return { transporter: null, fromEmail, adminEmail };
 }
 
 /**
@@ -152,7 +149,7 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
     </html>
   `;
 
-  const transport = getTransporter();
+  const { transporter: transport, fromEmail } = await getTransporter();
 
   if (transport) {
     try {
@@ -177,7 +174,7 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
     console.log(`Drop-off: ${booking.to_location}`);
     console.log(`Amount: £${booking.total_price.toFixed(2)}`);
     console.log(`Digital Voucher: ${voucherUrl}`);
-    console.log(`(Configure SMTP_HOST, SMTP_USER, SMTP_PASS in .env.local to send real emails)`);
+    console.log(`(Configure SMTP Settings in Admin Portal to send real emails)`);
     console.log(`========================================================\n`);
     return true;
   }
@@ -187,7 +184,7 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
  * Send admin alert email when a new booking is confirmed
  */
 export async function sendAdminBookingAlertEmail(booking: IBooking): Promise<boolean> {
-  const transport = getTransporter();
+  const { transporter: transport, fromEmail, adminEmail } = await getTransporter();
 
   const textContent = `
 🚨 NEW BOOKING ALERT: ${booking.quote_ref}
@@ -225,5 +222,113 @@ Status: ${booking.payment_status}
   } else {
     console.log(`[Admin Alert Simulated] New Booking: ${booking.quote_ref} (£${booking.total_price.toFixed(2)})`);
     return true;
+  }
+}
+
+/**
+ * Send 6-digit email confirmation code for new registration
+ */
+export async function sendVerificationCodeEmail(
+  email: string,
+  name: string,
+  code: string
+): Promise<boolean> {
+  const { transporter: transport, fromEmail } = await getTransporter();
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>Verify Your OTS Taxi Account</title></head>
+    <body style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 24px; color: #141720;">
+      <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+        <div style="background-color: #141720; padding: 24px; text-align: center; border-bottom: 4px solid #FFCC00;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">OTS <span style="color: #FFCC00;">TAXI</span></h1>
+          <p style="color: #9ca3af; font-size: 12px; margin: 4px 0 0;">UK Airport Transfer & Chauffeur Network</p>
+        </div>
+        <div style="padding: 32px 28px;">
+          <h2 style="font-size: 18px; font-weight: 700; margin-top: 0; color: #111827;">Confirm Your Email Address</h2>
+          <p style="font-size: 14px; color: #4b5563; line-height: 1.5;">Hello ${name || 'Valued User'}, thank you for registering with OTS Taxi. Please use the verification code below to activate your account:</p>
+          <div style="text-align: center; margin: 28px 0;">
+            <div style="display: inline-block; background-color: #FFF9E6; border: 2px dashed #FFCC00; border-radius: 12px; padding: 16px 36px; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #141720;">
+              ${code}
+            </div>
+          </div>
+          <p style="font-size: 12px; color: #6b7280; text-align: center;">This code will expire in 30 minutes. If you did not create an OTS Taxi account, please disregard this email.</p>
+        </div>
+        <div style="background-color: #f9fafb; padding: 16px; text-align: center; border-top: 1px solid #f3f4f6; font-size: 11px; color: #9ca3af;">
+          OTS Taxi Limited • 167-169 Great Portland Street, London W1W 5PF, United Kingdom
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  if (transport) {
+    try {
+      await transport.sendMail({
+        from: fromEmail,
+        to: email,
+        subject: `Verify Your OTS Taxi Account [${code}]`,
+        html: htmlContent,
+      });
+      console.log(`✉️ Verification code email sent to ${email}`);
+      return true;
+    } catch (err: any) {
+      console.error(`❌ Failed to send verification email:`, err.message);
+      return false;
+    }
+  } else {
+    console.log(`\n================== [VERIFICATION CODE SIMULATION] ==================`);
+    console.log(`To: ${email} (${name})`);
+    console.log(`Verification Code: >>> ${code} <<<`);
+    console.log(`Subject: Verify Your OTS Taxi Account [${code}]`);
+    console.log(`(Configure SMTP in Admin Portal -> Settings to send live emails)`);
+    console.log(`===================================================================\n`);
+    return true;
+  }
+}
+
+/**
+ * Send test SMTP configuration email
+ */
+export async function sendTestSmtpEmail(
+  toEmail: string,
+  settings: { host: string; port: number; user: string; pass: string; from: string }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const testTransport = nodemailer.createTransport({
+      host: settings.host,
+      port: settings.port,
+      secure: settings.port === 465,
+      auth: {
+        user: settings.user,
+        pass: settings.pass,
+      },
+    });
+
+    await testTransport.verify();
+
+    await testTransport.sendMail({
+      from: settings.from || '"OTS Taxi UK" <no-reply@otstaxi.co.uk>',
+      to: toEmail,
+      subject: `✅ SMTP Connection Successful - OTS Taxi UK`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #141720;">
+          <h2 style="color: #059669;">✅ SMTP Connection Test Succeeded</h2>
+          <p>Your SMTP mail server configuration is fully operational.</p>
+          <ul>
+            <li><strong>Host:</strong> ${settings.host}</li>
+            <li><strong>Port:</strong> ${settings.port}</li>
+            <li><strong>User:</strong> ${settings.user}</li>
+            <li><strong>Sender:</strong> ${settings.from}</li>
+          </ul>
+          <p>OTS Taxi booking receipts, driver alerts, and email verifications will now be delivered successfully.</p>
+        </div>
+      `,
+    });
+
+    return { success: true, message: `Test email sent successfully to ${toEmail}!` };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'SMTP connection failed. Check host, port, and credentials.' };
   }
 }

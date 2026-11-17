@@ -111,9 +111,9 @@ export default function QuoteBookingPage() {
   }
 
   const steps = [
-    { num: 1, title: 'Choose Vehicle', icon: Car },
-    { num: 2, title: 'Passenger Details', icon: User },
-    { num: 3, title: 'Payment & Confirm', icon: CreditCard },
+    { num: 1, title: 'Choose Vehicle', shortTitle: 'Vehicle', icon: Car },
+    { num: 2, title: 'Passenger Details', shortTitle: 'Details', icon: User },
+    { num: 3, title: 'Pay & Confirm', shortTitle: 'Payment', icon: CreditCard },
   ];
 
   return (
@@ -150,14 +150,15 @@ export default function QuoteBookingPage() {
                   >
                     {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : s.num}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider leading-tight">
+                  <div className="min-w-0 flex-1 pl-1">
+                    <span className="text-[10px] uppercase font-extrabold text-neutral-400 block tracking-wider leading-tight">
                       Step 0{s.num}
                     </span>
-                    <span className={`text-xs sm:text-sm font-bold truncate block ${
-                      isCurrent ? 'text-gray-900' : isCompleted ? 'text-gray-700' : 'text-gray-500'
+                    <span className={`text-xs sm:text-sm font-bold block truncate leading-snug ${
+                      isCurrent ? 'text-black font-extrabold' : isCompleted ? 'text-neutral-800' : 'text-neutral-500'
                     }`}>
-                      {s.title}
+                      <span className="hidden sm:inline">{s.title}</span>
+                      <span className="sm:hidden">{s.shortTitle}</span>
                     </span>
                   </div>
                 </div>

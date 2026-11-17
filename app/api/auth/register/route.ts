@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { UserModel } from "@/models/User";
+import { DriverModel } from "@/models/Driver";
 import { signJwtToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { getSystemSettings } from "@/lib/system-settings";
+import { sendVerificationCodeEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, phone, password } = body;
+    const { email, phone, password, role: requestedRole } = body;
+
+    const role = requestedRole === "driver" ? "driver" : "customer";
 
     // Support both unified name ('name' or 'fullName') and split name ('firstName' & 'lastName')
     let fullName = (body.name || body.fullName || "").trim();
@@ -53,23 +58,61 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           status: 400,
-          message: "An account with this email address already exists.",
-          errorMessage: "An account with this email address already exists."
+          message: "An account with this email address already exists. Please log in.",
+          errorMessage: "An account with this email address already exists. Please log in."
         },
         { status: 400 }
       );
     }
 
-    // 2. Create user (password will be automatically bcrypt-hashed in UserModel)
+    // 2. Check if email verification is globally enforced
+    const systemSettings = await getSystemSettings();
+    const requireVerification = Boolean(systemSettings.require_email_verification);
+
+    let verificationCode: string | undefined = undefined;
+    if (requireVerification) {
+      verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    // 3. Create user (password will be automatically bcrypt-hashed in UserModel)
     const user = await UserModel.create({
       name: fullName,
       email: cleanEmail,
       phone: phone ? String(phone).trim() : undefined,
       password: String(password),
-      role: "customer",
+      role,
+      is_verified: !requireVerification,
+      verification_code: verificationCode,
     });
 
-    // 3. Issue JWT session token
+    // 4. If driver, initialize their driver profile as incomplete / pending approval
+    if (role === "driver") {
+      await DriverModel.create({
+        userId: user.id,
+        licenseNumber: "",
+        vehicleModel: "",
+        vehiclePlate: "",
+        vehicleCategory: "saloon",
+        verificationStatus: "incomplete",
+        isActive: false,
+      });
+    }
+
+    // 5. If verification is required, send 6-digit code and instruct frontend to redirect to verify page
+    if (requireVerification && verificationCode) {
+      await sendVerificationCodeEmail(cleanEmail, fullName, verificationCode);
+
+      return NextResponse.json({
+        status: 200,
+        requiresVerification: true,
+        email: cleanEmail,
+        role,
+        devCode: process.env.NODE_ENV !== "production" ? verificationCode : undefined,
+        message: "Verification code sent to your email address.",
+      });
+    }
+
+    // 6. Otherwise, automatically issue JWT session token
     const token = signJwtToken({
       userId: user.id,
       email: user.email,
@@ -77,14 +120,15 @@ export async function POST(request: Request) {
       role: user.role,
     });
 
-    // 4. Set HTTP-Only Cookie
     const response = NextResponse.json({
       status: 200,
+      requiresVerification: false,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role,
       },
       message: "Account created successfully.",
     });

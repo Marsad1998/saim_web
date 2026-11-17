@@ -20,7 +20,12 @@ import {
   Star, 
   Power,
   ChevronRight,
-  Plane
+  Plane,
+  Lock,
+  FileCheck,
+  CreditCard,
+  Save,
+  Check
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -38,8 +43,22 @@ export default function DriverDashboardPage() {
   const [trips, setTrips] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTripId, setUpdatingTripId] = useState<string | null>(null);
-  const [isOnDuty, setIsOnDuty] = useState(true);
+  const [isOnDuty, setIsOnDuty] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'vehicle'>('active');
+
+  // Chauffeur Onboarding / Profile Form State
+  const [profileForm, setProfileForm] = useState({
+    licenseNumber: '',
+    pcoExpiry: '',
+    vehicleModel: '',
+    vehiclePlate: '',
+    vehicleCategory: 'saloon',
+    insuranceNumber: '',
+    sortCode: '',
+    accountNumber: '',
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadDriverData = async () => {
     setIsLoading(true);
@@ -55,6 +74,20 @@ export default function DriverDashboardPage() {
           setDriver(sData.driver);
           setIsOnDuty(Boolean(sData.driver?.is_active));
           if (sData.stats) setStats(sData.stats);
+
+          // Populate profile form if driver data exists
+          if (sData.driver) {
+            setProfileForm({
+              licenseNumber: sData.driver.license_number || '',
+              pcoExpiry: sData.driver.pco_expiry ? sData.driver.pco_expiry.split('T')[0] : '',
+              vehicleModel: sData.driver.vehicle_model || '',
+              vehiclePlate: sData.driver.vehicle_plate || '',
+              vehicleCategory: sData.driver.vehicle_category || 'saloon',
+              insuranceNumber: sData.driver.insurance_number || '',
+              sortCode: sData.driver.sort_code || '',
+              accountNumber: sData.driver.account_number || '',
+            });
+          }
         }
       }
 
@@ -75,17 +108,83 @@ export default function DriverDashboardPage() {
     loadDriverData();
   }, []);
 
+  const isProfileIncomplete = !driver?.license_number || driver?.verification_status === 'incomplete';
+
   const handleToggleDuty = async () => {
+    if (isProfileIncomplete) {
+      setActiveTab('vehicle');
+      setProfileFeedback({
+        type: 'error',
+        text: 'Chauffeur verification required: Please complete your PCO license and vehicle registration below to go On-Duty.',
+      });
+      return;
+    }
+
     const nextState = !isOnDuty;
     setIsOnDuty(nextState);
     try {
-      await fetch('/api/driver/status', {
+      const res = await fetch('/api/driver/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: nextState }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setIsOnDuty(!nextState);
+        alert(data.message || 'Cannot change status');
+      }
     } catch (e) {
       console.error('Failed to toggle duty:', e);
+      setIsOnDuty(!nextState);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    setProfileFeedback(null);
+
+    if (!profileForm.licenseNumber.trim() || !profileForm.vehicleModel.trim() || !profileForm.vehiclePlate.trim()) {
+      setProfileFeedback({
+        type: 'error',
+        text: 'Please fill in your PCO License Number, Vehicle Model, and Registration Plate.',
+      });
+      setIsSavingProfile(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/driver/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileForm),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.status) {
+        setProfileFeedback({
+          type: 'success',
+          text: data.message || 'Chauffeur profile and vehicle documentation updated successfully!',
+        });
+        if (data.driver) {
+          setDriver(data.driver);
+          setIsOnDuty(Boolean(data.driver.is_active));
+        }
+      } else {
+        setProfileFeedback({
+          type: 'error',
+          text: data.message || 'Failed to update profile.',
+        });
+      }
+    } catch (err: any) {
+      console.error('Save profile error:', err);
+      setProfileFeedback({
+        type: 'error',
+        text: 'Network error while saving profile. Please try again.',
+      });
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -143,32 +242,60 @@ export default function DriverDashboardPage() {
                 <span className="text-xs text-neutral-400 font-mono">
                   ID: {driver?.id || 'DRV-781'}
                 </span>
+                {driver?.verification_status && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                    driver.verification_status === 'approved'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : driver.verification_status === 'pending_approval'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  }`}>
+                    {driver.verification_status.replace('_', ' ')}
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
                 {driver?.name || user?.name || 'Authorized Driver'}
               </h1>
               <p className="text-xs text-neutral-400 mt-0.5 flex items-center space-x-2">
                 <Car className="w-3.5 h-3.5 text-ots-yellow" />
-                <span>{driver?.vehicle_model || 'Executive Saloon'} • </span>
+                <span>{driver?.vehicle_model || (isProfileIncomplete ? 'Profile Incomplete' : 'Executive Saloon')} • </span>
                 <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white font-bold">
-                  {driver?.vehicle_plate || 'LO71 ABC'}
+                  {driver?.vehicle_plate || (isProfileIncomplete ? 'NO PLATE' : 'LO71 ABC')}
                 </span>
               </p>
             </div>
 
             {/* Duty Status Button & Logout */}
             <div className="flex items-center space-x-3">
-              <button
-                onClick={handleToggleDuty}
-                className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2 border shadow-sm ${
-                  isOnDuty
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
-                    : 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30'
-                }`}
-              >
-                <Power className="w-4 h-4" />
-                <span>{isOnDuty ? '🟢 ON DUTY' : '🔴 OFF DUTY'}</span>
-              </button>
+              {isProfileIncomplete ? (
+                <button
+                  onClick={() => {
+                    setActiveTab('vehicle');
+                    setProfileFeedback({
+                      type: 'error',
+                      text: 'You must complete and submit your PCO & vehicle details below before going On-Duty.',
+                    });
+                  }}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2 border shadow-sm bg-neutral-800 text-neutral-400 border-neutral-700 hover:border-ots-yellow hover:text-white"
+                  title="Complete profile to unlock On-Duty"
+                >
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <span>🔒 Verification Required</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleToggleDuty}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2 border shadow-sm ${
+                    isOnDuty
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+                      : 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30'
+                  }`}
+                >
+                  <Power className="w-4 h-4" />
+                  <span>{isOnDuty ? '🟢 ON DUTY' : '🔴 OFF DUTY'}</span>
+                </button>
+              )}
 
               <button
                 onClick={handleLogout}
@@ -185,7 +312,7 @@ export default function DriverDashboardPage() {
             <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
               <div className="text-xs text-neutral-400">Today's Earnings</div>
               <div className="text-xl font-extrabold text-ots-yellow mt-1">
-                {formatPrice(stats.todayEarnings || 125)}
+                {formatPrice(stats.todayEarnings || 0)}
               </div>
             </div>
 
@@ -212,6 +339,30 @@ export default function DriverDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Profile Incomplete Warning Banner */}
+        {isProfileIncomplete && (
+          <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-extrabold text-amber-950">
+                  Chauffeur Onboarding Action Required: Complete Your Vehicle &amp; PCO Profile
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Welcome to OTS Taxi! Your driver account is active, but you cannot switch to <strong>On-Duty</strong> or accept passenger rides until your TfL/Council PCO license and vehicle registration are submitted.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('vehicle')}
+              className="px-4 py-2.5 bg-black hover:bg-neutral-800 text-ots-yellow font-bold text-xs rounded-xl flex-shrink-0 transition shadow flex items-center space-x-1.5 self-start sm:self-center"
+            >
+              <span>Complete Profile</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-gray-200 mt-8 space-x-6">
@@ -246,6 +397,9 @@ export default function DriverDashboardPage() {
             }`}
           >
             <span>Vehicle &amp; PCO License</span>
+            {isProfileIncomplete && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+            )}
           </button>
         </div>
 
@@ -253,11 +407,13 @@ export default function DriverDashboardPage() {
         {activeTab === 'active' && (
           <div className="mt-6 space-y-4">
             {activeTrips.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 text-center border border-gray-200">
-                <Car className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-gray-900">No active trips assigned</h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Keep your status set to <strong className="text-emerald-600">ON DUTY</strong> to receive automated flight &amp; airport transfer dispatches.
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center space-y-3 shadow-sm">
+                <Car className="w-12 h-12 text-gray-300 mx-auto" />
+                <h3 className="text-base font-bold text-gray-800">No Active Trips Assigned</h3>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                  {isOnDuty
+                    ? 'You are On-Duty! New dispatch assignments will appear here automatically when passengers book.'
+                    : 'You are currently Off-Duty. Toggle On-Duty at the top to receive ride assignments.'}
                 </p>
               </div>
             ) : (
@@ -266,86 +422,74 @@ export default function DriverDashboardPage() {
                   trip.from_location
                 )}&destination=${encodeURIComponent(trip.to_location)}`;
 
-                const isCurrent = trip.booking_status === 'in_progress';
-
                 return (
                   <div
                     key={trip.quote_ref}
-                    className={`bg-white rounded-2xl border p-6 shadow-sm transition-all space-y-5 ${
-                      isCurrent ? 'border-ots-yellow ring-2 ring-ots-yellow/40' : 'border-gray-200'
-                    }`}
+                    className="bg-white rounded-2xl border border-gray-200 p-5 md:p-6 shadow-sm hover:shadow-md transition space-y-4"
                   >
-                    {/* Top Row: Ref & Schedule */}
+                    {/* Header */}
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
                       <div className="flex items-center space-x-2">
-                        <span className="font-mono text-xs font-bold bg-black text-white px-2.5 py-1 rounded">
-                          {trip.quote_ref}
+                        <span className="font-mono text-xs font-bold bg-neutral-100 text-neutral-800 px-2.5 py-1 rounded-md">
+                          Ref: {trip.quote_ref}
                         </span>
-                        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
+                        <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
                           trip.booking_status === 'in_progress'
                             ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                            : 'bg-blue-100 text-blue-800'
                         }`}>
-                          {trip.booking_status === 'in_progress' ? 'In Progress' : 'Assigned to You'}
+                          {trip.booking_status === 'in_progress' ? '🚗 In Progress' : '📋 Assigned'}
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-3 text-xs text-gray-500">
-                        <span className="flex items-center space-x-1">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="font-semibold text-gray-800">{trip.pickup_date}</span>
-                        </span>
-                        <span className="flex items-center space-x-1">
-                          <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="font-semibold text-gray-800">{trip.pickup_time}</span>
-                        </span>
-                        <span className="font-extrabold text-gray-900 text-sm ml-2">
+                      <div className="text-right">
+                        <span className="text-[10px] text-gray-400 block uppercase font-bold">Chauffeur Payout</span>
+                        <span className="text-base font-black text-gray-900">
                           {formatPrice(trip.total_price)}
                         </span>
                       </div>
                     </div>
 
                     {/* Route Details */}
-                    <div className="space-y-3">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <MapPin className="w-3.5 h-3.5" />
-                        </div>
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-start space-x-2.5">
+                        <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <div>
-                          <div className="text-[10px] font-bold uppercase text-gray-400">Pick-up Location</div>
-                          <div className="text-sm font-semibold text-gray-900">{trip.from_location}</div>
+                          <span className="text-gray-400 block text-[10px] uppercase font-bold">Pickup Location</span>
+                          <span className="font-semibold text-gray-900">{trip.from_location}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-start space-x-3">
-                        <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <MapPin className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-start space-x-2.5">
+                        <Navigation className="w-4 h-4 text-ots-yellow flex-shrink-0 mt-0.5" />
                         <div>
-                          <div className="text-[10px] font-bold uppercase text-gray-400">Destination</div>
-                          <div className="text-sm font-semibold text-gray-900">{trip.to_location}</div>
+                          <span className="text-gray-400 block text-[10px] uppercase font-bold">Dropoff Destination</span>
+                          <span className="font-semibold text-gray-900">{trip.to_location}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Flight & Passenger Info */}
-                    <div className="bg-gray-50 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3 border border-gray-100 text-xs">
+                    {/* Meta Info */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 text-xs">
                       <div>
-                        <span className="text-gray-400 block">Lead Passenger</span>
-                        <span className="font-bold text-gray-900">{trip.passenger_name || 'Valued Guest'}</span>
-                        <span className="block text-gray-500 font-mono text-[11px]">{trip.passenger_phone || '+44 7...'}</span>
+                        <span className="text-gray-400 block">Date &amp; Time</span>
+                        <span className="font-semibold text-gray-800">
+                          {trip.pickup_date} at {trip.pickup_time}
+                        </span>
                       </div>
 
                       <div>
-                        <span className="text-gray-400 block">Flight / Terminal</span>
-                        {trip.flight_number ? (
-                          <span className="font-bold text-blue-700 font-mono flex items-center space-x-1">
-                            <Plane className="w-3.5 h-3.5" />
-                            <span>{trip.flight_number} {trip.terminal ? `(${trip.terminal})` : ''}</span>
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">Standard Transfer</span>
-                        )}
+                        <span className="text-gray-400 block">Lead Passenger</span>
+                        <span className="font-semibold text-gray-800">
+                          {trip.passenger_name || 'VIP Client'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-gray-400 block">Vehicle Category</span>
+                        <span className="font-semibold text-gray-800 capitalize">
+                          {trip.vehicle_tier || 'Executive Saloon'}
+                        </span>
                       </div>
 
                       <div>
@@ -459,42 +603,209 @@ export default function DriverDashboardPage() {
           </div>
         )}
 
-        {/* Tab 3: Vehicle & Documents */}
+        {/* Tab 3: Vehicle & Documents / Onboarding Form */}
         {activeTab === 'vehicle' && (
-          <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6 space-y-5 shadow-sm">
-            <div className="flex items-center space-x-3 border-b border-gray-100 pb-4">
-              <ShieldCheck className="w-6 h-6 text-emerald-600" />
-              <div>
-                <h3 className="text-base font-bold text-gray-900">Chauffeur Licensing &amp; Vehicle Compliance</h3>
-                <p className="text-xs text-gray-500">TfL / Council Private Hire Operator documentation.</p>
+          <div className="mt-6 space-y-6">
+            
+            {/* Status Card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isProfileIncomplete ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {isProfileIncomplete ? <AlertCircle className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">Chauffeur Licensing &amp; Vehicle Compliance</h3>
+                    <p className="text-xs text-gray-500">TfL / Local Council Private Hire Operator documentation.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+                    driver?.verification_status === 'approved'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : driver?.verification_status === 'pending_approval'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    Status: {driver?.verification_status || 'Incomplete'}
+                  </span>
+                </div>
               </div>
+
+              {profileFeedback && (
+                <div className={`mt-4 p-4 rounded-xl text-xs flex items-center space-x-2 ${
+                  profileFeedback.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {profileFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <span>{profileFeedback.text}</span>
+                </div>
+              )}
+
+              {/* Profile Completion Form */}
+              <form onSubmit={handleSaveProfile} className="mt-6 space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* PCO License Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      PCO Private Hire License Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. PCO-984321"
+                      value={profileForm.licenseNumber}
+                      onChange={(e) => setProfileForm({ ...profileForm, licenseNumber: e.target.value })}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                    <span className="text-[10px] text-gray-400 block mt-0.5">TfL or Local Authority Badge ID</span>
+                  </div>
+
+                  {/* PCO Expiry Date */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      PCO License Expiry Date
+                    </label>
+                    <input
+                      type="date"
+                      value={profileForm.pcoExpiry}
+                      onChange={(e) => setProfileForm({ ...profileForm, pcoExpiry: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Vehicle Model */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Vehicle Make &amp; Model <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mercedes-Benz E-Class 2023"
+                      value={profileForm.vehicleModel}
+                      onChange={(e) => setProfileForm({ ...profileForm, vehicleModel: e.target.value })}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Vehicle Plate */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Vehicle Registration Plate <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. LO71 ABC"
+                      value={profileForm.vehiclePlate}
+                      onChange={(e) => setProfileForm({ ...profileForm, vehiclePlate: e.target.value.toUpperCase() })}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase font-bold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Vehicle Category */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Vehicle Service Category
+                    </label>
+                    <select
+                      value={profileForm.vehicleCategory}
+                      onChange={(e) => setProfileForm({ ...profileForm, vehicleCategory: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none bg-white"
+                    >
+                      <option value="saloon">Standard Saloon (Up to 4 Pax)</option>
+                      <option value="estate">Estate / Station Wagon (Large Luggage)</option>
+                      <option value="executive">Executive Class (Mercedes E-Class / BMW 5)</option>
+                      <option value="mpv">MPV 6-Seater (Ford Galaxy / Sharan)</option>
+                      <option value="minibus">8-Seater Minibus (Mercedes Vito / V-Class)</option>
+                    </select>
+                  </div>
+
+                  {/* Private Hire Insurance Policy */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Hire &amp; Reward Insurance Policy No.
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. INS-882914-UK"
+                      value={profileForm.insuranceNumber}
+                      onChange={(e) => setProfileForm({ ...profileForm, insuranceNumber: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Payout Sort Code */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Bank Sort Code (For Weekly Payouts)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 20-04-15"
+                      value={profileForm.sortCode}
+                      onChange={(e) => setProfileForm({ ...profileForm, sortCode: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                  {/* Payout Account Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Bank Account Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 12345678"
+                      value={profileForm.accountNumber}
+                      onChange={(e) => setProfileForm({ ...profileForm, accountNumber: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                    />
+                  </div>
+
+                </div>
+
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-[11px] text-gray-500">
+                    All chauffeur details are reviewed in accordance with UK Private Hire Operator regulations.
+                  </span>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="px-6 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow-md transition flex items-center space-x-2"
+                  >
+                    {isSavingProfile ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save &amp; Submit Documents</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
-                <span className="text-gray-400 block uppercase font-bold text-[10px]">PCO Private Hire License</span>
-                <span className="font-mono font-bold text-sm text-gray-900">{driver?.license_number || 'PCO-984321'}</span>
-                <span className="text-emerald-600 font-semibold block text-[11px]">✓ Verified &amp; Active</span>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
-                <span className="text-gray-400 block uppercase font-bold text-[10px]">Vehicle Registration Plate</span>
-                <span className="font-mono font-bold text-sm text-gray-900">{driver?.vehicle_plate || 'LO71 ABC'}</span>
-                <span className="text-gray-600 font-medium block text-[11px]">{driver?.vehicle_model || 'Mercedes E-Class'}</span>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
-                <span className="text-gray-400 block uppercase font-bold text-[10px]">Vehicle Category</span>
-                <span className="font-bold text-gray-900">{driver?.vehicle_category || 'Executive Saloon'}</span>
-                <span className="text-gray-500 block text-[11px]">Authorized for Airport Chauffeur</span>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-1">
-                <span className="text-gray-400 block uppercase font-bold text-[10px]">MOT &amp; Hire Insurance</span>
-                <span className="font-bold text-gray-900">Comprehensive Chauffeur Cover</span>
-                <span className="text-emerald-600 font-semibold block text-[11px]">✓ Valid until Dec 2027</span>
-              </div>
+            {/* Compliance FAQ */}
+            <div className="p-4 bg-gray-100 rounded-2xl text-xs text-gray-600 space-y-1">
+              <span className="font-bold text-gray-800 block">Why do I need to complete this?</span>
+              <p>
+                To maintain London TfL &amp; UK Council compliance, only drivers with verified PCO licenses, vehicle registrations, and Hire &amp; Reward insurance are allowed to receive live dispatch requests. Once submitted, your profile will be authorized immediately.
+              </p>
             </div>
+
           </div>
         )}
 

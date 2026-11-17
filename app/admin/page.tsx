@@ -23,7 +23,13 @@ import {
   RefreshCw,
   Phone,
   Mail,
-  ChevronDown
+  ChevronDown,
+  Settings,
+  Send,
+  Lock,
+  ToggleLeft,
+  ToggleRight,
+  ShieldCheck
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -31,7 +37,7 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, logout, formatPrice } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'bookings' | 'drivers' | 'inquiries'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'drivers' | 'inquiries' | 'settings'>('bookings');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -47,6 +53,22 @@ export default function AdminPage() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
 
+  // SMTP & System Settings State
+  const [settings, setSettings] = useState({
+    smtp_host: 'smtp.gmail.com',
+    smtp_port: 587,
+    smtp_user: '',
+    smtp_pass: '',
+    smtp_from: '"OTS Taxi UK" <no-reply@otstaxi.co.uk>',
+    admin_email: 'admin@otstaxi.co.uk',
+    require_email_verification: false,
+    require_driver_approval: true,
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+  const [testRecipient, setTestRecipient] = useState('');
+  const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -54,10 +76,11 @@ export default function AdminPage() {
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
-      const [bookingsRes, driversRes, inquiriesRes] = await Promise.all([
+      const [bookingsRes, driversRes, inquiriesRes, settingsRes] = await Promise.all([
         fetch(`/api/admin/bookings?status=${statusFilter}`),
         fetch('/api/admin/drivers'),
         fetch('/api/admin/inquiries'),
+        fetch('/api/admin/settings'),
       ]);
 
       if (bookingsRes.ok) {
@@ -77,10 +100,88 @@ export default function AdminPage() {
         const iData = await inquiriesRes.json();
         if (iData.status) setInquiries(iData.inquiries || []);
       }
+
+      if (settingsRes.ok) {
+        const sData = await settingsRes.json();
+        if (sData.status && sData.settings) {
+          setSettings(sData.settings);
+          if (sData.settings.admin_email) setTestRecipient(sData.settings.admin_email);
+        }
+      }
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsMessage(null);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSettingsMessage({ type: 'success', text: data.message || 'Settings saved successfully!' });
+      } else {
+        setSettingsMessage({ type: 'error', text: data.message || 'Failed to save settings.' });
+      }
+    } catch {
+      setSettingsMessage({ type: 'error', text: 'Connection failed.' });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    setIsTestingSmtp(true);
+    setSettingsMessage(null);
+    try {
+      const res = await fetch('/api/admin/settings/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...settings,
+          test_recipient: testRecipient || settings.admin_email,
+        }),
+      });
+      const data = await res.json();
+      if (data.status) {
+        setSettingsMessage({ type: 'success', text: data.message || 'Test email dispatched successfully!' });
+      } else {
+        setSettingsMessage({ type: 'error', text: data.message || 'SMTP test connection failed.' });
+      }
+    } catch {
+      setSettingsMessage({ type: 'error', text: 'Failed to test SMTP.' });
+    } finally {
+      setIsTestingSmtp(false);
+    }
+  };
+
+  const handleApproveDriver = async (driverId: string) => {
+    setActionLoading(driverId);
+    try {
+      const res = await fetch('/api/admin/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId,
+          verificationStatus: 'approved',
+          isActive: true,
+        }),
+      });
+      if (res.ok) {
+        await loadAdminData();
+      }
+    } catch (e) {
+      console.error('Failed to approve driver:', e);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -251,6 +352,18 @@ export default function AdminPage() {
           >
             <MessageSquare className="w-4 h-4" />
             <span>Contact Inquiries ({inquiries.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-3 font-bold text-sm border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap min-h-[44px] ${
+              activeTab === 'settings'
+                ? 'border-ots-yellow text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>SMTP &amp; Security Settings</span>
           </button>
         </div>
 
@@ -539,22 +652,50 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {drivers.map((d) => (
-                <div key={d.id} className="p-4 border border-gray-200 rounded-xl space-y-3 bg-gray-50/50">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-gray-900 text-sm">{d.driver_name || 'Driver'}</span>
-                    <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Active
-                    </span>
+              {drivers.map((d) => {
+                const isVerified = d.verification_status === 'approved' || (Boolean(d.license_number) && d.verification_status !== 'incomplete');
+                const isPending = d.verification_status === 'pending_approval' || (Boolean(d.license_number) && !d.is_active);
+
+                return (
+                  <div key={d.id} className="p-4 border border-gray-200 rounded-xl space-y-3 bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-900 text-sm">{d.driver_name || 'Chauffeur'}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        isVerified
+                          ? 'bg-green-100 text-green-800'
+                          : isPending
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {isVerified ? '✓ Approved' : isPending ? '⏳ Pending Approval' : 'Incomplete Profile'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div><strong>Car:</strong> {d.vehicle_model || 'Not set'} ({d.vehicle_category || 'Saloon'})</div>
+                      <div><strong>Plate:</strong> <span className="font-mono bg-white px-1.5 py-0.5 border rounded">{d.vehicle_plate || 'PENDING'}</span></div>
+                      <div><strong>License:</strong> {d.license_number || 'Awaiting submission'}</div>
+                      {d.driver_phone && <div><strong>Phone:</strong> {d.driver_phone}</div>}
+                    </div>
+
+                    {!isVerified && d.license_number && (
+                      <button
+                        onClick={() => handleApproveDriver(d.id)}
+                        disabled={actionLoading === d.id}
+                        className="w-full mt-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5"
+                      >
+                        {actionLoading === d.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Approve Chauffeur</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div><strong>Car:</strong> {d.vehicle_model} ({d.vehicle_category})</div>
-                    <div><strong>Plate:</strong> <span className="font-mono bg-white px-1.5 py-0.5 border rounded">{d.vehicle_plate}</span></div>
-                    <div><strong>License:</strong> {d.license_number}</div>
-                    {d.driver_phone && <div><strong>Phone:</strong> {d.driver_phone}</div>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -603,6 +744,234 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 4: SMTP & Security Policy Settings */}
+        {activeTab === 'settings' && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-8">
+            <div>
+              <div className="flex items-center space-x-2 text-ots-yellow bg-black px-3 py-1 rounded inline-flex text-xs font-bold uppercase tracking-wider mb-2">
+                <Settings className="w-3.5 h-3.5" />
+                <span>Admin Controls</span>
+              </div>
+              <h2 className="text-xl font-extrabold text-gray-900">SMTP Server &amp; Registration Security Policies</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Configure outgoing transactional emails and require email verification for new accounts.
+              </p>
+            </div>
+
+            {settingsMessage && (
+              <div className={`p-4 rounded-xl text-xs flex items-center space-x-2.5 ${
+                settingsMessage.type === 'success'
+                  ? 'bg-green-50 border border-green-200 text-green-800'
+                  : 'bg-red-50 border border-red-200 text-red-800'
+              }`}>
+                {settingsMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                )}
+                <span className="font-medium">{settingsMessage.text}</span>
+              </div>
+            )}
+
+            {/* SECTION 1: REGISTRATION POLICIES */}
+            <div className="p-5 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-4">
+              <h3 className="text-sm font-extrabold text-gray-900 flex items-center space-x-2">
+                <Shield className="w-4 h-4 text-amber-600" />
+                <span>Account Verification Policies</span>
+              </h3>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-amber-100">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-gray-900 block">
+                    Require Email Verification for New Registrations
+                  </span>
+                  <span className="text-[11px] text-gray-500 block">
+                    When enabled, no customer or driver can activate their account without confirming a 6-digit email code.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      require_email_verification: !prev.require_email_verification,
+                    }))
+                  }
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition ${
+                    settings.require_email_verification
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {settings.require_email_verification ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>ENFORCED (Active)</span>
+                    </>
+                  ) : (
+                    <span>DISABLED (Instant Access)</span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-amber-100">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-gray-900 block">
+                    Driver Onboarding PCO &amp; Vehicle Approval
+                  </span>
+                  <span className="text-[11px] text-gray-500 block">
+                    Drivers can view their dashboard upon sign-up, but On-Duty remains locked until chauffeur profile is completed.
+                  </span>
+                </div>
+                <span className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200">
+                  ✓ Always Required
+                </span>
+              </div>
+            </div>
+
+            {/* SECTION 2: SMTP SERVER CONFIGURATION FORM */}
+            <form onSubmit={handleSaveSettings} className="space-y-5">
+              <h3 className="text-sm font-extrabold text-gray-900 flex items-center space-x-2">
+                <Mail className="w-4 h-4 text-ots-yellow" />
+                <span>SMTP Mail Server Configuration</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    SMTP Host *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. smtp.gmail.com or smtp.resend.com"
+                    value={settings.smtp_host}
+                    onChange={(e) => setSettings({ ...settings, smtp_host: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    SMTP Port *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="587"
+                    value={settings.smtp_port}
+                    onChange={(e) => setSettings({ ...settings, smtp_port: parseInt(e.target.value, 10) || 587 })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    SMTP Username / Email *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. notifications@otstaxi.co.uk"
+                    value={settings.smtp_user}
+                    onChange={(e) => setSettings({ ...settings, smtp_user: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    SMTP Password / App Password *
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter SMTP password"
+                    value={settings.smtp_pass}
+                    onChange={(e) => setSettings({ ...settings, smtp_pass: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    From Sender Header *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder='"OTS Taxi UK" <no-reply@otstaxi.co.uk>'
+                    value={settings.smtp_from}
+                    onChange={(e) => setSettings({ ...settings, smtp_from: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-gray-500 mb-1">
+                    Admin Notification Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@otstaxi.co.uk"
+                    value={settings.admin_email}
+                    onChange={(e) => setSettings({ ...settings, admin_email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ots-yellow focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* SAVE & TEST ACTION BUTTONS */}
+              <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="px-6 py-3 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-2 disabled:opacity-50"
+                >
+                  {isSavingSettings ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Save Settings &amp; Policies</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Test Email Section */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="email"
+                    placeholder="Test recipient email"
+                    value={testRecipient}
+                    onChange={(e) => setTestRecipient(e.target.value)}
+                    className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs w-48 sm:w-60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestSmtp}
+                    disabled={isTestingSmtp}
+                    className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition flex items-center space-x-1.5 disabled:opacity-50"
+                  >
+                    {isTestingSmtp ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Test Email</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         )}
 

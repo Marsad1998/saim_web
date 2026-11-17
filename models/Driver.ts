@@ -8,6 +8,11 @@ export interface IDriver {
   vehicle_plate: string;
   vehicle_category: string;
   is_active: boolean;
+  pco_expiry?: string | null;
+  insurance_number?: string | null;
+  sort_code?: string | null;
+  account_number?: string | null;
+  verification_status?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
   created_at?: string;
   // Joined fields when queried with user details
   driver_name?: string;
@@ -17,10 +22,15 @@ export interface IDriver {
 
 export interface CreateDriverInput {
   userId: string;
-  licenseNumber: string;
-  vehicleModel: string;
-  vehiclePlate: string;
+  licenseNumber?: string;
+  vehicleModel?: string;
+  vehiclePlate?: string;
   vehicleCategory?: string;
+  pcoExpiry?: string;
+  insuranceNumber?: string;
+  sortCode?: string;
+  accountNumber?: string;
+  verificationStatus?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
   isActive?: boolean;
 }
 
@@ -29,6 +39,11 @@ export interface UpdateDriverInput {
   vehicleModel?: string;
   vehiclePlate?: string;
   vehicleCategory?: string;
+  pcoExpiry?: string;
+  insuranceNumber?: string;
+  sortCode?: string;
+  accountNumber?: string;
+  verificationStatus?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
   isActive?: boolean;
 }
 
@@ -39,20 +54,30 @@ export class DriverModel {
   static async create(input: CreateDriverInput): Promise<IDriver> {
     const id = "drv_" + Math.random().toString(36).substring(2, 10);
     const category = input.vehicleCategory || "saloon";
-    const isActive = input.isActive !== undefined ? input.isActive : true;
+    const isActive = input.isActive !== undefined ? input.isActive : false;
+    const licenseNumber = input.licenseNumber ? input.licenseNumber.trim().toUpperCase() : null;
+    const vehicleModel = input.vehicleModel ? input.vehicleModel.trim() : null;
+    const vehiclePlate = input.vehiclePlate ? input.vehiclePlate.trim().toUpperCase() : null;
+    const verificationStatus = input.verificationStatus || (licenseNumber ? "approved" : "incomplete");
 
     try {
       await dbQuery(
         `INSERT INTO drivers (
-          id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, 
+          pco_expiry, insurance_number, sort_code, account_number, verification_status, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           input.userId,
-          input.licenseNumber.trim().toUpperCase(),
-          input.vehicleModel.trim(),
-          input.vehiclePlate.trim().toUpperCase(),
+          licenseNumber,
+          vehicleModel,
+          vehiclePlate,
           category,
+          input.pcoExpiry || null,
+          input.insuranceNumber || null,
+          input.sortCode || null,
+          input.accountNumber || null,
+          verificationStatus,
           isActive ? 1 : 0,
         ]
       );
@@ -63,10 +88,15 @@ export class DriverModel {
     return {
       id,
       user_id: input.userId,
-      license_number: input.licenseNumber.trim().toUpperCase(),
-      vehicle_model: input.vehicleModel.trim(),
-      vehicle_plate: input.vehiclePlate.trim().toUpperCase(),
+      license_number: licenseNumber || "",
+      vehicle_model: vehicleModel || "",
+      vehicle_plate: vehiclePlate || "",
       vehicle_category: category,
+      pco_expiry: input.pcoExpiry || null,
+      insurance_number: input.insuranceNumber || null,
+      sort_code: input.sortCode || null,
+      account_number: input.accountNumber || null,
+      verification_status: verificationStatus,
       is_active: isActive,
       created_at: new Date().toISOString(),
     };
@@ -90,10 +120,15 @@ export class DriverModel {
         return {
           id: row.id,
           user_id: row.user_id,
-          license_number: row.license_number,
-          vehicle_model: row.vehicle_model,
-          vehicle_plate: row.vehicle_plate,
-          vehicle_category: row.vehicle_category,
+          license_number: row.license_number || "",
+          vehicle_model: row.vehicle_model || "",
+          vehicle_plate: row.vehicle_plate || "",
+          vehicle_category: row.vehicle_category || "saloon",
+          pco_expiry: row.pco_expiry || null,
+          insurance_number: row.insurance_number || null,
+          sort_code: row.sort_code || null,
+          account_number: row.account_number || null,
+          verification_status: row.verification_status || (row.license_number ? "approved" : "incomplete"),
           is_active: Boolean(row.is_active),
           created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
           driver_name: row.driver_name,
@@ -122,10 +157,15 @@ export class DriverModel {
         return {
           id: row.id,
           user_id: row.user_id,
-          license_number: row.license_number,
-          vehicle_model: row.vehicle_model,
-          vehicle_plate: row.vehicle_plate,
-          vehicle_category: row.vehicle_category,
+          license_number: row.license_number || "",
+          vehicle_model: row.vehicle_model || "",
+          vehicle_plate: row.vehicle_plate || "",
+          vehicle_category: row.vehicle_category || "saloon",
+          pco_expiry: row.pco_expiry || null,
+          insurance_number: row.insurance_number || null,
+          sort_code: row.sort_code || null,
+          account_number: row.account_number || null,
+          verification_status: row.verification_status || (row.license_number ? "approved" : "incomplete"),
           is_active: Boolean(row.is_active),
           created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
         };
@@ -152,21 +192,41 @@ export class DriverModel {
       const fields: string[] = [];
       const values: any[] = [];
 
-      if (updates.licenseNumber) {
+      if (updates.licenseNumber !== undefined) {
         fields.push("license_number = ?");
         values.push(updates.licenseNumber.trim().toUpperCase());
       }
-      if (updates.vehicleModel) {
+      if (updates.vehicleModel !== undefined) {
         fields.push("vehicle_model = ?");
         values.push(updates.vehicleModel.trim());
       }
-      if (updates.vehiclePlate) {
+      if (updates.vehiclePlate !== undefined) {
         fields.push("vehicle_plate = ?");
         values.push(updates.vehiclePlate.trim().toUpperCase());
       }
-      if (updates.vehicleCategory) {
+      if (updates.vehicleCategory !== undefined) {
         fields.push("vehicle_category = ?");
         values.push(updates.vehicleCategory);
+      }
+      if (updates.pcoExpiry !== undefined) {
+        fields.push("pco_expiry = ?");
+        values.push(updates.pcoExpiry);
+      }
+      if (updates.insuranceNumber !== undefined) {
+        fields.push("insurance_number = ?");
+        values.push(updates.insuranceNumber.trim());
+      }
+      if (updates.sortCode !== undefined) {
+        fields.push("sort_code = ?");
+        values.push(updates.sortCode.trim());
+      }
+      if (updates.accountNumber !== undefined) {
+        fields.push("account_number = ?");
+        values.push(updates.accountNumber.trim());
+      }
+      if (updates.verificationStatus !== undefined) {
+        fields.push("verification_status = ?");
+        values.push(updates.verificationStatus);
       }
       if (updates.isActive !== undefined) {
         fields.push("is_active = ?");

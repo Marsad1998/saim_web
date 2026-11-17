@@ -81,3 +81,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: false, message: "Failed to onboard driver" }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const admin = checkAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { driverId, verificationStatus, isActive } = body;
+
+    if (!driverId) {
+      return NextResponse.json({ status: false, message: "driverId is required" }, { status: 400 });
+    }
+
+    await DriverModel.update(driverId, {
+      verificationStatus,
+      isActive,
+    });
+
+    return NextResponse.json({
+      status: true,
+      message: "Driver status updated successfully.",
+    });
+  } catch (error: any) {
+    console.error("PATCH /api/admin/drivers error:", error.message);
+    return NextResponse.json({ status: false, message: "Failed to update driver" }, { status: 500 });
+  }
+}

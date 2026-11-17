@@ -86,9 +86,20 @@ export async function PATCH(request: NextRequest) {
     const { isActive } = body;
 
     let driver = await DriverModel.findByUserId(payload.userId);
-    if (driver) {
-      await DriverModel.toggleActive(driver.id, Boolean(isActive));
+    if (!driver) {
+      return NextResponse.json({ status: false, message: "Driver record not found" }, { status: 404 });
     }
+
+    // Enforce profile completion before allowing driver to go ON DUTY
+    if (isActive && (!driver.license_number || driver.verification_status === "incomplete")) {
+      return NextResponse.json({
+        status: false,
+        requiresProfileCompletion: true,
+        message: "Profile incomplete! Please enter your PCO license number and vehicle registration plate to unlock On-Duty status."
+      }, { status: 400 });
+    }
+
+    await DriverModel.toggleActive(driver.id, Boolean(isActive));
 
     return NextResponse.json({
       status: true,

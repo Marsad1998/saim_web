@@ -8,6 +8,8 @@ export interface IUser {
   phone?: string | null;
   password_hash?: string | null;
   role: "customer" | "admin" | "driver";
+  is_verified?: boolean;
+  verification_code?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -18,6 +20,8 @@ export interface CreateUserInput {
   password?: string;
   phone?: string;
   role?: "customer" | "admin" | "driver";
+  is_verified?: boolean;
+  verification_code?: string;
 }
 
 const DEFAULT_FALLBACK_USERS: Record<string, IUser> = {
@@ -79,7 +83,7 @@ export class UserModel {
     const cleanEmail = email.trim().toLowerCase();
     try {
       const rows = await dbQuery<any[]>(
-        "SELECT id, name, email, phone, password_hash, role, created_at, updated_at FROM users WHERE email = ? LIMIT 1",
+        "SELECT id, name, email, phone, password_hash, role, is_verified, verification_code, created_at, updated_at FROM users WHERE email = ? LIMIT 1",
         [cleanEmail]
       );
       if (rows && rows.length > 0) {
@@ -97,7 +101,7 @@ export class UserModel {
   static async findById(id: string): Promise<IUser | null> {
     try {
       const rows = await dbQuery<any[]>(
-        "SELECT id, name, email, phone, role, created_at, updated_at FROM users WHERE id = ? LIMIT 1",
+        "SELECT id, name, email, phone, role, is_verified, verification_code, created_at, updated_at FROM users WHERE id = ? LIMIT 1",
         [id]
       );
       if (rows && rows.length > 0) {
@@ -118,25 +122,95 @@ export class UserModel {
     const cleanEmail = input.email.trim().toLowerCase();
     const role = input.role || "customer";
     const passwordHash = input.password ? await hashPassword(input.password) : null;
+    const isVerified = input.is_verified ?? true;
+    const verificationCode = input.verification_code || null;
 
     try {
       await dbQuery(
-        `INSERT INTO users (id, name, email, phone, password_hash, role)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, input.name.trim(), cleanEmail, input.phone?.trim() || null, passwordHash, role]
+        `INSERT INTO users (id, name, email, phone, password_hash, role, is_verified, verification_code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, input.name.trim(), cleanEmail, input.phone?.trim() || null, passwordHash, role, isVerified ? 1 : 0, verificationCode]
       );
     } catch (error: any) {
       console.error("UserModel.create error:", error.message);
     }
 
-    return {
+    const newUser: IUser = {
       id,
       name: input.name.trim(),
       email: cleanEmail,
       phone: input.phone?.trim() || null,
       role,
+      is_verified: isVerified,
+      verification_code: verificationCode,
       created_at: new Date().toISOString(),
     };
+
+    // Keep in memory fallback store in sync
+    DEFAULT_FALLBACK_USERS[cleanEmail] = {
+      ...newUser,
+      password_hash: passwordHash,
+    };
+
+    return newUser;
+  }
+
+  /**
+   * Verify 6-digit confirmation code and activate account
+   */
+  static async verifyEmailCode(email: string, code: string): Promise<{ success: boolean; user?: IUser; message?: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await this.findByEmail(cleanEmail);
+
+    if (!user) {
+      return { success: false, message: "User account not found." };
+    }
+
+    if (user.is_verified) {
+      return { success: true, user, message: "Account is already verified." };
+    }
+
+    const trimmedCode = code.trim();
+    if (user.verification_code && user.verification_code.trim() !== trimmedCode) {
+      return { success: false, message: "Invalid 6-digit verification code. Please check and try again." };
+    }
+
+    try {
+      await dbQuery(
+        "UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?",
+        [cleanEmail]
+      );
+    } catch (e: any) {
+      console.warn("DB update error on verifyEmailCode:", e.message);
+    }
+
+    user.is_verified = true;
+    user.verification_code = null;
+    if (DEFAULT_FALLBACK_USERS[cleanEmail]) {
+      DEFAULT_FALLBACK_USERS[cleanEmail].is_verified = true;
+      DEFAULT_FALLBACK_USERS[cleanEmail].verification_code = null;
+    }
+
+    return { success: true, user };
+  }
+
+  /**
+   * Update or regenerate 6-digit verification code
+   */
+  static async setVerificationCode(email: string, code: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      await dbQuery(
+        "UPDATE users SET verification_code = ? WHERE email = ?",
+        [code, cleanEmail]
+      );
+    } catch (e: any) {
+      console.warn("DB error setVerificationCode:", e.message);
+    }
+
+    if (DEFAULT_FALLBACK_USERS[cleanEmail]) {
+      DEFAULT_FALLBACK_USERS[cleanEmail].verification_code = code;
+    }
   }
 
   /**

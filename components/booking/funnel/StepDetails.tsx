@@ -29,7 +29,7 @@ export default function StepDetails({
   initialData = {},
 }: StepDetailsProps) {
   const { user } = useApp();
-  const safeData = initialData || {};
+  const safeData = (initialData && typeof initialData === 'object') ? initialData : {};
 
   const [fullName, setFullName] = useState(safeData.fullName || user?.name || '');
   const [email, setEmail] = useState(safeData.email || user?.email || '');

@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `phone` VARCHAR(50) DEFAULT NULL,
   `password_hash` VARCHAR(255) DEFAULT NULL,
   `role` ENUM('customer', 'admin', 'driver') NOT NULL DEFAULT 'customer',
+  `is_verified` BOOLEAN NOT NULL DEFAULT TRUE,
+  `verification_code` VARCHAR(10) DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_users_email` (`email`),
@@ -25,11 +27,16 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `drivers` (
   `id` VARCHAR(50) NOT NULL PRIMARY KEY,
   `user_id` VARCHAR(50) NOT NULL,
-  `license_number` VARCHAR(100) NOT NULL,
-  `vehicle_model` VARCHAR(100) NOT NULL,
-  `vehicle_plate` VARCHAR(50) NOT NULL,
+  `license_number` VARCHAR(100) DEFAULT NULL,
+  `vehicle_model` VARCHAR(100) DEFAULT NULL,
+  `vehicle_plate` VARCHAR(50) DEFAULT NULL,
   `vehicle_category` VARCHAR(50) NOT NULL DEFAULT 'saloon',
-  `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
+  `pco_expiry` VARCHAR(50) DEFAULT NULL,
+  `insurance_number` VARCHAR(100) DEFAULT NULL,
+  `sort_code` VARCHAR(20) DEFAULT NULL,
+  `account_number` VARCHAR(30) DEFAULT NULL,
+  `verification_status` ENUM('incomplete', 'pending_approval', 'approved', 'rejected') NOT NULL DEFAULT 'incomplete',
+  `is_active` BOOLEAN NOT NULL DEFAULT FALSE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -121,6 +128,13 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `sort_order` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. System Settings Table (SMTP Config & Global Policies)
+CREATE TABLE IF NOT EXISTS `system_settings` (
+  `key_name` VARCHAR(100) NOT NULL PRIMARY KEY,
+  `key_value` TEXT NOT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
