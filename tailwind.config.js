@@ -32,6 +32,9 @@ module.exports = {
         card: "0 8px 24px rgba(13, 17, 25, 0.06)",
         header: "0 2px 10px rgba(0, 0, 0, 0.15)",
       },
+      screens: {
+        xs: "480px",
+      },
     },
   },
   plugins: [],

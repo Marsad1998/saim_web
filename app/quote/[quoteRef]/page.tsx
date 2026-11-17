@@ -148,12 +148,12 @@ export default function QuoteBookingPage() {
                   >
                     {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : s.num}
                   </div>
-                  <div className="min-w-0 hidden xs:block">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider leading-tight">
                       Step 0{s.num}
                     </span>
                     <span className={`text-xs sm:text-sm font-bold truncate block ${
-                      isCurrent ? 'text-gray-900' : 'text-gray-600'
+                      isCurrent ? 'text-gray-900' : isCompleted ? 'text-gray-700' : 'text-gray-500'
                     }`}>
                       {s.title}
                     </span>
