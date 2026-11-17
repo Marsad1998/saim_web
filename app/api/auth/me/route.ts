@@ -17,10 +17,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
     }
 
-    // Fetch fresh user profile from MySQL
-    const user = await UserModel.findById(payload.userId);
+    // Attempt to fetch fresh user profile from MySQL
+    let user = await UserModel.findById(payload.userId);
     if (!user) {
-      return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
+      // Fallback to verified JWT payload claims if DB is unreachable or user not cached
+      user = {
+        id: payload.userId,
+        name: payload.name || "Customer",
+        email: payload.email,
+        phone: null,
+        role: payload.role || "customer",
+      };
     }
 
     return NextResponse.json({

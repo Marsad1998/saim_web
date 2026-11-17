@@ -1,6 +1,5 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,6 +8,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "ots-yellow": "#FFCC00",
+        "ots-yellow-dark": "#E6B800",
         ots: {
           yellow: "#FFCC00",
           yellowHover: "#FFC001",
@@ -25,6 +26,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Poppins", "sans-serif"],
+        poppins: ["Poppins", "sans-serif"],
       },
       boxShadow: {
         card: "0 8px 24px rgba(13, 17, 25, 0.06)",
@@ -34,5 +36,3 @@ const config: Config = {
   },
   plugins: [],
 };
-
-export default config;

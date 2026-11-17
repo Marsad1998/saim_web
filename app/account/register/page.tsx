@@ -50,11 +50,11 @@ export default function RegisterPage() {
 
       const data = await res.json();
 
-      if (data.status && data.user) {
+      if (res.ok && data.user) {
         setUser(data.user);
         router.push('/account/dashboard');
       } else {
-        setErrorMessage(data.message || 'Registration failed. Please try again.');
+        setErrorMessage(data.message || data.errorMessage || 'Registration failed. Please try again.');
         setIsLoading(false);
       }
     } catch (err: any) {
