@@ -1,4 +1,4 @@
-import { calculateQuote, JourneyCalculationParams } from "./pricing-engine";
+import { BookingModel, IBooking } from "@/models/Booking";
 
 export interface StoredQuote {
   quoteRef: string;
@@ -21,9 +21,7 @@ export interface StoredQuote {
   estimatedTimeMins: number;
   selectedVehicleId?: string;
   selectedExtras: string[];
-  pricing: ReturnType<typeof calculateQuote>;
-  
-  // Passenger details (Step 2)
+  pricing: any;
   passenger?: {
     fullName: string;
     email: string;
@@ -33,22 +31,61 @@ export interface StoredQuote {
     pickupBufferMinutes?: number;
     specialNotes?: string;
   };
-
-  // Payment status (Step 3)
-  paymentStatus: "unpaid" | "completed" | "cancelled";
+  paymentStatus: "unpaid" | "completed" | "cancelled" | "refunded";
   paidAmount?: number;
   currency: string;
   paymentMethod?: string;
 }
 
-// In-memory store (persists during server runtime; production can plug MySQL via Prisma)
+function mapBookingToStoredQuote(b: IBooking): StoredQuote {
+  return {
+    quoteRef: b.quote_ref,
+    createdAt: b.created_at || new Date().toISOString(),
+    fromLocation: b.from_location,
+    toLocation: b.to_location,
+    fromLocationType: b.from_location_type,
+    toLocationType: b.to_location_type,
+    fromCoords: b.from_lat && b.from_lng ? { lat: b.from_lat, lng: b.from_lng } : undefined,
+    toCoords: b.to_lat && b.to_lng ? { lat: b.to_lat, lng: b.to_lng } : undefined,
+    passengers: b.passengers,
+    suitcases: b.suitcases,
+    pickUpDate: b.pickup_date,
+    pickUpTime: b.pickup_time,
+    bookReturn: b.book_return,
+    returnDate: b.return_date || undefined,
+    returnTime: b.return_time || undefined,
+    waypoints: b.waypoints || [],
+    distanceMiles: b.distance_miles,
+    estimatedTimeMins: b.estimated_time_mins,
+    selectedVehicleId: b.selected_vehicle_id,
+    selectedExtras: b.selected_extras || [],
+    pricing: b.pricing_details,
+    passenger: b.passenger_name
+      ? {
+          fullName: b.passenger_name,
+          email: b.passenger_email || "",
+          phone: b.passenger_phone || "",
+          flightNumber: b.flight_number || undefined,
+          terminal: b.terminal || undefined,
+          pickupBufferMinutes: b.pickup_buffer_mins,
+          specialNotes: b.special_notes || undefined,
+        }
+      : undefined,
+    paymentStatus: b.payment_status,
+    paidAmount: b.total_price,
+    currency: b.currency,
+    paymentMethod: b.payment_method || undefined,
+  };
+}
+
+// In-memory fallback cache
 const globalQuotes = globalThis as unknown as { __quotesMap?: Map<string, StoredQuote> };
 if (!globalQuotes.__quotesMap) {
   globalQuotes.__quotesMap = new Map<string, StoredQuote>();
 }
 
 export const quoteStore = {
-  create(params: {
+  async create(params: {
     fromLocation: string;
     toLocation: string;
     fromLocationType?: number;
@@ -63,59 +100,52 @@ export const quoteStore = {
     returnDate?: string;
     returnTime?: string;
     waypoints?: string[];
-  }): StoredQuote {
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const quoteRef = `OTS-${randomSuffix}`;
-
-    const pricing = calculateQuote({
-      fromLocation: params.fromLocation,
-      toLocation: params.toLocation,
-      fromCoords: params.fromCoords,
-      toCoords: params.toCoords,
-      fromLocationType: params.fromLocationType || 1,
-      toLocationType: params.toLocationType || 2,
-      passengers: params.passengers || 1,
-      waypoints: params.waypoints || [],
-      bookReturn: params.bookReturn || false,
-    });
-
-    const quote: StoredQuote = {
-      quoteRef,
-      createdAt: new Date().toISOString(),
-      fromLocation: params.fromLocation,
-      toLocation: params.toLocation,
-      fromLocationType: params.fromLocationType || 1,
-      toLocationType: params.toLocationType || 2,
-      fromCoords: params.fromCoords,
-      toCoords: params.toCoords,
-      passengers: params.passengers || 1,
-      suitcases: params.suitcases || 1,
-      pickUpDate: params.pickUpDate,
-      pickUpTime: params.pickUpTime,
-      bookReturn: params.bookReturn,
-      returnDate: params.returnDate,
-      returnTime: params.returnTime,
-      waypoints: params.waypoints || [],
-      distanceMiles: pricing.distanceMiles,
-      estimatedTimeMins: pricing.estimatedTimeMins,
-      selectedVehicleId: "saloon", // default selection
-      selectedExtras: [],
-      pricing,
-      paymentStatus: "unpaid",
-      currency: "GBP",
-    };
-
-    globalQuotes.__quotesMap.set(quoteRef, quote);
+  }): Promise<StoredQuote> {
+    const booking = await BookingModel.create(params);
+    const quote = mapBookingToStoredQuote(booking);
+    globalQuotes.__quotesMap.set(quote.quoteRef, quote);
     return quote;
   },
 
-  get(quoteRef: string): StoredQuote | undefined {
-    return globalQuotes.__quotesMap.get(quoteRef);
+  async get(quoteRef: string): Promise<StoredQuote | undefined> {
+    const cached = globalQuotes.__quotesMap.get(quoteRef);
+    if (cached) return cached;
+
+    const booking = await BookingModel.getByRef(quoteRef);
+    if (booking) {
+      const quote = mapBookingToStoredQuote(booking);
+      globalQuotes.__quotesMap.set(quoteRef, quote);
+      return quote;
+    }
+
+    return undefined;
   },
 
-  update(quoteRef: string, updates: Partial<StoredQuote>): StoredQuote | undefined {
-    const current = globalQuotes.__quotesMap.get(quoteRef);
+  async update(quoteRef: string, updates: Partial<StoredQuote>): Promise<StoredQuote | undefined> {
+    const current = await this.get(quoteRef);
     if (!current) return undefined;
+
+    // Delegate updates to BookingModel
+    if (updates.paymentStatus === "completed" && updates.paidAmount) {
+      await BookingModel.markPaymentCompleted(quoteRef, {
+        paidAmount: updates.paidAmount,
+        paymentMethod: updates.paymentMethod || "stripe",
+      });
+    }
+
+    await BookingModel.updateDetails(quoteRef, {
+      selectedVehicleId: updates.selectedVehicleId,
+      selectedExtras: updates.selectedExtras,
+      passengerName: updates.passenger?.fullName,
+      passengerEmail: updates.passenger?.email,
+      passengerPhone: updates.passenger?.phone,
+      flightNumber: updates.passenger?.flightNumber,
+      terminal: updates.passenger?.terminal,
+      pickupBufferMinutes: updates.passenger?.pickupBufferMinutes,
+      specialNotes: updates.passenger?.specialNotes,
+      currency: updates.currency,
+      totalPrice: updates.paidAmount,
+    });
 
     const updated = { ...current, ...updates };
     globalQuotes.__quotesMap.set(quoteRef, updated);

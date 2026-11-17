@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       if (match) toCoords = { lat: match.lat, lng: match.lng };
     }
 
-    const quote = quoteStore.create({
+    const quote = await quoteStore.create({
       fromLocation,
       toLocation,
       fromLocationType: body.fromLocationType || 1,

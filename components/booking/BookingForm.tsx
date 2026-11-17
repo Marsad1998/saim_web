@@ -36,7 +36,7 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
   const [dropoff, setDropoff] = useState<LocationItem | null>(
     initialValues?.dropoff ? { name: initialValues.dropoff } : null
   );
-  const [waypoints, setWaypoints] = useState<LocationItem[]>([]);
+  const [waypoints, setWaypoints] = useState<string[]>([]);
   
   // Date & Time
   const today = new Date().toISOString().split('T')[0];
@@ -67,7 +67,7 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
     setLocationModalOpen(true);
   };
 
-  const handleSelectLocation = (loc: LocationItem) => {
+  const handleSelectLocation = (loc: any) => {
     if (locationModalTarget === 'pickup') {
       setPickup(loc);
     } else {
@@ -103,7 +103,7 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
         dropoff: dropoff.name,
         pickupDate,
         pickupTime,
-        waypoints: waypoints.map(w => w.name),
+        waypoints,
         isReturn,
         returnDate: isReturn ? returnDate : undefined,
         returnTime: isReturn ? returnTime : undefined,
@@ -400,7 +400,8 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
         isOpen={waypointModalOpen}
         onClose={() => setWaypointModalOpen(false)}
         waypoints={waypoints}
-        onSave={(updated) => setWaypoints(updated)}
+        onAddWaypoint={(w) => setWaypoints((prev) => [...prev, w])}
+        onRemoveWaypoint={(idx) => setWaypoints((prev) => prev.filter((_, i) => i !== idx))}
       />
 
       <TimePickerModal

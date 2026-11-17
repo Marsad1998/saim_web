@@ -37,7 +37,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
-  // Initialize currency from localStorage or cookie if present
+  // Initialize currency & verify live session with server
   useEffect(() => {
     try {
       const savedCurr = localStorage.getItem("ots_currency") as CurrencyCode;
@@ -48,9 +48,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
+
+    // Verify session with server HTTP-Only cookie
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setUser(data.user);
+          localStorage.setItem("ots_user", JSON.stringify(data.user));
+        } else if (data && !data.authenticated) {
+          setUser(null);
+          localStorage.removeItem("ots_user");
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const setCurrency = (code: CurrencyCode) => {
@@ -66,6 +78,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem("ots_user");
     } catch (e) {}
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   };
 
   const customFormatPrice = (amountGbp: number) => {

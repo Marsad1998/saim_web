@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ContactInquiryModel } from "@/models/ContactInquiry";
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +13,14 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("Contact submission received:", { name, email, phone, subject, message });
+    // Persist to MySQL via ContactInquiryModel
+    await ContactInquiryModel.create({
+      name,
+      email,
+      phone,
+      subject,
+      message,
+    });
 
     return NextResponse.json({
       status: 200,

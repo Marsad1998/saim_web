@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: false, message: "Missing quote reference" }, { status: 400 });
     }
 
-    const updated = quoteStore.update(quoteRef, {
+    const updated = await quoteStore.update(quoteRef, {
       ...(selectedVehicleId && { selectedVehicleId }),
       ...(selectedExtras && { selectedExtras }),
       ...(passenger && { passenger }),

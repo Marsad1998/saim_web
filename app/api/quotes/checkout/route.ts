@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { quoteStore } from "@/lib/quote-store";
 import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
+import { BookingModel } from "@/models/Booking";
+import { sendBookingConfirmationEmail, sendAdminBookingAlertEmail } from "@/lib/email";
 import Stripe from "stripe";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -13,14 +15,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { quoteRef, paymentMethod = "stripe", passenger, cardDetails } = body;
 
-    const quote = quoteStore.get(quoteRef);
+    const quote = await quoteStore.get(quoteRef);
     if (!quote) {
       return NextResponse.json({ status: false, message: "Quote not found" }, { status: 404 });
     }
 
     // Save passenger details if supplied
     if (passenger) {
-      quoteStore.update(quoteRef, { passenger });
+      await quoteStore.update(quoteRef, { passenger });
     }
 
     // Calculate final total including selected vehicle and extras
@@ -52,10 +54,18 @@ export async function POST(request: Request) {
     }
 
     // Mark quote as completed
-    quoteStore.update(quoteRef, {
+    await quoteStore.update(quoteRef, {
       paymentStatus: "completed",
       paidAmount: finalAmountGbp,
       paymentMethod,
+    });
+
+    // Send automated email receipt & admin alert in background
+    BookingModel.getByRef(quoteRef).then((b) => {
+      if (b) {
+        sendBookingConfirmationEmail(b).catch((e) => console.error("Confirmation email error:", e));
+        sendAdminBookingAlertEmail(b).catch((e) => console.error("Admin alert email error:", e));
+      }
     });
 
     return NextResponse.json({

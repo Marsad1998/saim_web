@@ -145,7 +145,7 @@ function calculateDistanceMiles(
   return Math.max(5.0, Math.round(crowMiles * 1.28 * 10) / 10);
 }
 
-export function calculateQuote(params: JourneyCalculationParams) {
+export function calculateQuote(params: JourneyCalculationParams, customFleet?: VehicleFleetOption[]) {
   const distanceMiles = calculateDistanceMiles(params.fromCoords, params.toCoords);
   const estimatedTimeMins = Math.round(distanceMiles * 1.8 + 15); // average UK highway + city drive time
 
@@ -165,8 +165,9 @@ export function calculateQuote(params: JourneyCalculationParams) {
 
   const baseOneWayStandard = Math.round((basePickupFee + mileageCost + airportBarrierFee + waypointCost) * 100) / 100;
 
-  // Calculate pricing for all vehicles
-  const vehiclesWithPricing = VEHICLE_FLEET.map((vehicle) => {
+  // Calculate pricing for all vehicles (from MySQL or fallback fleet)
+  const fleetToUse = customFleet && customFleet.length > 0 ? customFleet : VEHICLE_FLEET;
+  const vehiclesWithPricing = fleetToUse.map((vehicle) => {
     let oneWayPrice = Math.round(baseOneWayStandard * vehicle.multiplier * 100) / 100;
     
     // If Return Trip booked: 2x journey minus 5% discount
@@ -184,6 +185,12 @@ export function calculateQuote(params: JourneyCalculationParams) {
       oneWayPrice,
       returnTripDiscount,
       totalPrice,
+      finalPrice: totalPrice,
+      capacity: {
+        passengers: vehicle.passengers,
+        suitcases: vehicle.suitcases,
+        handLuggage: vehicle.handLuggage,
+      },
       isAvailable: params.passengers <= vehicle.passengers
     };
   });

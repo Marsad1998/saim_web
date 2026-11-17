@@ -7,11 +7,11 @@ export async function GET(
 ) {
   try {
     const { quoteRef } = params;
-    let quote = quoteStore.get(quoteRef);
+    let quote = await quoteStore.get(quoteRef);
 
     if (!quote) {
       // If server reloaded, generate fallback quote for this ref
-      quote = quoteStore.create({
+      quote = await quoteStore.create({
         fromLocation: "London Heathrow Airport (LHR)",
         toLocation: "Central London, UK",
         fromLocationType: 1,
