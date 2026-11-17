@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Percent
 } from 'lucide-react';
-import LocationModal from './LocationModal';
+import LocationModal, { SelectedLocationItem } from './LocationModal';
 import WaypointModal from './WaypointModal';
 import TimePickerModal from './TimePickerModal';
 
@@ -22,20 +22,31 @@ interface LocationItem {
   id?: string;
   name: string;
   address?: string;
+  location?: string;
   type?: string;
   postcode?: string;
+  lat?: number;
+  lng?: number;
+  locationType?: number;
+  code?: string;
 }
 
 export default function BookingForm({ initialValues }: { initialValues?: any }) {
   const router = useRouter();
 
   // State
-  const [pickup, setPickup] = useState<LocationItem | null>(
-    initialValues?.pickup ? { name: initialValues.pickup } : null
-  );
-  const [dropoff, setDropoff] = useState<LocationItem | null>(
-    initialValues?.dropoff ? { name: initialValues.dropoff } : null
-  );
+  const [pickup, setPickup] = useState<LocationItem | null>(() => {
+    if (!initialValues?.pickup) return null;
+    const name = typeof initialValues.pickup === 'string' ? initialValues.pickup : initialValues.pickup.name;
+    return { name, location: name };
+  });
+  
+  const [dropoff, setDropoff] = useState<LocationItem | null>(() => {
+    if (!initialValues?.dropoff) return null;
+    const name = typeof initialValues.dropoff === 'string' ? initialValues.dropoff : initialValues.dropoff.name;
+    return { name, location: name };
+  });
+
   const [waypoints, setWaypoints] = useState<string[]>([]);
   
   // Date & Time
@@ -67,11 +78,23 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
     setLocationModalOpen(true);
   };
 
-  const handleSelectLocation = (loc: any) => {
+  const handleSelectLocation = (loc: SelectedLocationItem) => {
+    const locName = loc.name || loc.location || '';
+    const normalized: LocationItem = {
+      name: locName,
+      location: locName,
+      address: locName,
+      code: loc.code,
+      locationType: loc.locationType || (locName.toLowerCase().includes('airport') ? 1 : 2),
+      lat: loc.lat,
+      lng: loc.lng,
+      postcode: loc.postcode,
+    };
+
     if (locationModalTarget === 'pickup') {
-      setPickup(loc);
+      setPickup(normalized);
     } else {
-      setDropoff(loc);
+      setDropoff(normalized);
     }
     setErrorMessage(null);
   };
@@ -86,11 +109,14 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!pickup?.name) {
+    const pickupName = pickup?.name || pickup?.location || '';
+    const dropoffName = dropoff?.name || dropoff?.location || '';
+
+    if (!pickupName) {
       setErrorMessage('Please select a Pick-up location or airport');
       return;
     }
-    if (!dropoff?.name) {
+    if (!dropoffName) {
       setErrorMessage('Please select a Drop-off destination or airport');
       return;
     }
@@ -99,12 +125,19 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
 
     try {
       const payload = {
-        pickup: pickup.name,
-        dropoff: dropoff.name,
+        pickup: pickupName,
+        dropoff: dropoffName,
+        fromDestination: pickupName,
+        toDestination: dropoffName,
+        fromCoords: pickup?.lat && pickup?.lng ? { lat: pickup.lat, lng: pickup.lng } : undefined,
+        toCoords: dropoff?.lat && dropoff?.lng ? { lat: dropoff.lat, lng: dropoff.lng } : undefined,
+        fromLocationType: pickup?.locationType || (pickupName.toLowerCase().includes('airport') ? 1 : 2),
+        toLocationType: dropoff?.locationType || (dropoffName.toLowerCase().includes('airport') ? 1 : 2),
         pickupDate,
         pickupTime,
         waypoints,
         isReturn,
+        bookReturn: isReturn,
         returnDate: isReturn ? returnDate : undefined,
         returnTime: isReturn ? returnTime : undefined,
         passengers,
@@ -130,6 +163,9 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
       setIsLoading(false);
     }
   };
+
+  const currentPickupName = pickup?.name || pickup?.location;
+  const currentDropoffName = dropoff?.name || dropoff?.location;
 
   return (
     <div className="w-full bg-white rounded-2xl shadow-2xl p-5 md:p-8 border border-gray-100 relative">
@@ -157,9 +193,9 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="flex-1 truncate">
-                {pickup ? (
-                  <span className="font-medium text-gray-900 text-sm md:text-base">
-                    {pickup.name}
+                {currentPickupName ? (
+                  <span className="font-semibold text-gray-900 text-sm md:text-base">
+                    {currentPickupName}
                   </span>
                 ) : (
                   <span className="text-gray-400 text-sm">
@@ -196,9 +232,9 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="flex-1 truncate">
-                {dropoff ? (
-                  <span className="font-medium text-gray-900 text-sm md:text-base">
-                    {dropoff.name}
+                {currentDropoffName ? (
+                  <span className="font-semibold text-gray-900 text-sm md:text-base">
+                    {currentDropoffName}
                   </span>
                 ) : (
                   <span className="text-gray-400 text-sm">

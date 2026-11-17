@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 import { StoredQuote } from '@/lib/quote-store';
+import RouteMap from '@/components/booking/RouteMap';
 
 interface TransferSidebarProps {
   quote: StoredQuote;
@@ -68,6 +69,16 @@ export default function TransferSidebar({
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Route Map Preview */}
+        <RouteMap
+          origin={quote.fromLocation}
+          destination={quote.toLocation}
+          waypoints={quote.waypoints}
+          distanceMiles={quote.distanceMiles}
+          estimatedTimeMins={quote.estimatedTimeMins}
+          className="h-44 rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+        />
+
         {/* Route Details */}
         <div className="space-y-3">
           {/* Pickup */}

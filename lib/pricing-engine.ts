@@ -119,6 +119,8 @@ export interface JourneyCalculationParams {
   bookReturn: boolean;
   selectedVehicleId?: string;
   selectedExtras?: string[];
+  distanceMiles?: number;
+  estimatedTimeMins?: number;
 }
 
 function calculateDistanceMiles(
@@ -146,8 +148,8 @@ function calculateDistanceMiles(
 }
 
 export function calculateQuote(params: JourneyCalculationParams, customFleet?: VehicleFleetOption[]) {
-  const distanceMiles = calculateDistanceMiles(params.fromCoords, params.toCoords);
-  const estimatedTimeMins = Math.round(distanceMiles * 1.8 + 15); // average UK highway + city drive time
+  const distanceMiles = params.distanceMiles || calculateDistanceMiles(params.fromCoords, params.toCoords);
+  const estimatedTimeMins = params.estimatedTimeMins || Math.round(distanceMiles * 1.8 + 15); // average UK highway + city drive time
 
   // Base mileage rate curve
   let mileageCost = 0;

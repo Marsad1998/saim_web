@@ -1,15 +1,29 @@
 import { NextResponse } from "next/server";
 import { quoteStore } from "@/lib/quote-store";
 import { searchLocations } from "@/lib/locations-data";
+import { isGoogleMapsEnabled, calculateGoogleDistanceMatrix } from "@/lib/google-maps";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const fromLocation = body.fromDestination || body.from || body.airport || "London Heathrow Airport (LHR)";
-    const toLocation = body.toDestination || body.to || body.destination || "Central London, London, UK";
+    const fromLocation = (
+      body.pickup ||
+      body.fromDestination ||
+      body.from ||
+      body.airport ||
+      "London Heathrow Airport (LHR)"
+    ).trim();
 
-    // Attempt to lookup coordinates from our preset locations if not provided
+    const toLocation = (
+      body.dropoff ||
+      body.toDestination ||
+      body.to ||
+      body.destination ||
+      "Central London, London, UK"
+    ).trim();
+
+    // Coordinates resolution
     let fromCoords = body.fromCoords;
     let toCoords = body.toCoords;
 
@@ -23,21 +37,38 @@ export async function POST(request: Request) {
       if (match) toCoords = { lat: match.lat, lng: match.lng };
     }
 
+    const fromLocationType = body.fromLocationType || (fromLocation.toLowerCase().includes("airport") ? 1 : 2);
+    const toLocationType = body.toLocationType || (toLocation.toLowerCase().includes("airport") ? 1 : 2);
+
+    // If Google Maps is active, get real road distance & traffic duration
+    let distanceMiles: number | undefined;
+    let estimatedTimeMins: number | undefined;
+
+    if (isGoogleMapsEnabled()) {
+      const googleMatrix = await calculateGoogleDistanceMatrix(fromLocation, toLocation);
+      if (googleMatrix) {
+        distanceMiles = googleMatrix.distanceMiles;
+        estimatedTimeMins = googleMatrix.durationMinutes;
+      }
+    }
+
     const quote = await quoteStore.create({
       fromLocation,
       toLocation,
-      fromLocationType: body.fromLocationType || 1,
-      toLocationType: body.toLocationType || 2,
+      fromLocationType,
+      toLocationType,
       fromCoords,
       toCoords,
       passengers: parseInt(body.passengers) || 1,
       suitcases: parseInt(body.suitcases) || 1,
-      pickUpDate: body.pickUpDate || "14/10/2026",
-      pickUpTime: body.pickUpTime || "15:00",
-      bookReturn: Boolean(body.bookReturn),
+      pickUpDate: body.pickupDate || body.pickUpDate || new Date().toISOString().split("T")[0],
+      pickUpTime: body.pickupTime || body.pickUpTime || "12:00",
+      bookReturn: Boolean(body.isReturn || body.bookReturn),
       returnDate: body.returnDate,
       returnTime: body.returnTime,
       waypoints: Array.isArray(body.waypoints) ? body.waypoints : [],
+      distanceMiles,
+      estimatedTimeMins,
     });
 
     return NextResponse.json({

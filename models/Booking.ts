@@ -62,6 +62,8 @@ export interface CreateBookingInput {
   returnTime?: string;
   waypoints?: string[];
   userId?: string;
+  distanceMiles?: number;
+  estimatedTimeMins?: number;
 }
 
 export interface UpdateBookingInput {
@@ -153,6 +155,8 @@ export class BookingModel {
       passengers: input.passengers || 1,
       waypoints: input.waypoints || [],
       bookReturn: input.bookReturn || false,
+      distanceMiles: input.distanceMiles,
+      estimatedTimeMins: input.estimatedTimeMins,
     }, fleet);
 
     const selectedVeh = pricing.vehicles.find((v) => v.id === "saloon") || pricing.vehicles[0];

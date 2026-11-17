@@ -100,6 +100,8 @@ export const quoteStore = {
     returnDate?: string;
     returnTime?: string;
     waypoints?: string[];
+    distanceMiles?: number;
+    estimatedTimeMins?: number;
   }): Promise<StoredQuote> {
     const booking = await BookingModel.create(params);
     const quote = mapBookingToStoredQuote(booking);
@@ -119,6 +121,19 @@ export const quoteStore = {
     }
 
     return undefined;
+  },
+
+  async listByUserOrEmail(userId?: string, email?: string): Promise<StoredQuote[]> {
+    const list: StoredQuote[] = [];
+    if (!globalQuotes.__quotesMap) return list;
+    const cleanEmail = email?.toLowerCase();
+    const quotes = Array.from(globalQuotes.__quotesMap.values());
+    for (const quote of quotes) {
+      if (cleanEmail && quote.passenger?.email?.toLowerCase() === cleanEmail) {
+        list.push(quote);
+      }
+    }
+    return list;
   },
 
   async update(quoteRef: string, updates: Partial<StoredQuote>): Promise<StoredQuote | undefined> {
