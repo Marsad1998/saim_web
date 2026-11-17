@@ -9,6 +9,8 @@ export interface SystemSettings {
   admin_email: string;
   require_email_verification: boolean;
   require_driver_approval: boolean;
+  google_client_id: string;
+  google_client_secret: string;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -20,6 +22,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
   admin_email: process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@otstaxi.co.uk',
   require_email_verification: false,
   require_driver_approval: true,
+  google_client_id: process.env.GOOGLE_CLIENT_ID || '',
+  google_client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
 };
 
 let inMemorySettings: SystemSettings = { ...DEFAULT_SETTINGS };

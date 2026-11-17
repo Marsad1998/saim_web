@@ -32,6 +32,23 @@ export async function POST(request: Request) {
       );
     }
 
+    // 1b. Check if email verification is enforced and user is unverified
+    if (user.role !== "admin" && !user.is_verified) {
+      const { getSystemSettings } = await import("@/lib/system-settings");
+      const settings = await getSystemSettings();
+      if (settings.require_email_verification) {
+        return NextResponse.json(
+          {
+            status: 403,
+            requiresVerification: true,
+            email: user.email,
+            message: "Your email is not verified yet. Please enter the verification code.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // 2. Generate secure JWT session token
     const token = signJwtToken({
       userId: user.id,

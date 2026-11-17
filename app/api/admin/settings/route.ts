@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
         admin_email: settings.admin_email,
         require_email_verification: Boolean(settings.require_email_verification),
         require_driver_approval: Boolean(settings.require_driver_approval),
+        google_client_id: settings.google_client_id || "",
+        google_client_secret: settings.google_client_secret ? "••••••••" : "",
       },
     });
   } catch (error: any) {
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
     if (body.admin_email !== undefined) updates.admin_email = String(body.admin_email).trim();
     if (body.require_email_verification !== undefined) updates.require_email_verification = Boolean(body.require_email_verification);
     if (body.require_driver_approval !== undefined) updates.require_driver_approval = Boolean(body.require_driver_approval);
+    if (body.google_client_id !== undefined) updates.google_client_id = String(body.google_client_id).trim();
+    if (body.google_client_secret && body.google_client_secret !== "••••••••") updates.google_client_secret = String(body.google_client_secret).trim();
 
     const updated = await updateSystemSettings(updates);
 
@@ -69,6 +73,7 @@ export async function POST(request: NextRequest) {
       settings: {
         ...updated,
         smtp_pass: updated.smtp_pass ? "••••••••" : "",
+        google_client_secret: updated.google_client_secret ? "••••••••" : "",
       },
     });
   } catch (error: any) {

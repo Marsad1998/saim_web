@@ -15,6 +15,7 @@ export interface IUser {
 }
 
 export interface CreateUserInput {
+  id?: string;
   name: string;
   email: string;
   password?: string;
@@ -118,7 +119,7 @@ export class UserModel {
    * Create a new user in MySQL
    */
   static async create(input: CreateUserInput): Promise<IUser> {
-    const id = "usr_" + Math.random().toString(36).substring(2, 10);
+    const id = input.id || ("usr_" + Math.random().toString(36).substring(2, 10));
     const cleanEmail = input.email.trim().toLowerCase();
     const role = input.role || "customer";
     const passwordHash = input.password ? await hashPassword(input.password) : null;
@@ -227,6 +228,33 @@ export class UserModel {
     }
 
     return user;
+  }
+
+  /**
+   * Alias for create
+   */
+  static async createUser(input: CreateUserInput): Promise<IUser> {
+    return this.create(input);
+  }
+
+  /**
+   * Mark email as verified directly
+   */
+  static async markEmailVerified(email: string): Promise<boolean> {
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      await dbQuery(
+        "UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?",
+        [cleanEmail]
+      );
+    } catch (e: any) {
+      console.warn("DB update error on markEmailVerified:", e.message);
+    }
+    if (DEFAULT_FALLBACK_USERS[cleanEmail]) {
+      DEFAULT_FALLBACK_USERS[cleanEmail].is_verified = true;
+      DEFAULT_FALLBACK_USERS[cleanEmail].verification_code = null;
+    }
+    return true;
   }
 
   /**
