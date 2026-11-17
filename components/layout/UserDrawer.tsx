@@ -36,21 +36,51 @@ export default function UserDrawer() {
           {user ? (
             <div className="mt-8 space-y-6">
               <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
-                <div className="w-12 h-12 rounded-full bg-ots-yellow text-black flex items-center justify-center font-bold text-lg mb-3">
-                  {user.name.charAt(0).toUpperCase()}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 rounded-full bg-ots-yellow text-black flex items-center justify-center font-bold text-lg">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-ots-yellow/20 text-ots-yellow border border-ots-yellow/30">
+                    {user.role === 'admin' ? 'Administrator' : user.role === 'driver' ? 'Chauffeur' : 'Passenger'}
+                  </span>
                 </div>
                 <h4 className="text-lg font-bold text-white">{user.name}</h4>
                 <p className="text-xs text-ots-mutedText">{user.email}</p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
+                {/* Admin Console Link */}
+                {user.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsUserDrawerOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-900 hover:bg-neutral-800 text-ots-yellow rounded-lg text-sm font-semibold transition border border-ots-yellow/30"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Admin Dispatch &amp; Fleet</span>
+                  </Link>
+                )}
+
+                {/* Driver Portal Link */}
+                {user.role === 'driver' && (
+                  <Link
+                    href="/driver/dashboard"
+                    onClick={() => setIsUserDrawerOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-900 hover:bg-neutral-800 text-ots-yellow rounded-lg text-sm font-semibold transition border border-ots-yellow/30"
+                  >
+                    <CalendarCheck className="w-4 h-4" />
+                    <span>Chauffeur Portal &amp; Jobs</span>
+                  </Link>
+                )}
+
+                {/* Passenger Bookings Link */}
                 <Link
                   href="/account/dashboard"
                   onClick={() => setIsUserDrawerOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-sm font-semibold transition"
                 >
                   <CalendarCheck className="w-4 h-4 text-ots-yellow" />
-                  <span>My Bookings & Trips</span>
+                  <span>My Bookings &amp; Transfers</span>
                 </Link>
 
                 <button

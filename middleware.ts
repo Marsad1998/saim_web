@@ -6,7 +6,11 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get("ots_session")?.value;
 
   // 1. Protected routes: User must be logged in
-  const isProtectedPath = pathname.startsWith("/account/dashboard") || pathname.startsWith("/admin");
+  const isProtectedPath =
+    pathname.startsWith("/account/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/driver");
+
   if (isProtectedPath && !sessionCookie) {
     const loginUrl = new URL("/account/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
@@ -28,5 +32,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/account/:path*", "/admin/:path*"],
+  matcher: ["/account/:path*", "/admin/:path*", "/driver/:path*"],
 };

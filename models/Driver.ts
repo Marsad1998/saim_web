@@ -138,6 +138,13 @@ export class DriverModel {
   }
 
   /**
+   * Toggle driver active on/off duty
+   */
+  static async toggleActive(id: string, isActive: boolean): Promise<boolean> {
+    return this.update(id, { isActive });
+  }
+
+  /**
    * Update driver vehicle or license info
    */
   static async update(id: string, updates: UpdateDriverInput): Promise<boolean> {

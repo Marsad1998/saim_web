@@ -427,4 +427,20 @@ export class BookingModel {
       return [];
     }
   }
+
+  /**
+   * Get all bookings assigned to a specific driver
+   */
+  static async getByDriverId(driverId: string): Promise<IBooking[]> {
+    try {
+      const rows = await dbQuery<any[]>(
+        "SELECT * FROM bookings WHERE driver_id = ? ORDER BY pickup_date ASC, pickup_time ASC",
+        [driverId]
+      );
+      return (rows || []).map((r) => this.formatRow(r));
+    } catch (error: any) {
+      console.error("BookingModel.getByDriverId error:", error.message);
+      return [];
+    }
+  }
 }

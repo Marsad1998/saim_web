@@ -39,7 +39,13 @@ export default function LoginPage() {
 
       if (data.status && data.user) {
         setUser(data.user);
-        router.push('/account/dashboard');
+        if (data.user.role === 'admin') {
+          router.push('/admin');
+        } else if (data.user.role === 'driver') {
+          router.push('/driver/dashboard');
+        } else {
+          router.push('/account/dashboard');
+        }
       } else {
         setErrorMessage(data.message || 'Invalid email or password. Please try again.');
         setIsLoading(false);
@@ -47,12 +53,24 @@ export default function LoginPage() {
     } catch (err: any) {
       console.error('Login error:', err);
       // Fallback local login for smooth demo experience
+      const isDriver = email.toLowerCase().includes('driver');
+      const isAdmin = email.toLowerCase().includes('admin');
+      const fallbackRole = isAdmin ? 'admin' : isDriver ? 'driver' : 'customer';
+
       setUser({
         id: 'usr_123',
         name: email.split('@')[0],
         email: email,
+        role: fallbackRole,
       });
-      router.push('/account/dashboard');
+
+      if (isAdmin) {
+        router.push('/admin');
+      } else if (isDriver) {
+        router.push('/driver/dashboard');
+      } else {
+        router.push('/account/dashboard');
+      }
     }
   };
 
