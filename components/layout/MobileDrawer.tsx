@@ -27,6 +27,7 @@ export default function MobileDrawer() {
   const { 
     isMobileMenuOpen, 
     setIsMobileMenuOpen, 
+    siteSettings,
     user, 
     logout, 
     currency, 
@@ -66,8 +67,22 @@ export default function MobileDrawer() {
               onClick={() => setIsMobileMenuOpen(false)} 
               className="flex items-center gap-1.5"
             >
-              <span className="text-2xl font-black text-ots-yellow tracking-wider">OTS</span>
-              <span className="text-2xl font-bold text-white tracking-tight">TAXI</span>
+              {siteSettings?.logo_dark ? (
+                <img
+                  src={siteSettings.logo_dark}
+                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  className="h-9 w-auto object-contain"
+                />
+              ) : (
+                <div className="flex items-center">
+                  <span className="text-2xl font-black text-ots-yellow tracking-wider">
+                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                  </span>
+                  <span className="text-2xl font-bold text-white tracking-tight ml-1">
+                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
+                  </span>
+                </div>
+              )}
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(false)}

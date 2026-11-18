@@ -40,17 +40,56 @@ import {
   Building2,
   AlertTriangle,
   ArrowUpRight,
-  Briefcase
+  Briefcase,
+  Palette,
+  Upload,
+  Image as ImageIcon,
+  Sparkles,
+  Trash2,
+  HelpCircle,
+  CheckCircle
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
+// Helper function to calculate dark hover shade for custom hex colors
+function adjustHex(hex: string, percent: number) {
+  let cleanHex = hex.replace('#', '');
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex.split('').map((c) => c + c).join('');
+  }
+  if (cleanHex.length !== 6) return hex;
+  const num = parseInt(cleanHex, 16);
+  let r = (num >> 16) + percent;
+  let g = ((num >> 8) & 0x00ff) + percent;
+  let b = (num & 0x0000ff) + percent;
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+const COLOR_PRESETS = [
+  { name: 'OTS Yellow (Default)', hex: '#FFCC00', hover: '#E6B800', isDarkText: true },
+  { name: 'Prestige Gold', hex: '#D4AF37', hover: '#B89628', isDarkText: true },
+  { name: 'Warm Amber', hex: '#F59E0B', hover: '#D97706', isDarkText: true },
+  { name: 'Vibrant Orange', hex: '#F97316', hover: '#EA580C', isDarkText: false },
+  { name: 'Royal London Blue', hex: '#2563EB', hover: '#1D4ED8', isDarkText: false },
+  { name: 'Electric Cyan', hex: '#06B6D4', hover: '#0891B2', isDarkText: true },
+  { name: 'Emerald Green', hex: '#10B981', hover: '#059669', isDarkText: false },
+  { name: 'Racing Green', hex: '#047857', hover: '#065F46', isDarkText: false },
+  { name: 'Crimson Red', hex: '#EF4444', hover: '#DC2626', isDarkText: false },
+  { name: 'Luxury Violet', hex: '#8B5CF6', hover: '#7C3AED', isDarkText: false },
+  { name: 'Modern Slate', hex: '#64748B', hover: '#475569', isDarkText: false },
+  { name: 'Obsidian Black', hex: '#18181B', hover: '#09090B', isDarkText: false },
+];
+
 export default function AdminPage() {
   const router = useRouter();
-  const { user, logout, formatPrice } = useApp();
+  const { user, logout, formatPrice, siteSettings, updateSiteSettingsState } = useApp();
 
   // Active Navigation Tab
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'bookings' | 'drivers' | 'partners' | 'users' | 'vehicles' | 'inquiries' | 'settings'
+    'dashboard' | 'bookings' | 'drivers' | 'partners' | 'users' | 'vehicles' | 'inquiries' | 'settings' | 'website_settings'
   >('dashboard');
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -77,7 +116,7 @@ export default function AdminPage() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
 
-  // SMTP & System Settings State
+  // SMTP & System & Website Branding Settings State
   const [settings, setSettings] = useState({
     smtp_host: 'smtp.gmail.com',
     smtp_port: 587,
@@ -89,12 +128,112 @@ export default function AdminPage() {
     require_driver_approval: true,
     google_client_id: '',
     google_client_secret: '',
+    // Branding & Color Theme Fields
+    primary_color: '#FFCC00',
+    primary_hover_color: '#E6B800',
+    secondary_color: '#141720',
+    brand_name: 'OTS TAXI',
+    brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
+    logo_dark: '/images/ots-taxi-logo.png',
+    logo_light: '',
+    logo_icon: '',
+    support_phone: '+44 20 8123 4567',
+    support_email: 'support@otstaxi.co.uk',
+    emergency_whatsapp: '+44 7123 456789',
+    office_address: 'Heathrow Airport Terminal 2, Hounslow TW6 1EW, United Kingdom',
+    company_number: '12345678',
+    vat_number: 'GB 123 4567 89',
+    copyright_text: '© 2026 OTS Taxi UK Ltd. All rights reserved.',
   });
 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
   const [testRecipient, setTestRecipient] = useState('');
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState<'logo_dark' | 'logo_light' | 'logo_icon' | null>(null);
+
+  // Logo file upload handler
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, variant: 'logo_dark' | 'logo_light' | 'logo_icon') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image file size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingLogo(variant);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const variantKey = variant === 'logo_dark' ? 'dark' : variant === 'logo_light' ? 'light' : 'icon';
+      formData.append('variant', variantKey);
+
+      const res = await fetch('/api/admin/settings/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.status && data.url) {
+        setSettings((prev) => ({ ...prev, [variant]: data.url }));
+        if (updateSiteSettingsState) {
+          updateSiteSettingsState({ [variant]: data.url });
+        }
+        setSettingsMessage({ type: 'success', text: `Logo uploaded successfully! Click "Save Changes" to persist permanently.` });
+      } else {
+        alert(data.message || 'Logo upload failed');
+      }
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      alert('Network error while uploading logo.');
+    } finally {
+      setUploadingLogo(null);
+    }
+  };
+
+  // Primary color change handler (live DOM update + state)
+  const handlePrimaryColorChange = (hex: string, hoverHex?: string) => {
+    const hover = hoverHex || adjustHex(hex, -25);
+    setSettings((prev) => ({
+      ...prev,
+      primary_color: hex,
+      primary_hover_color: hover,
+    }));
+    if (updateSiteSettingsState) {
+      updateSiteSettingsState({
+        primary_color: hex,
+        primary_hover_color: hover,
+      });
+    }
+  };
+
+  // Reset to OTS Taxi default theme
+  const handleResetThemeDefaults = () => {
+    if (confirm('Reset primary color and logos to OTS Taxi default theme?')) {
+      handlePrimaryColorChange('#FFCC00', '#E6B800');
+      setSettings((prev) => ({
+        ...prev,
+        primary_color: '#FFCC00',
+        primary_hover_color: '#E6B800',
+        brand_name: 'OTS TAXI',
+        brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
+        logo_dark: '/images/ots-taxi-logo.png',
+        logo_light: '',
+        logo_icon: '',
+      }));
+      if (updateSiteSettingsState) {
+        updateSiteSettingsState({
+          primary_color: '#FFCC00',
+          primary_hover_color: '#E6B800',
+          brand_name: 'OTS TAXI',
+          brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
+          logo_dark: '/images/ots-taxi-logo.png',
+          logo_light: '',
+          logo_icon: '',
+        });
+      }
+    }
+  };
 
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -348,9 +487,9 @@ export default function AdminPage() {
     }
   };
 
-  // Save SMTP Settings
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Save System & Website Branding Settings
+  const handleSaveSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSavingSettings(true);
     setSettingsMessage(null);
     try {
@@ -361,7 +500,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSettingsMessage({ type: 'success', text: data.message || 'Settings saved successfully!' });
+        setSettingsMessage({ type: 'success', text: data.message || 'Settings saved successfully! Live theme updated across the website.' });
+        if (updateSiteSettingsState) {
+          updateSiteSettingsState(settings as any);
+        }
       } else {
         setSettingsMessage({ type: 'error', text: data.message || 'Failed to save settings.' });
       }
@@ -479,6 +621,7 @@ export default function AdminPage() {
     {
       group: 'CONFIGURATION',
       items: [
+        { id: 'website_settings', label: 'Website & Branding', icon: Palette, badge: 'Live Theme', badgeColor: 'bg-amber-400 text-gray-950 font-black' },
         { id: 'settings', label: 'SMTP & Integrations', icon: Settings, badge: null },
       ],
     },
@@ -638,7 +781,7 @@ export default function AdminPage() {
               <span className="font-semibold text-slate-500">Admin Operations</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
               <span className="font-black text-slate-900 capitalize tracking-wide">
-                {activeTab === 'dashboard' ? 'Overview Cockpit' : activeTab}
+                {activeTab === 'dashboard' ? 'Overview Cockpit' : activeTab === 'website_settings' ? 'Website & Branding' : activeTab}
               </span>
             </div>
           </div>
@@ -1726,6 +1869,719 @@ export default function AdminPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              VIEW 8: WEBSITE SETTINGS, BRANDING & LIVE THEME
+          ══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'website_settings' && (
+            <div className="space-y-6 max-w-5xl pb-12">
+              
+              {/* Header Banner */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-ots-yellow text-gray-950 flex items-center justify-center font-black shadow-sm">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900">Website Settings &amp; Brand Identity</h2>
+                      <p className="text-xs text-slate-500">
+                        Configure primary theme colors, header &amp; voucher logos, and official business details across the web
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleResetThemeDefaults}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition flex items-center space-x-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Reset Theme Defaults</span>
+                  </button>
+                  <Link
+                    href="/"
+                    target="_blank"
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-xs transition flex items-center space-x-1.5 shadow"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-ots-yellow" />
+                    <span>View Live Website</span>
+                    <ExternalLink className="w-3 h-3 ml-0.5 text-slate-400" />
+                  </Link>
+                </div>
+              </div>
+
+              {settingsMessage && (
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center space-x-2 ${
+                  settingsMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {settingsMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                  <span>{settingsMessage.text}</span>
+                </div>
+              )}
+
+              {/* CARD 1: LIVE THEME INTERACTIVE PREVIEW */}
+              <div className="bg-[#121622] rounded-2xl border border-slate-800 p-6 text-white space-y-5 shadow-lg">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800/80 flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-ots-yellow" />
+                    <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">
+                      Live Real-Time Theme Preview
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-[11px]">
+                    <span className="font-mono bg-slate-800/80 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-300">
+                      --ots-primary: <span className="font-bold text-white">{settings.primary_color}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Simulated Website Header Mockup */}
+                <div className="rounded-xl bg-black/90 border border-slate-800 p-3.5 flex items-center justify-between shadow-inner">
+                  <div className="flex items-center space-x-3">
+                    {settings.logo_dark ? (
+                      <img 
+                        src={settings.logo_dark} 
+                        alt="Header Logo Preview" 
+                        className="h-8 max-w-[160px] object-contain" 
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2 font-black text-sm">
+                        <div 
+                          style={{ backgroundColor: settings.primary_color }}
+                          className="w-8 h-8 rounded-lg text-gray-950 flex items-center justify-center text-xs font-black shadow"
+                        >
+                          {settings.brand_name?.charAt(0) || 'O'}
+                        </div>
+                        <span className="text-white font-extrabold">{settings.brand_name || 'OTS TAXI'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="hidden md:flex items-center space-x-5 text-xs text-slate-300 font-medium">
+                    <span className="hover:text-white cursor-pointer transition">Airport Transfers</span>
+                    <span className="hover:text-white cursor-pointer transition">Executive Chauffeurs</span>
+                    <span className="hover:text-white cursor-pointer transition">Partner Program</span>
+                    <span className="hover:text-white cursor-pointer transition">Help</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2.5">
+                    <button
+                      type="button"
+                      style={{ backgroundColor: settings.primary_color }}
+                      className="px-4 py-2 rounded-xl font-black text-xs text-gray-950 shadow transition hover:opacity-95"
+                    >
+                      Instant Quote →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Simulated Booking Hero Card */}
+                <div className="rounded-xl bg-gradient-to-br from-slate-900 to-[#141720] border border-slate-800 p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                    <span 
+                      style={{ backgroundColor: settings.primary_color }} 
+                      className="text-gray-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+                    >
+                      ★ 24/7 UK AIRPORT TRANSFERS
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {settings.brand_tagline}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Premium Airport &amp; City Travel with{' '}
+                    <span style={{ color: settings.primary_color }}>
+                      {settings.brand_name}
+                    </span>
+                  </h3>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                    <div className="w-full sm:flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                      📍 Pick-up: London Heathrow Airport (LHR)
+                    </div>
+                    <div className="w-full sm:flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                      🏁 Drop-off: Central London Hotels
+                    </div>
+                    <button
+                      type="button"
+                      style={{ backgroundColor: settings.primary_color }}
+                      className="w-full sm:w-auto px-5 py-2 rounded-xl font-black text-xs text-gray-950 shadow whitespace-nowrap"
+                    >
+                      Search Fares
+                    </button>
+                  </div>
+                </div>
+
+                {/* Diagnostic Metric Tiles */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-[11px]">
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Primary Color</span>
+                    <div className="flex items-center justify-center space-x-1.5 font-mono font-bold text-white text-xs">
+                      <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: settings.primary_color }} />
+                      <span>{settings.primary_color}</span>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Hover Color</span>
+                    <div className="flex items-center justify-center space-x-1.5 font-mono font-bold text-white text-xs">
+                      <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: settings.primary_hover_color }} />
+                      <span>{settings.primary_hover_color}</span>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Active Brand</span>
+                    <span className="font-bold text-white text-xs truncate block">{settings.brand_name}</span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Support Phone</span>
+                    <span className="font-mono font-bold text-white text-xs truncate block">{settings.support_phone}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: PRIMARY COLOR CUSTOMIZER & 12 PRESETS */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                    <Palette className="w-4 h-4 text-ots-yellow" />
+                    <span>Website Primary Color &amp; Accent System</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Click any curated theme swatch or pick a custom brand HEX color. The entire website (buttons, progress bars, active nav, badges) updates instantly.
+                  </p>
+                </div>
+
+                {/* 12 Curated Theme Swatches */}
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-3">
+                    Curated Color Presets (1-Click Switch):
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                    {COLOR_PRESETS.map((preset) => {
+                      const isSelected = settings.primary_color.toLowerCase() === preset.hex.toLowerCase();
+                      return (
+                        <button
+                          key={preset.hex}
+                          type="button"
+                          onClick={() => handlePrimaryColorChange(preset.hex, preset.hover)}
+                          className={`p-3 rounded-xl border-2 text-left transition flex flex-col justify-between space-y-2 relative group ${
+                            isSelected
+                              ? 'border-slate-900 bg-slate-50 shadow-md ring-2 ring-black/10'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span 
+                              className="w-6 h-6 rounded-lg shadow-sm border border-black/10 flex items-center justify-center"
+                              style={{ backgroundColor: preset.hex }}
+                            >
+                              {isSelected && <Check className={`w-3.5 h-3.5 ${preset.isDarkText ? 'text-gray-950 font-black' : 'text-white font-black'}`} />}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-600">
+                              {preset.hex}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-xs text-slate-900 block leading-tight">
+                              {preset.name}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom HEX Pickers */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Primary Color Picker */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Custom Primary Color
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="color"
+                        value={settings.primary_color}
+                        onChange={(e) => handlePrimaryColorChange(e.target.value)}
+                        className="w-10 h-10 rounded-xl cursor-pointer border border-slate-300 p-0.5 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={settings.primary_color}
+                        onChange={(e) => handlePrimaryColorChange(e.target.value)}
+                        placeholder="#FFCC00"
+                        className="w-32 p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-slate-900 uppercase"
+                      />
+                      <span className="text-[11px] text-slate-500">
+                        Default: <code className="font-bold text-slate-700">#FFCC00</code>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Primary Hover Color Picker */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Primary Hover State (Interactive Buttons)
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="color"
+                        value={settings.primary_hover_color}
+                        onChange={(e) => {
+                          setSettings({ ...settings, primary_hover_color: e.target.value });
+                          if (updateSiteSettingsState) {
+                            updateSiteSettingsState({ primary_hover_color: e.target.value });
+                          }
+                        }}
+                        className="w-10 h-10 rounded-xl cursor-pointer border border-slate-300 p-0.5 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={settings.primary_hover_color}
+                        onChange={(e) => {
+                          setSettings({ ...settings, primary_hover_color: e.target.value });
+                          if (updateSiteSettingsState) {
+                            updateSiteSettingsState({ primary_hover_color: e.target.value });
+                          }
+                        }}
+                        placeholder="#E6B800"
+                        className="w-32 p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-slate-900 uppercase"
+                      />
+                      <span className="text-[11px] text-slate-500">
+                        Auto-calculated from primary
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 3: LOGO VARIATIONS MANAGEMENT (3 CARDS) */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                    <ImageIcon className="w-4 h-4 text-ots-yellow" />
+                    <span>Logo Variations &amp; Visual Branding</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Upload tailored logo variations to guarantee high contrast across dark header surfaces, printed light vouchers, and mobile browser icons.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  
+                  {/* Variation 1: Dark Background Logo */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs text-slate-900">1. Header / Dark Logo</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-white">Dark Theme</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Rendered on the main sticky header, mobile drawer menu, and dark footer.
+                      </p>
+
+                      {/* Dark Preview Canvas */}
+                      <div className="h-24 bg-[#0e1118] border border-slate-800 rounded-xl flex items-center justify-center p-3 relative overflow-hidden group">
+                        {settings.logo_dark ? (
+                          <img 
+                            src={settings.logo_dark} 
+                            alt="Dark logo" 
+                            className="max-h-16 max-w-full object-contain" 
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-500 italic">No image (falls back to OTS TAXI text)</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Upload Button */}
+                      <label className="w-full py-2 px-3 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer shadow">
+                        {uploadingLogo === 'logo_dark' ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 text-ots-yellow" />
+                            <span>Upload Dark Logo</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleLogoUpload(e, 'logo_dark')}
+                          disabled={uploadingLogo === 'logo_dark'}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {/* Direct URL input */}
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="text"
+                          value={settings.logo_dark}
+                          onChange={(e) => {
+                            setSettings({ ...settings, logo_dark: e.target.value });
+                            if (updateSiteSettingsState) {
+                              updateSiteSettingsState({ logo_dark: e.target.value });
+                            }
+                          }}
+                          placeholder="/images/ots-taxi-logo.png"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-800 font-mono"
+                        />
+                        {settings.logo_dark && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSettings({ ...settings, logo_dark: '' });
+                              if (updateSiteSettingsState) updateSiteSettingsState({ logo_dark: '' });
+                            }}
+                            className="p-2 text-slate-400 hover:text-red-500 transition"
+                            title="Clear logo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Variation 2: Light Background Logo (Voucher & Documents) */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs text-slate-900">2. Voucher &amp; Invoice Logo</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Light Theme</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Rendered on printable PDF vouchers, booking confirmations, and customer invoices.
+                      </p>
+
+                      {/* Light Preview Canvas */}
+                      <div className="h-24 bg-white border border-slate-200 rounded-xl flex items-center justify-center p-3 relative overflow-hidden shadow-inner">
+                        {settings.logo_light ? (
+                          <img 
+                            src={settings.logo_light} 
+                            alt="Light logo" 
+                            className="max-h-16 max-w-full object-contain" 
+                          />
+                        ) : settings.logo_dark ? (
+                          <div className="text-center">
+                            <img 
+                              src={settings.logo_dark} 
+                              alt="Fallback dark logo" 
+                              className="max-h-12 max-w-full object-contain opacity-70" 
+                            />
+                            <span className="text-[10px] text-slate-400 block mt-1">(Using header logo fallback)</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">No image (text fallback)</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Upload Button */}
+                      <label className="w-full py-2 px-3 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer shadow">
+                        {uploadingLogo === 'logo_light' ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 text-ots-yellow" />
+                            <span>Upload Voucher Logo</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleLogoUpload(e, 'logo_light')}
+                          disabled={uploadingLogo === 'logo_light'}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {/* Direct URL input */}
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="text"
+                          value={settings.logo_light}
+                          onChange={(e) => {
+                            setSettings({ ...settings, logo_light: e.target.value });
+                            if (updateSiteSettingsState) {
+                              updateSiteSettingsState({ logo_light: e.target.value });
+                            }
+                          }}
+                          placeholder="/images/ots-taxi-logo-dark.png"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-800 font-mono"
+                        />
+                        {settings.logo_light && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSettings({ ...settings, logo_light: '' });
+                              if (updateSiteSettingsState) updateSiteSettingsState({ logo_light: '' });
+                            }}
+                            className="p-2 text-slate-400 hover:text-red-500 transition"
+                            title="Clear logo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Variation 3: App Icon / Square Favicon */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs text-slate-900">3. App Icon &amp; Favicon</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">1:1 Square</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Square format for mobile bookmarks, iOS/Android shortcuts, and browser favicon.
+                      </p>
+
+                      {/* Square Preview Canvas */}
+                      <div className="h-24 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center p-3 relative">
+                        {settings.logo_icon ? (
+                          <img 
+                            src={settings.logo_icon} 
+                            alt="Square icon" 
+                            className="w-14 h-14 rounded-xl object-contain shadow" 
+                          />
+                        ) : (
+                          <div 
+                            style={{ backgroundColor: settings.primary_color }}
+                            className="w-14 h-14 rounded-xl flex items-center justify-center font-black text-gray-950 text-xl shadow"
+                          >
+                            {settings.brand_name?.charAt(0) || 'O'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Upload Button */}
+                      <label className="w-full py-2 px-3 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer shadow">
+                        {uploadingLogo === 'logo_icon' ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 text-ots-yellow" />
+                            <span>Upload Square Icon</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleLogoUpload(e, 'logo_icon')}
+                          disabled={uploadingLogo === 'logo_icon'}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {/* Direct URL input */}
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="text"
+                          value={settings.logo_icon}
+                          onChange={(e) => {
+                            setSettings({ ...settings, logo_icon: e.target.value });
+                            if (updateSiteSettingsState) {
+                              updateSiteSettingsState({ logo_icon: e.target.value });
+                            }
+                          }}
+                          placeholder="/favicon.ico or icon.png"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-800 font-mono"
+                        />
+                        {settings.logo_icon && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSettings({ ...settings, logo_icon: '' });
+                              if (updateSiteSettingsState) updateSiteSettingsState({ logo_icon: '' });
+                            }}
+                            className="p-2 text-slate-400 hover:text-red-500 transition"
+                            title="Clear logo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* CARD 4: BRAND IDENTITY & COMPANY CONTACT INFORMATION */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-ots-yellow" />
+                    <span>Brand Identity &amp; Corporate Details</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Official company particulars rendered dynamically on the website header, footer, contact modal, and confirmation receipts.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Brand Name</label>
+                    <input
+                      type="text"
+                      value={settings.brand_name}
+                      onChange={(e) => setSettings({ ...settings, brand_name: e.target.value })}
+                      placeholder="e.g. OTS TAXI"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-bold text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Brand Tagline</label>
+                    <input
+                      type="text"
+                      value={settings.brand_tagline}
+                      onChange={(e) => setSettings({ ...settings, brand_tagline: e.target.value })}
+                      placeholder="e.g. London Airport Transfers & Executive Chauffeur Services"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Customer Support Phone</label>
+                    <input
+                      type="text"
+                      value={settings.support_phone}
+                      onChange={(e) => setSettings({ ...settings, support_phone: e.target.value })}
+                      placeholder="e.g. +44 20 8123 4567"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Customer Support Email</label>
+                    <input
+                      type="email"
+                      value={settings.support_email}
+                      onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
+                      placeholder="e.g. support@otstaxi.co.uk"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">24/7 Dispatch WhatsApp / Emergency</label>
+                    <input
+                      type="text"
+                      value={settings.emergency_whatsapp}
+                      onChange={(e) => setSettings({ ...settings, emergency_whatsapp: e.target.value })}
+                      placeholder="e.g. +44 7123 456789"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Company Registration Number</label>
+                    <input
+                      type="text"
+                      value={settings.company_number}
+                      onChange={(e) => setSettings({ ...settings, company_number: e.target.value })}
+                      placeholder="e.g. 12345678"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono text-slate-900"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">Registered Head Office Address</label>
+                    <input
+                      type="text"
+                      value={settings.office_address}
+                      onChange={(e) => setSettings({ ...settings, office_address: e.target.value })}
+                      placeholder="e.g. Heathrow Airport Terminal 2, Hounslow TW6 1EW, United Kingdom"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">VAT Registration Number</label>
+                    <input
+                      type="text"
+                      value={settings.vat_number}
+                      onChange={(e) => setSettings({ ...settings, vat_number: e.target.value })}
+                      placeholder="e.g. GB 123 4567 89"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Website Footer Copyright Text</label>
+                    <input
+                      type="text"
+                      value={settings.copyright_text}
+                      onChange={(e) => setSettings({ ...settings, copyright_text: e.target.value })}
+                      placeholder="e.g. © 2026 OTS Taxi UK Ltd. All rights reserved."
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom Action Save Bar */}
+                <div className="flex items-center justify-between pt-5 border-t border-slate-100 flex-wrap gap-3">
+                  <div className="text-[11px] text-slate-500 flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Real-time persistence enabled via MySQL &amp; React Theme Context</span>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleResetThemeDefaults}
+                      className="px-4 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-xl transition"
+                    >
+                      Reset Colors
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSettings()}
+                      disabled={isSavingSettings}
+                      className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-lg transition flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      {isSavingSettings ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Saving Changes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 text-ots-yellow" />
+                          <span>Save Website Settings</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           )}
 

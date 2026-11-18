@@ -3,9 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --primary-yellow: #FFCC00;
-  --primary-yellow-hover: #FFC001;
-  --dark-charcoal: #141720;
+  --ots-primary: #FFCC00;
+  --ots-primary-hover: #E6B800;
+  --ots-primary-dark: #CCA300;
+  --ots-primary-contrast: #000000;
+  --ots-secondary: #141720;
+  --primary-yellow: var(--ots-primary, #FFCC00);
+  --primary-yellow-hover: var(--ots-primary-hover, #E6B800);
+  --dark-charcoal: var(--ots-secondary, #141720);
   --dark-black: #000000;
   --border-color: #E9E9E9;
   --text-muted: #7B8091;
@@ -37,14 +42,14 @@ body {
 }
 
 .btn-login-skew:hover {
-  background-color: #FFCC00;
-  color: #000000;
+  background-color: var(--ots-primary, #FFCC00);
+  color: var(--ots-primary-contrast, #000000);
 }
 
 .btn-register-skew {
   position: relative;
-  background-color: #FFCC00;
-  color: #000000;
+  background-color: var(--ots-primary, #FFCC00);
+  color: var(--ots-primary-contrast, #000000);
   padding: 10px 24px;
   font-size: 13px;
   font-weight: 700;

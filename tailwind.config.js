@@ -8,12 +8,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "ots-yellow": "#FFCC00",
-        "ots-yellow-dark": "#E6B800",
+        "ots-yellow": "var(--ots-primary, #FFCC00)",
+        "ots-yellow-dark": "var(--ots-primary-hover, #E6B800)",
         ots: {
-          yellow: "#FFCC00",
-          yellowHover: "#FFC001",
-          dark: "#141720",
+          yellow: "var(--ots-primary, #FFCC00)",
+          yellowHover: "var(--ots-primary-hover, #E6B800)",
+          dark: "var(--ots-secondary, #141720)",
           black: "#000000",
           cardDark: "#1B1F2A",
           border: "#E9E9E9",

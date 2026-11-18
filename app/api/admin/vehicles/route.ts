@@ -48,12 +48,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ status: false, message: "Vehicle id is required" }, { status: 400 });
     }
 
+    const updates: Record<string, any> = {};
     if (multiplier !== undefined) {
-      await VehicleModel.updateMultiplier(id, Number(multiplier));
+      updates.multiplier = Number(multiplier);
+    }
+    if (isActive !== undefined) {
+      updates.isActive = Boolean(isActive);
     }
 
-    if (isActive !== undefined) {
-      await VehicleModel.toggleActive(id, Boolean(isActive));
+    if (Object.keys(updates).length > 0) {
+      await VehicleModel.update(id, updates);
     }
 
     return NextResponse.json({

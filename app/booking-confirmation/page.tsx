@@ -27,7 +27,7 @@ function BookingConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const quoteRef = searchParams.get('ref') || 'OTS-DEMO123';
-  const { formatPrice } = useApp();
+  const { formatPrice, siteSettings } = useApp();
 
   const [quote, setQuote] = useState<StoredQuote | null>(null);
   const [copied, setCopied] = useState(false);
@@ -100,9 +100,18 @@ function BookingConfirmationContent() {
           <div className="p-6 sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-5 gap-3">
               <div>
-                <span className="text-xs uppercase font-extrabold text-ots-yellow bg-black px-2.5 py-1 rounded">
-                  OTS TAXI VOUCHER
-                </span>
+                <div className="flex items-center space-x-2">
+                  {siteSettings?.logo_light ? (
+                    <img
+                      src={siteSettings.logo_light}
+                      alt={siteSettings.brand_name || "OTS Taxi"}
+                      className="h-8 w-auto object-contain"
+                    />
+                  ) : null}
+                  <span className="text-xs uppercase font-extrabold text-ots-yellow bg-black px-2.5 py-1 rounded">
+                    {siteSettings?.brand_name || "OTS TAXI"} VOUCHER
+                  </span>
+                </div>
                 <h2 className="text-lg font-bold text-gray-900 mt-2">
                   Airport Transfer Itinerary
                 </h2>
@@ -251,11 +260,6 @@ function BookingConfirmationContent() {
           >
             <Printer className="w-4 h-4 flex-shrink-0" />
             <span className="whitespace-nowrap">Print / Save Booking Voucher</span>
-          </button>
-        </div>
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print / Save Booking Voucher</span>
           </button>
         </div>
 

@@ -3,6 +3,85 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { CurrencyCode, CURRENCIES, formatPrice, convertFromGbp } from "@/lib/currency";
 
+export interface SiteSettings {
+  primary_color: string;
+  primary_hover_color: string;
+  secondary_color: string;
+  brand_name: string;
+  brand_tagline: string;
+  logo_dark: string;
+  logo_light: string;
+  logo_icon: string;
+  support_phone: string;
+  support_email: string;
+  emergency_whatsapp: string;
+  office_address: string;
+  company_number: string;
+  vat_number: string;
+  copyright_text: string;
+}
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  primary_color: "#FFCC00",
+  primary_hover_color: "#E6B800",
+  secondary_color: "#141720",
+  brand_name: "OTS Taxi",
+  brand_tagline: "UK Airport Transfer & Taxi Booking | Fixed Price Cabs",
+  logo_dark: "",
+  logo_light: "",
+  logo_icon: "",
+  support_phone: "+44 (0) 208 004 0000",
+  support_email: "support@otstaxi.co.uk",
+  emergency_whatsapp: "+44 7123 456789",
+  office_address: "Heathrow Terminal 2 Concourse, London TW6 1EW, United Kingdom",
+  company_number: "06783060",
+  vat_number: "GB 123 4567 89",
+  copyright_text: "© 2026 OTS Taxi Limited. All Rights Reserved.",
+};
+
+export function getContrastColor(hexColor: string): string {
+  try {
+    const hex = hexColor.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 135 ? "#000000" : "#ffffff";
+  } catch {
+    return "#000000";
+  }
+}
+
+export function adjustBrightness(hexColor: string, percent: number): string {
+  try {
+    const hex = hexColor.replace("#", "");
+    let r = parseInt(hex.substring(0, 2), 16) || 0;
+    let g = parseInt(hex.substring(2, 4), 16) || 0;
+    let b = parseInt(hex.substring(4, 6), 16) || 0;
+    r = Math.max(0, Math.min(255, Math.floor(r * (1 + percent / 100))));
+    g = Math.max(0, Math.min(255, Math.floor(g * (1 + percent / 100))));
+    b = Math.max(0, Math.min(255, Math.floor(b * (1 + percent / 100))));
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  } catch {
+    return hexColor;
+  }
+}
+
+export function applyThemeColors(primary: string, hover?: string, secondary?: string) {
+  if (typeof document === "undefined") return;
+  const prim = primary || "#FFCC00";
+  const hov = hover || adjustBrightness(prim, -10);
+  const dark = adjustBrightness(prim, -18);
+  const contrast = getContrastColor(prim);
+  const sec = secondary || "#141720";
+
+  document.documentElement.style.setProperty("--ots-primary", prim);
+  document.documentElement.style.setProperty("--ots-primary-hover", hov);
+  document.documentElement.style.setProperty("--ots-primary-dark", dark);
+  document.documentElement.style.setProperty("--ots-primary-contrast", contrast);
+  document.documentElement.style.setProperty("--ots-secondary", sec);
+}
+
 interface UserProfile {
   id: string;
   name: string;
@@ -18,6 +97,8 @@ interface AppContextType {
   setLanguage: (lang: string) => void;
   formatPrice: (amountGbp: number) => string;
   convertPrice: (amountGbp: number) => number;
+  siteSettings: SiteSettings;
+  updateSiteSettingsState: (settings: Partial<SiteSettings>) => void;
   user: UserProfile | null;
   setUser: (user: UserProfile | null) => void;
   logout: () => void;
@@ -34,12 +115,25 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("GBP");
   const [language, setLanguage] = useState<string>("ENG");
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
-  // Initialize currency & verify live session with server
+  const updateSiteSettingsState = useCallback((newSettings: Partial<SiteSettings>) => {
+    setSiteSettings((prev) => {
+      const merged = { ...prev, ...newSettings };
+      applyThemeColors(merged.primary_color, merged.primary_hover_color, merged.secondary_color);
+      try {
+        localStorage.setItem("ots_site_settings", JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent("ots_settings_change", { detail: merged }));
+      } catch (e) {}
+      return merged;
+    });
+  }, []);
+
+  // Initialize currency, live session & site settings with server
   useEffect(() => {
     try {
       const savedCurr = localStorage.getItem("ots_currency") as CurrencyCode;
@@ -51,16 +145,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setCurrencyState(match[1] as CurrencyCode);
         }
       }
+
+      const cachedSettings = localStorage.getItem("ots_site_settings");
+      if (cachedSettings) {
+        const parsed = JSON.parse(cachedSettings);
+        setSiteSettings(parsed);
+        applyThemeColors(parsed.primary_color, parsed.primary_hover_color, parsed.secondary_color);
+      }
+
       const savedUser = localStorage.getItem("ots_user");
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
     } catch (e) {}
 
-    // Listen to storage or cross-component currency changes
+    // Fetch live website settings from API
+    fetch("/api/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.status && data.settings) {
+          setSiteSettings(data.settings);
+          applyThemeColors(data.settings.primary_color, data.settings.primary_hover_color, data.settings.secondary_color);
+          try {
+            localStorage.setItem("ots_site_settings", JSON.stringify(data.settings));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
+
+    // Listen to storage or cross-component currency and settings changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "ots_currency" && e.newValue && CURRENCIES[e.newValue as CurrencyCode]) {
         setCurrencyState(e.newValue as CurrencyCode);
+      }
+      if (e.key === "ots_site_settings" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setSiteSettings(parsed);
+          applyThemeColors(parsed.primary_color, parsed.primary_hover_color, parsed.secondary_color);
+        } catch {}
       }
     };
     const handleCustomChange = (e: any) => {
@@ -68,9 +191,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCurrencyState(e.detail as CurrencyCode);
       }
     };
+    const handleSettingsCustomChange = (e: any) => {
+      if (e.detail) {
+        setSiteSettings(e.detail);
+        applyThemeColors(e.detail.primary_color, e.detail.primary_hover_color, e.detail.secondary_color);
+      }
+    };
 
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("ots_currency_change", handleCustomChange);
+    window.addEventListener("ots_settings_change", handleSettingsCustomChange);
 
     // Verify session with server HTTP-Only cookie
     fetch("/api/auth/me")
@@ -89,6 +219,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("ots_currency_change", handleCustomChange);
+      window.removeEventListener("ots_settings_change", handleSettingsCustomChange);
     };
   }, []);
 
@@ -133,6 +264,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setLanguage,
         formatPrice: customFormatPrice,
         convertPrice: customConvertPrice,
+        siteSettings,
+        updateSiteSettingsState,
         user,
         setUser: (u) => {
           setUser(u);

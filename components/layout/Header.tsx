@@ -14,6 +14,7 @@ export default function Header() {
     setCurrency,
     language,
     setLanguage,
+    siteSettings,
     user,
     logout,
     setIsMobileMenuOpen,
@@ -44,10 +45,22 @@ export default function Header() {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="flex items-center">
-                <span className="text-2xl font-black tracking-wider text-ots-yellow">OTS</span>
-                <span className="text-2xl font-bold tracking-tight text-white ml-1">TAXI</span>
-              </div>
+              {siteSettings?.logo_dark ? (
+                <img
+                  src={siteSettings.logo_dark}
+                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="flex items-center">
+                  <span className="text-2xl font-black tracking-wider text-ots-yellow">
+                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                  </span>
+                  <span className="text-2xl font-bold tracking-tight text-white ml-1">
+                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
+                  </span>
+                </div>
+              )}
             </Link>
           </div>
 

@@ -4,9 +4,11 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Phone, Mail, MapPin, Briefcase, Hash, ShieldCheck } from "lucide-react";
+import { useApp } from "@/components/context/AppContext";
 
 export default function Footer() {
   const pathname = usePathname();
+  const { siteSettings } = useApp();
 
   if (pathname?.startsWith("/admin")) {
     return null;
@@ -22,46 +24,62 @@ export default function Footer() {
           {/* Column 1: Company Profile (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
             <Link href="/" className="inline-block">
-              <div className="flex items-center">
-                <span className="text-2xl font-black text-ots-yellow tracking-wider">OTS</span>
-                <span className="text-2xl font-bold text-white tracking-tight ml-1">TAXI</span>
-              </div>
+              {siteSettings?.logo_dark ? (
+                <img
+                  src={siteSettings.logo_dark}
+                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <div className="flex items-center">
+                  <span className="text-2xl font-black text-ots-yellow tracking-wider">
+                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                  </span>
+                  <span className="text-2xl font-bold text-white tracking-tight ml-1">
+                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
+                  </span>
+                </div>
+              )}
             </Link>
             
             <p className="text-xs text-ots-mutedText leading-relaxed">
-              &quot;OTS Taxi&quot; is a registered trademark of OTS Taxi Limited, trademark number UK00004079557.
+              &quot;{siteSettings?.brand_name || "OTS Taxi"}&quot; is a registered trademark of {siteSettings?.brand_name || "OTS Taxi"} Limited, trademark number UK00004079557.
             </p>
             <p className="text-xs text-ots-mutedText">
-              Online Travel Services <span className="block text-neutral-400 font-semibold mt-1">© 2026 - OtsTaxi.com All Rights Reserved</span>
+              Online Travel Services <span className="block text-neutral-400 font-semibold mt-1">{siteSettings?.copyright_text || "© 2026 - OtsTaxi.com All Rights Reserved"}</span>
             </p>
 
             <ul className="space-y-2.5 text-xs text-neutral-300 pt-2">
               <li className="flex items-start gap-2">
                 <Briefcase className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
-                <span><strong className="text-neutral-400">Company Name:</strong> OTS Taxi Limited</span>
+                <span><strong className="text-neutral-400">Company Name:</strong> {siteSettings?.brand_name || "OTS Taxi"} Limited</span>
               </li>
               <li className="flex items-start gap-2">
                 <Hash className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
-                <span><strong className="text-neutral-400">Company Registration Number:</strong> 06783060</span>
+                <span><strong className="text-neutral-400">Company Registration Number:</strong> {siteSettings?.company_number || "06783060"}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Phone className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
                   <strong className="text-neutral-400">Phone Number:</strong>{" "}
-                  <a href="tel:+443330047131" className="hover:text-ots-yellow transition">+443330047131</a>
+                  <a href={`tel:${siteSettings?.support_phone || "+443330047131"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.support_phone || "+443330047131"}
+                  </a>
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Mail className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
                   <strong className="text-neutral-400">Email:</strong>{" "}
-                  <a href="mailto:support@otstaxi.com" className="hover:text-ots-yellow transition">support@otstaxi.com</a>
+                  <a href={`mailto:${siteSettings?.support_email || "support@otstaxi.com"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.support_email || "support@otstaxi.com"}
+                  </a>
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
-                  <strong className="text-neutral-400">Address:</strong> 167-169 Great Portland Street, 5th Floor, London W1W 5PF, United Kingdom
+                  <strong className="text-neutral-400">Address:</strong> {siteSettings?.office_address || "167-169 Great Portland Street, 5th Floor, London W1W 5PF, United Kingdom"}
                 </span>
               </li>
             </ul>

@@ -11,6 +11,25 @@ export interface SystemSettings {
   require_driver_approval: boolean;
   google_client_id: string;
   google_client_secret: string;
+
+  // Website Branding & Appearance
+  primary_color: string;
+  primary_hover_color: string;
+  secondary_color: string;
+  brand_name: string;
+  brand_tagline: string;
+  logo_dark: string;
+  logo_light: string;
+  logo_icon: string;
+
+  // Support & Company Details
+  support_phone: string;
+  support_email: string;
+  emergency_whatsapp: string;
+  office_address: string;
+  company_number: string;
+  vat_number: string;
+  copyright_text: string;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -24,6 +43,23 @@ const DEFAULT_SETTINGS: SystemSettings = {
   require_driver_approval: true,
   google_client_id: process.env.GOOGLE_CLIENT_ID || '',
   google_client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+
+  primary_color: '#FFCC00',
+  primary_hover_color: '#E6B800',
+  secondary_color: '#141720',
+  brand_name: 'OTS Taxi',
+  brand_tagline: 'UK Airport Transfer & Taxi Booking | Fixed Price Cabs',
+  logo_dark: '',
+  logo_light: '',
+  logo_icon: '',
+
+  support_phone: '+44 (0) 208 004 0000',
+  support_email: 'support@otstaxi.co.uk',
+  emergency_whatsapp: '+44 7123 456789',
+  office_address: 'Heathrow Terminal 2 Concourse, London TW6 1EW, United Kingdom',
+  company_number: '06783060',
+  vat_number: 'GB 123 4567 89',
+  copyright_text: '© 2026 OTS Taxi Limited. All Rights Reserved.',
 };
 
 let inMemorySettings: SystemSettings = { ...DEFAULT_SETTINGS };

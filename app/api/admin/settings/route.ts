@@ -31,6 +31,25 @@ export async function GET(request: NextRequest) {
         require_driver_approval: Boolean(settings.require_driver_approval),
         google_client_id: settings.google_client_id || "",
         google_client_secret: settings.google_client_secret ? "••••••••" : "",
+
+        // Branding & Customization
+        primary_color: settings.primary_color || "#FFCC00",
+        primary_hover_color: settings.primary_hover_color || "#E6B800",
+        secondary_color: settings.secondary_color || "#141720",
+        brand_name: settings.brand_name || "OTS Taxi",
+        brand_tagline: settings.brand_tagline || "UK Airport Transfer & Taxi Booking | Fixed Price Cabs",
+        logo_dark: settings.logo_dark || "",
+        logo_light: settings.logo_light || "",
+        logo_icon: settings.logo_icon || "",
+
+        // Support & Contact
+        support_phone: settings.support_phone || "+44 (0) 208 004 0000",
+        support_email: settings.support_email || "support@otstaxi.co.uk",
+        emergency_whatsapp: settings.emergency_whatsapp || "+44 7123 456789",
+        office_address: settings.office_address || "Heathrow Terminal 2 Concourse, London TW6 1EW, United Kingdom",
+        company_number: settings.company_number || "06783060",
+        vat_number: settings.vat_number || "GB 123 4567 89",
+        copyright_text: settings.copyright_text || "© 2026 OTS Taxi Limited. All Rights Reserved.",
       },
     });
   } catch (error: any) {
@@ -65,11 +84,30 @@ export async function POST(request: NextRequest) {
     if (body.google_client_id !== undefined) updates.google_client_id = String(body.google_client_id).trim();
     if (body.google_client_secret && body.google_client_secret !== "••••••••") updates.google_client_secret = String(body.google_client_secret).trim();
 
+    // Branding & Customization
+    if (body.primary_color !== undefined) updates.primary_color = String(body.primary_color).trim();
+    if (body.primary_hover_color !== undefined) updates.primary_hover_color = String(body.primary_hover_color).trim();
+    if (body.secondary_color !== undefined) updates.secondary_color = String(body.secondary_color).trim();
+    if (body.brand_name !== undefined) updates.brand_name = String(body.brand_name).trim();
+    if (body.brand_tagline !== undefined) updates.brand_tagline = String(body.brand_tagline).trim();
+    if (body.logo_dark !== undefined) updates.logo_dark = String(body.logo_dark).trim();
+    if (body.logo_light !== undefined) updates.logo_light = String(body.logo_light).trim();
+    if (body.logo_icon !== undefined) updates.logo_icon = String(body.logo_icon).trim();
+
+    // Support & Company Details
+    if (body.support_phone !== undefined) updates.support_phone = String(body.support_phone).trim();
+    if (body.support_email !== undefined) updates.support_email = String(body.support_email).trim();
+    if (body.emergency_whatsapp !== undefined) updates.emergency_whatsapp = String(body.emergency_whatsapp).trim();
+    if (body.office_address !== undefined) updates.office_address = String(body.office_address).trim();
+    if (body.company_number !== undefined) updates.company_number = String(body.company_number).trim();
+    if (body.vat_number !== undefined) updates.vat_number = String(body.vat_number).trim();
+    if (body.copyright_text !== undefined) updates.copyright_text = String(body.copyright_text).trim();
+
     const updated = await updateSystemSettings(updates);
 
     return NextResponse.json({
       status: true,
-      message: "System and SMTP settings updated successfully!",
+      message: "Website and system settings updated successfully!",
       settings: {
         ...updated,
         smtp_pass: updated.smtp_pass ? "••••••••" : "",
