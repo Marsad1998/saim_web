@@ -63,9 +63,15 @@ export default function DashboardPage() {
   useEffect(() => {
     setIsLoading(true);
     fetch('/api/account/my-bookings')
-      .then((res) => (res.ok ? res.json() : Promise.reject('Failed to fetch')))
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = '/account/login?redirect=%2Faccount%2Fdashboard';
+          return null;
+        }
+        return res.ok ? res.json() : Promise.reject('Failed to fetch');
+      })
       .then((data) => {
-        if (data.status && Array.isArray(data.bookings)) {
+        if (data && data.status && Array.isArray(data.bookings)) {
           setBookings(data.bookings);
         }
       })

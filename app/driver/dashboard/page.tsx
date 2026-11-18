@@ -68,6 +68,11 @@ export default function DriverDashboardPage() {
         fetch('/api/driver/trips'),
       ]);
 
+      if (statusRes.status === 401) {
+        window.location.href = '/account/login?redirect=%2Fdriver%2Fdashboard';
+        return;
+      }
+
       if (statusRes.ok) {
         const sData = await statusRes.json();
         if (sData.status) {

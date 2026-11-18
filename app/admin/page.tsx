@@ -85,6 +85,11 @@ export default function AdminPage() {
         fetch('/api/admin/settings'),
       ]);
 
+      if (bookingsRes.status === 401 || driversRes.status === 401) {
+        window.location.href = '/account/login?redirect=%2Fadmin';
+        return;
+      }
+
       if (bookingsRes.ok) {
         const bData = await bookingsRes.json();
         if (bData.status) {

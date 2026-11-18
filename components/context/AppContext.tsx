@@ -74,12 +74,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
   };
 
-  const logout = () => {
+  const logout = (redirectUrl: string = "/account/login") => {
     setUser(null);
     try {
       localStorage.removeItem("ots_user");
     } catch (e) {}
-    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    fetch("/api/auth/logout", { method: "POST" })
+      .catch(() => {})
+      .finally(() => {
+        window.location.href = redirectUrl;
+      });
   };
 
   const customFormatPrice = (amountGbp: number) => {
