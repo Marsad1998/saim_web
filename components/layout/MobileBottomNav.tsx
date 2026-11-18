@@ -28,6 +28,10 @@ export default function MobileBottomNav() {
   const isAirportsActive = pathname.startsWith("/airport");
   const isTripsActive = pathname.startsWith(tripsTab.href);
 
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <nav
       aria-label="Mobile Navigation Bar"

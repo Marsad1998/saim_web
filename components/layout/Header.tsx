@@ -32,6 +32,10 @@ export default function Header() {
     { label: "PARTNERS", href: "/partners" },
   ];
 
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className="bg-black text-white sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

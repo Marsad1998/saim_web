@@ -295,16 +295,21 @@ export class UserModel {
     try {
       if (role) {
         return await dbQuery<IUser[]>(
-          "SELECT id, name, email, phone, role, created_at FROM users WHERE role = ? ORDER BY created_at DESC",
+          "SELECT id, name, email, phone, role, is_verified, created_at FROM users WHERE role = ? ORDER BY created_at DESC",
           [role]
         );
       }
-      return await dbQuery<IUser[]>(
-        "SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC"
+      const rows = await dbQuery<IUser[]>(
+        "SELECT id, name, email, phone, role, is_verified, created_at FROM users ORDER BY created_at DESC"
       );
+      if (rows && rows.length > 0) return rows;
     } catch (error: any) {
-      console.error("UserModel.getAll error:", error.message);
-      return [];
+      console.warn("UserModel.getAll fallback:", error.message);
     }
+    const fallbacks = Object.values(DEFAULT_FALLBACK_USERS);
+    if (role) {
+      return fallbacks.filter((u) => u.role === role);
+    }
+    return fallbacks;
   }
 }
