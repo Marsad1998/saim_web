@@ -29,7 +29,16 @@ import {
   Lock,
   ToggleLeft,
   ToggleRight,
-  ShieldCheck
+  ShieldCheck,
+  X,
+  ExternalLink,
+  FileText,
+  Check,
+  AlertTriangle,
+  Building2,
+  CreditCard,
+  Award,
+  Eye
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -73,6 +82,17 @@ export default function AdminPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Driver Verification & Dossier Modal State
+  const [selectedDriver, setSelectedDriver] = useState<any | null>(null);
+  const [isDossierModalOpen, setIsDossierModalOpen] = useState(false);
+  const [adminStatusForm, setAdminStatusForm] = useState({
+    verificationStatus: 'incomplete',
+    isActive: false,
+    adminNotes: '',
+  });
+  const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
+  const [driverUpdateSuccess, setDriverUpdateSuccess] = useState<string | null>(null);
 
   // Load Admin Data
   const loadAdminData = async () => {
@@ -167,6 +187,57 @@ export default function AdminPage() {
       setSettingsMessage({ type: 'error', text: 'Failed to test SMTP.' });
     } finally {
       setIsTestingSmtp(false);
+    }
+  };
+
+  const openDriverDossier = (driver: any) => {
+    setSelectedDriver(driver);
+    setAdminStatusForm({
+      verificationStatus: driver.verification_status || 'incomplete',
+      isActive: Boolean(driver.is_active),
+      adminNotes: driver.admin_notes || '',
+    });
+    setDriverUpdateSuccess(null);
+    setIsDossierModalOpen(true);
+  };
+
+  const handleSaveDriverStatus = async () => {
+    if (!selectedDriver) return;
+    setIsUpdatingDriver(true);
+    setDriverUpdateSuccess(null);
+    try {
+      const res = await fetch('/api/admin/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: selectedDriver.id,
+          verificationStatus: adminStatusForm.verificationStatus,
+          isActive: adminStatusForm.isActive,
+          adminNotes: adminStatusForm.adminNotes,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setDriverUpdateSuccess(`Chauffeur status updated to ${adminStatusForm.verificationStatus.toUpperCase()}`);
+        if (data.driver) {
+          setSelectedDriver({ ...selectedDriver, ...data.driver });
+        } else {
+          setSelectedDriver({
+            ...selectedDriver,
+            verification_status: adminStatusForm.verificationStatus,
+            is_active: adminStatusForm.isActive,
+            admin_notes: adminStatusForm.adminNotes,
+          });
+        }
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to update driver status.');
+      }
+    } catch (err) {
+      console.error('Failed to update driver status:', err);
+      alert('Network error while saving driver status.');
+    } finally {
+      setIsUpdatingDriver(false);
     }
   };
 
@@ -786,25 +857,42 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Admin Action: Approve Button */}
-                    {!isVerified ? (
+                    {/* Admin Action Buttons */}
+                    <div className="space-y-2 pt-1">
                       <button
-                        onClick={() => handleApproveDriver(d.id)}
-                        disabled={actionLoading === d.id}
-                        className="w-full mt-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5"
+                        onClick={() => openDriverDossier(d)}
+                        className="w-full py-2.5 bg-gray-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5 min-h-[40px]"
                       >
-                        {actionLoading === d.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>Approve Chauffeur (Activate On-Duty)</span>
-                          </>
-                        )}
+                        <Eye className="w-3.5 h-3.5 text-ots-yellow" />
+                        <span>Inspect Dossier &amp; Verify Docs</span>
                       </button>
-                    ) : (
-                      <div className="w-full py-2 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold text-center border border-emerald-200">
-                        ✓ Verified &amp; Authorized
+
+                      {!isVerified ? (
+                        <button
+                          onClick={() => handleApproveDriver(d.id)}
+                          disabled={actionLoading === d.id}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5 min-h-[38px]"
+                        >
+                          {actionLoading === d.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <ShieldCheck className="w-4 h-4" />
+                              <span>Quick Approve (Activate On-Duty)</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className="w-full py-2 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold text-center border border-emerald-200 flex items-center justify-center space-x-1">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Verified &amp; Cleared for Dispatches</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {d.admin_notes && (
+                      <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900">
+                        <span className="font-bold">Admin Note:</span> {d.admin_notes}
                       </div>
                     )}
                   </div>
@@ -1206,6 +1294,412 @@ export default function AdminPage() {
         )}
 
       </div>
+
+      {/* DRIVER DOSSIER & DOCUMENT VERIFICATION MODAL */}
+      {isDossierModalOpen && selectedDriver && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden my-6 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="bg-gray-900 text-white p-5 sm:p-6 flex items-start justify-between border-b border-gray-800 flex-shrink-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-12 h-12 rounded-2xl bg-ots-yellow text-gray-900 font-extrabold flex items-center justify-center text-lg shadow-md flex-shrink-0">
+                  {selectedDriver.driver_name ? selectedDriver.driver_name.charAt(0).toUpperCase() : 'C'}
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 flex-wrap">
+                    <h3 className="text-lg font-extrabold text-white">
+                      {selectedDriver.driver_name || 'Chauffeur Profile'}
+                    </h3>
+                    <span className="font-mono text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-md">
+                      {selectedDriver.id}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400 flex items-center space-x-3 mt-1 flex-wrap">
+                    {selectedDriver.driver_email && (
+                      <span className="flex items-center space-x-1">
+                        <Mail className="w-3.5 h-3.5 text-gray-400" />
+                        <span>{selectedDriver.driver_email}</span>
+                      </span>
+                    )}
+                    {selectedDriver.driver_phone && (
+                      <span className="flex items-center space-x-1">
+                        <Phone className="w-3.5 h-3.5 text-gray-400" />
+                        <span>{selectedDriver.driver_phone}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsDossierModalOpen(false)}
+                className="text-gray-400 hover:text-white p-1.5 rounded-xl hover:bg-gray-800 transition min-h-[36px] min-w-[36px] flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+
+              {/* Success alert if just saved */}
+              {driverUpdateSuccess && (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center space-x-2 font-bold animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>{driverUpdateSuccess}</span>
+                </div>
+              )}
+
+              {/* Progress & Compliance Bar Banner */}
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-gray-900 text-sm">Compliance Profile Completion</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      selectedDriver.completion_score === 100
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : selectedDriver.completion_score >= 50
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedDriver.completion_score || 0}% Complete
+                    </span>
+                  </div>
+                  <p className="text-gray-500 text-[11px]">
+                    4-step regulatory chauffeur verification standard
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    selectedDriver.verification_status === 'approved'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : selectedDriver.verification_status === 'pending_approval'
+                      ? 'bg-amber-100 text-amber-800'
+                      : selectedDriver.verification_status === 'rejected'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {selectedDriver.verification_status === 'approved'
+                      ? '✓ Approved'
+                      : selectedDriver.verification_status === 'pending_approval'
+                      ? '⏳ Pending Approval'
+                      : selectedDriver.verification_status === 'rejected'
+                      ? '✕ Rejected'
+                      : 'Incomplete'}
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    selectedDriver.is_active
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {selectedDriver.is_active ? '🟢 Dispatch Enabled' : '🔒 Dispatch Locked'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Cards Grid of Chauffeur Dossier */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Card 1: Personal & Identity */}
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3">
+                  <div className="flex items-center space-x-2 text-gray-900 font-bold border-b border-gray-100 pb-2">
+                    <UserCheck className="w-4 h-4 text-ots-yellow" />
+                    <span>1. Personal &amp; Identity</span>
+                  </div>
+                  <div className="space-y-1.5 text-gray-700">
+                    <div>
+                      <span className="text-gray-400 block text-[10px] uppercase font-bold">Residential Address</span>
+                      <span className="font-medium text-gray-900">{selectedDriver.address || <span className="text-gray-400 italic">Not provided</span>}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px] uppercase font-bold">National Insurance (NI) Number</span>
+                      <span className="font-mono font-bold text-gray-900">{selectedDriver.ni_number || <span className="text-gray-400 italic font-normal">Not provided</span>}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px] uppercase font-bold">Emergency Contact</span>
+                      <span className="font-medium text-gray-900">{selectedDriver.emergency_contact || <span className="text-gray-400 italic">Not provided</span>}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Chauffeur Authority & PCO Licensing */}
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3">
+                  <div className="flex items-center space-x-2 text-gray-900 font-bold border-b border-gray-100 pb-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <span>2. PCO &amp; DVLA Licensing</span>
+                  </div>
+                  <div className="space-y-2 text-gray-700">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">PCO Badge Number</span>
+                        <span className="font-mono font-bold text-gray-900">{selectedDriver.license_number || <span className="text-gray-400 italic font-normal">Pending</span>}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">PCO Expiry Date</span>
+                        <span className="font-medium text-gray-900">{selectedDriver.pco_expiry ? selectedDriver.pco_expiry.split('T')[0] : <span className="text-gray-400 italic">Not set</span>}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px] uppercase font-bold">DVLA Driver License No</span>
+                      <span className="font-mono font-bold text-gray-900">{selectedDriver.dvla_license_number || <span className="text-gray-400 italic font-normal">Pending</span>}</span>
+                    </div>
+                    <div className="pt-1 space-y-1.5 border-t border-gray-100">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Uploaded Licenses:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedDriver.doc_pco_badge ? (
+                          <a
+                            href={selectedDriver.doc_pco_badge}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] transition"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>View PCO Badge</span>
+                            <ExternalLink className="w-3 h-3 ml-0.5" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 italic text-[11px]">PCO Badge file not uploaded</span>
+                        )}
+
+                        {selectedDriver.doc_dvla_license && (
+                          <a
+                            href={selectedDriver.doc_dvla_license}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] transition"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>View DVLA License</span>
+                            <ExternalLink className="w-3 h-3 ml-0.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3: Vehicle Specification & MOT */}
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3">
+                  <div className="flex items-center space-x-2 text-gray-900 font-bold border-b border-gray-100 pb-2">
+                    <Car className="w-4 h-4 text-emerald-600" />
+                    <span>3. Vehicle Specification &amp; MOT</span>
+                  </div>
+                  <div className="space-y-2 text-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">Make &amp; Model</span>
+                        <span className="font-bold text-gray-900">{selectedDriver.vehicle_model || 'Not provided'}</span>
+                        {selectedDriver.vehicle_year && <span className="text-gray-500 text-[11px] ml-1">({selectedDriver.vehicle_year})</span>}
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">Plate</span>
+                        <span className="inline-block px-2.5 py-0.5 bg-yellow-400 text-black font-mono font-black rounded border border-black shadow-sm text-xs tracking-wider">
+                          {selectedDriver.vehicle_plate || 'PENDING'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block text-[10px] uppercase font-bold">Service Category</span>
+                      <span className="capitalize font-medium text-gray-900">{selectedDriver.vehicle_category || 'Saloon'}</span>
+                    </div>
+                    <div className="pt-1 space-y-1.5 border-t border-gray-100">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Council Inspection Certificate:</span>
+                      {selectedDriver.doc_phv_mot ? (
+                        <a
+                          href={selectedDriver.doc_phv_mot}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] transition"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View PHV MOT / Council Disc</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic text-[11px]">MOT file not uploaded</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 4: Insurance & Payout Banking */}
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white space-y-3">
+                  <div className="flex items-center space-x-2 text-gray-900 font-bold border-b border-gray-100 pb-2">
+                    <CreditCard className="w-4 h-4 text-purple-600" />
+                    <span>4. Insurance &amp; Payout Banking</span>
+                  </div>
+                  <div className="space-y-2 text-gray-700">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">Insurance Policy No</span>
+                        <span className="font-mono font-bold text-gray-900">{selectedDriver.insurance_number || <span className="text-gray-400 italic font-normal">Pending</span>}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-bold">Insurance Expiry</span>
+                        <span className="font-medium text-gray-900">{selectedDriver.insurance_expiry ? selectedDriver.insurance_expiry.split('T')[0] : <span className="text-gray-400 italic">Not set</span>}</span>
+                      </div>
+                    </div>
+                    <div className="pt-1 border-t border-gray-100">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Payout Banking Details</span>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <div>
+                          <span className="text-gray-400 text-[10px]">Bank:</span>{' '}
+                          <span className="font-medium text-gray-900">{selectedDriver.bank_name || 'Not provided'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 text-[10px]">Sort Code:</span>{' '}
+                          <span className="font-mono font-bold text-gray-900">{selectedDriver.sort_code || 'Pending'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 text-[10px]">Account:</span>{' '}
+                          <span className="font-mono font-bold text-gray-900">{selectedDriver.account_number || 'Pending'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-1 space-y-1.5 border-t border-gray-100">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Insurance Certificate:</span>
+                      {selectedDriver.doc_insurance ? (
+                        <a
+                          href={selectedDriver.doc_insurance}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] transition"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View Insurance Certificate</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic text-[11px]">Insurance file not uploaded</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* CARD 5: ADMIN DECISION & STATUS OVERRIDE PANEL */}
+              <div className="p-5 rounded-2xl border-2 border-amber-300 bg-amber-50/50 space-y-4">
+                <div className="flex items-center space-x-2 text-gray-900 font-extrabold text-sm border-b border-amber-200/80 pb-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-700" />
+                  <span>Admin Compliance Decision &amp; Dispatch Authorization</span>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Status Selection */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      Verification Status
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { val: 'approved', label: 'Approved', color: 'border-emerald-500 bg-emerald-50 text-emerald-800' },
+                        { val: 'pending_approval', label: 'Pending Review', color: 'border-amber-500 bg-amber-50 text-amber-800' },
+                        { val: 'incomplete', label: 'Incomplete', color: 'border-gray-400 bg-gray-50 text-gray-800' },
+                        { val: 'rejected', label: 'Rejected', color: 'border-red-500 bg-red-50 text-red-800' },
+                      ].map((item) => {
+                        const isSelected = adminStatusForm.verificationStatus === item.val;
+                        return (
+                          <button
+                            key={item.val}
+                            type="button"
+                            onClick={() => {
+                              setAdminStatusForm({
+                                ...adminStatusForm,
+                                verificationStatus: item.val,
+                                isActive: item.val === 'approved' ? true : adminStatusForm.isActive,
+                              });
+                            }}
+                            className={`p-2.5 rounded-xl border-2 font-bold text-xs text-center transition flex items-center justify-center space-x-1.5 ${
+                              isSelected
+                                ? `${item.color} shadow-sm ring-2 ring-black/5`
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            <span>{isSelected ? '●' : '○'}</span>
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Active Toggle */}
+                  <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-amber-200">
+                    <div>
+                      <span className="font-bold text-gray-900 block text-xs">
+                        Allow Live On-Duty Mode &amp; Dispatching
+                      </span>
+                      <span className="text-[11px] text-gray-500 block">
+                        When enabled, chauffeur can toggle On-Duty and receive passenger trip dispatches.
+                      </span>
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                      <input
+                        type="checkbox"
+                        checked={adminStatusForm.isActive}
+                        onChange={(e) => setAdminStatusForm({ ...adminStatusForm, isActive: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Admin Notes */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                      Compliance Audit Notes / Admin Feedback
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={adminStatusForm.adminNotes}
+                      onChange={(e) => setAdminStatusForm({ ...adminStatusForm, adminNotes: e.target.value })}
+                      placeholder="e.g. TfL PCO badge verified against register. Approved for executive saloon transfers."
+                      className="w-full p-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-ots-yellow"
+                    />
+                  </div>
+
+                  {/* Action Save Button */}
+                  <div className="flex items-center justify-end space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDossierModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 font-bold text-xs transition"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveDriverStatus}
+                      disabled={isUpdatingDriver}
+                      className="px-6 py-2.5 bg-gray-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      {isUpdatingDriver ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving Changes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 text-ots-yellow" />
+                          <span>Save Verification &amp; Update Status</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

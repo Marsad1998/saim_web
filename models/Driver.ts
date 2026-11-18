@@ -28,6 +28,7 @@ export interface IDriver {
   step3_completed?: boolean;
   step4_completed?: boolean;
   verification_status?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
+  admin_notes?: string | null;
   is_active: boolean;
   created_at?: string;
   // Joined fields when queried with user details
@@ -58,6 +59,7 @@ export interface CreateDriverInput {
   docPhvMot?: string;
   docInsurance?: string;
   verificationStatus?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
+  adminNotes?: string;
   isActive?: boolean;
 }
 
@@ -83,6 +85,7 @@ export interface UpdateDriverInput {
   docInsurance?: string;
   completionScore?: number;
   verificationStatus?: 'incomplete' | 'pending_approval' | 'approved' | 'rejected';
+  adminNotes?: string;
   isActive?: boolean;
 }
 
@@ -243,6 +246,7 @@ export class DriverModel {
       step3_completed: progress.step3,
       step4_completed: progress.step4,
       verification_status: verificationStatus,
+      admin_notes: input.adminNotes || null,
       is_active: isActive,
       created_at: new Date().toISOString(),
     };
@@ -394,6 +398,7 @@ export class DriverModel {
       step3_completed: progress.step3,
       step4_completed: progress.step4,
       verification_status: row.verification_status || (progress.isComplete ? "approved" : "incomplete"),
+      admin_notes: row.admin_notes || null,
       is_active: Boolean(row.is_active),
       created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
       driver_name: row.driver_name,
@@ -440,6 +445,7 @@ export class DriverModel {
       if (updates.docPhvMot !== undefined) targetDriver.doc_phv_mot = updates.docPhvMot;
       if (updates.docInsurance !== undefined) targetDriver.doc_insurance = updates.docInsurance;
       if (updates.verificationStatus !== undefined) targetDriver.verification_status = updates.verificationStatus;
+      if (updates.adminNotes !== undefined) targetDriver.admin_notes = updates.adminNotes;
       if (updates.isActive !== undefined) targetDriver.is_active = updates.isActive;
 
       // Recalculate progress
@@ -481,6 +487,7 @@ export class DriverModel {
       if (updates.docInsurance !== undefined) { fields.push("doc_insurance = ?"); values.push(updates.docInsurance); }
       if (updates.completionScore !== undefined) { fields.push("completion_score = ?"); values.push(updates.completionScore); }
       if (updates.verificationStatus !== undefined) { fields.push("verification_status = ?"); values.push(updates.verificationStatus); }
+      if (updates.adminNotes !== undefined) { fields.push("admin_notes = ?"); values.push(updates.adminNotes); }
       if (updates.isActive !== undefined) { fields.push("is_active = ?"); values.push(updates.isActive ? 1 : 0); }
 
       if (fields.length > 0) {

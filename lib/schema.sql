@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `drivers` (
   `doc_insurance` VARCHAR(255) DEFAULT NULL,
   `completion_score` INT NOT NULL DEFAULT 0,
   `verification_status` ENUM('incomplete', 'pending_approval', 'approved', 'rejected') NOT NULL DEFAULT 'incomplete',
+  `admin_notes` TEXT DEFAULT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT FALSE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE

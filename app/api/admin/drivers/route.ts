@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { driverId, verificationStatus, isActive } = body;
+    const { driverId, verificationStatus, isActive, adminNotes } = body;
 
     if (!driverId) {
       return NextResponse.json({ status: false, message: "driverId is required" }, { status: 400 });
@@ -99,11 +99,15 @@ export async function PATCH(request: NextRequest) {
     await DriverModel.update(driverId, {
       verificationStatus,
       isActive,
+      adminNotes,
     });
+
+    const updatedDriver = await DriverModel.findById(driverId);
 
     return NextResponse.json({
       status: true,
-      message: "Driver status updated successfully.",
+      message: "Driver compliance status updated successfully.",
+      driver: updatedDriver,
     });
   } catch (error: any) {
     console.error("PATCH /api/admin/drivers error:", error.message);
