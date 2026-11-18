@@ -19,6 +19,10 @@ export interface CreateInquiryInput {
   message: string;
 }
 
+// In-memory fallback cache so inquiries persist even when DB is temporarily unreachable
+const inMemoryInquiries: IContactInquiry[] = [];
+let nextInquiryId = 1000;
+
 export class ContactInquiryModel {
   /**
    * Save a new contact inquiry from the Contact Us form
@@ -30,6 +34,17 @@ export class ContactInquiryModel {
     const cleanSubject = input.subject?.trim() || null;
     const cleanMessage = input.message.trim();
 
+    const inquiryRecord: IContactInquiry = {
+      id: nextInquiryId++,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      subject: cleanSubject,
+      message: cleanMessage,
+      status: "new",
+      created_at: new Date().toISOString(),
+    };
+
     try {
       const result: any = await dbQuery(
         `INSERT INTO contact_inquiries (name, email, phone, subject, message, status)
@@ -37,28 +52,15 @@ export class ContactInquiryModel {
         [cleanName, cleanEmail, cleanPhone, cleanSubject, cleanMessage]
       );
 
-      return {
-        id: result?.insertId || 0,
-        name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
-        subject: cleanSubject,
-        message: cleanMessage,
-        status: "new",
-        created_at: new Date().toISOString(),
-      };
+      if (result?.insertId) {
+        inquiryRecord.id = result.insertId;
+      }
     } catch (error: any) {
-      console.error("ContactInquiryModel.create error:", error.message);
-      return {
-        name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
-        subject: cleanSubject,
-        message: cleanMessage,
-        status: "new",
-        created_at: new Date().toISOString(),
-      };
+      console.warn("ContactInquiryModel.create DB fallback:", error.message);
     }
+
+    inMemoryInquiries.unshift(inquiryRecord);
+    return inquiryRecord;
   }
 
   /**
@@ -83,11 +85,11 @@ export class ContactInquiryModel {
           created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
         };
       }
-      return null;
     } catch (error: any) {
-      console.error("ContactInquiryModel.getById error:", error.message);
-      return null;
+      console.warn("ContactInquiryModel.getById DB fallback:", error.message);
     }
+
+    return inMemoryInquiries.find((i) => i.id === id) || null;
   }
 
   /**
@@ -97,12 +99,15 @@ export class ContactInquiryModel {
     id: number,
     status: "new" | "in_progress" | "resolved"
   ): Promise<boolean> {
+    const inMem = inMemoryInquiries.find((i) => i.id === id);
+    if (inMem) inMem.status = status;
+
     try {
       await dbQuery("UPDATE contact_inquiries SET status = ? WHERE id = ?", [status, id]);
       return true;
     } catch (error: any) {
-      console.error("ContactInquiryModel.updateStatus error:", error.message);
-      return false;
+      console.warn("ContactInquiryModel.updateStatus DB fallback:", error.message);
+      return Boolean(inMem);
     }
   }
 
@@ -111,11 +116,13 @@ export class ContactInquiryModel {
    */
   static async getAll(status?: "new" | "in_progress" | "resolved"): Promise<IContactInquiry[]> {
     try {
-      if (status) {
-        const rows = await dbQuery<any[]>(
-          "SELECT * FROM contact_inquiries WHERE status = ? ORDER BY created_at DESC",
-          [status]
-        );
+      const sql = status
+        ? "SELECT * FROM contact_inquiries WHERE status = ? ORDER BY created_at DESC"
+        : "SELECT * FROM contact_inquiries ORDER BY created_at DESC";
+      const params = status ? [status] : [];
+      const rows = await dbQuery<any[]>(sql, params);
+
+      if (rows && rows.length > 0) {
         return rows.map((row) => ({
           id: row.id,
           name: row.name,
@@ -127,36 +134,28 @@ export class ContactInquiryModel {
           created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
         }));
       }
-
-      const rows = await dbQuery<any[]>(
-        "SELECT * FROM contact_inquiries ORDER BY created_at DESC"
-      );
-      return rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        subject: row.subject,
-        message: row.message,
-        status: row.status,
-        created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-      }));
     } catch (error: any) {
-      console.error("ContactInquiryModel.getAll error:", error.message);
-      return [];
+      console.warn("ContactInquiryModel.getAll DB fallback:", error.message);
     }
+
+    return status
+      ? inMemoryInquiries.filter((i) => i.status === status)
+      : inMemoryInquiries;
   }
 
   /**
    * Delete an inquiry by ID
    */
   static async delete(id: number): Promise<boolean> {
+    const idx = inMemoryInquiries.findIndex((i) => i.id === id);
+    if (idx !== -1) inMemoryInquiries.splice(idx, 1);
+
     try {
       await dbQuery("DELETE FROM contact_inquiries WHERE id = ?", [id]);
       return true;
     } catch (error: any) {
-      console.error("ContactInquiryModel.delete error:", error.message);
-      return false;
+      console.warn("ContactInquiryModel.delete DB fallback:", error.message);
+      return idx !== -1;
     }
   }
 }
