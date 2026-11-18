@@ -18,20 +18,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: false, message: "Invalid session" }, { status: 401 });
     }
 
+    const isDemoDriver =
+      payload.userId === "usr_driver_1" ||
+      payload.userId === "usr_driver_2" ||
+      payload.email?.toLowerCase().includes("driver@otstaxi.co.uk") ||
+      payload.email?.toLowerCase().includes("driver@driver.com");
+
     // Lookup driver profile by user_id
     let driver = await DriverModel.findByUserId(payload.userId);
 
-    // Fallback demo driver if record not yet linked in MySQL
+    // Fallback if record not yet linked in MySQL
     if (!driver) {
-      driver = {
-        id: `drv_${payload.userId.slice(-6)}`,
-        user_id: payload.userId,
-        license_number: "PCO-984321",
-        vehicle_model: "Mercedes-Benz E-Class",
-        vehicle_plate: "LO71 ABC",
-        vehicle_category: "executive-saloon",
-        is_active: true,
-      };
+      if (isDemoDriver) {
+        driver = {
+          id: `drv_${payload.userId.slice(-6)}`,
+          user_id: payload.userId,
+          license_number: "PCO-984321",
+          vehicle_model: "Mercedes-Benz E-Class",
+          vehicle_plate: "LO71 ABC",
+          vehicle_category: "saloon",
+          verification_status: "approved",
+          is_active: true,
+        };
+      } else {
+        // Real new registered driver: start completely empty & off-duty
+        driver = {
+          id: `drv_${payload.userId.slice(-6)}`,
+          user_id: payload.userId,
+          license_number: "",
+          vehicle_model: "",
+          vehicle_plate: "",
+          vehicle_category: "saloon",
+          verification_status: "incomplete",
+          is_active: false,
+        };
+      }
     }
 
     // Query stats: today's completed trips & total earnings
@@ -58,10 +79,10 @@ export async function GET(request: NextRequest) {
         email: payload.email,
       },
       stats: {
-        completedTrips: completedCount || 14,
-        totalEarnings: totalEarnings || 840.50,
-        todayEarnings: 125.00,
-        rating: 4.95,
+        completedTrips: completedCount || (isDemoDriver ? 14 : 0),
+        totalEarnings: totalEarnings || (isDemoDriver ? 840.50 : 0),
+        todayEarnings: isDemoDriver ? 125.00 : 0,
+        rating: isDemoDriver ? 4.95 : 5.0,
       },
     });
   } catch (error: any) {

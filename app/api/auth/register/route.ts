@@ -65,9 +65,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Check if email verification is globally enforced
+    // 2. Check if email verification is enforced (Drivers are exempt so they can log in directly to their dashboard)
     const systemSettings = await getSystemSettings();
-    const requireVerification = Boolean(systemSettings.require_email_verification);
+    const isDriver = role === "driver";
+    const requireVerification = !isDriver && Boolean(systemSettings.require_email_verification);
 
     let verificationCode: string | undefined = undefined;
     if (requireVerification) {
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       phone: phone ? String(phone).trim() : undefined,
       password: String(password),
       role,
-      is_verified: !requireVerification,
+      is_verified: isDriver ? true : !requireVerification,
       verification_code: verificationCode,
     });
 
@@ -98,8 +99,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // 5. If verification is required, send 6-digit code and instruct frontend to redirect to verify page
-    if (requireVerification && verificationCode) {
+    // 5. If verification is required (passengers only when enabled by admin), send code
+    if (requireVerification && verificationCode && !isDriver) {
       await sendVerificationCodeEmail(cleanEmail, fullName, verificationCode);
 
       return NextResponse.json({

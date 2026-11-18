@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: false, message: "Invalid session" }, { status: 401 });
     }
 
+    const isDemoDriver =
+      payload.userId === "usr_driver_1" ||
+      payload.userId === "usr_driver_2" ||
+      payload.email?.toLowerCase().includes("driver@otstaxi.co.uk") ||
+      payload.email?.toLowerCase().includes("driver@driver.com");
+
     const driver = await DriverModel.findByUserId(payload.userId);
     const driverId = driver ? driver.id : `drv_${payload.userId.slice(-6)}`;
 
@@ -26,8 +32,8 @@ export async function GET(request: NextRequest) {
       trips = await BookingModel.getByDriverId(driverId);
     } catch (e) {}
 
-    // If no specific assigned trips in DB, provide sample dispatched transfers for demo
-    if (trips.length === 0) {
+    // Only provide sample dispatched transfers for the demo driver
+    if (trips.length === 0 && isDemoDriver) {
       trips = [
         {
           quote_ref: "OTS-892104",
