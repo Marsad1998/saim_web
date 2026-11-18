@@ -788,7 +788,7 @@ export default function AdminPage() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gross Paid Revenue</span>
                     <DollarSign className="w-4 h-4 text-ots-yellow" />
                   </div>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900">£{Number(stats.totalRevenue || 0).toFixed(2)}</div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900">{formatPrice(Number(stats.totalRevenue || 0))}</div>
                   <div className="text-[11px] text-slate-400">Completed payments</div>
                 </div>
 
@@ -847,7 +847,7 @@ export default function AdminPage() {
                               <span className="font-bold text-slate-800 truncate">{b.to_location}</span>
                             </div>
                             <div className="text-[11px] text-slate-400">
-                              Passenger: <strong className="text-slate-700">{b.passenger_name || 'Guest'}</strong> &bull; Fare: <strong className="text-slate-900">£{Number(b.total_price || 0).toFixed(2)}</strong>
+                              Passenger: <strong className="text-slate-700">{b.passenger_name || 'Guest'}</strong> &bull; Fare: <strong className="text-slate-900">{formatPrice(Number(b.total_price || 0))}</strong>
                             </div>
                           </div>
 
@@ -1020,7 +1020,7 @@ export default function AdminPage() {
                           </td>
 
                           <td className="p-4 align-top whitespace-nowrap">
-                            <span className="font-black text-slate-900 text-sm block">£{Number(b.total_price || 0).toFixed(2)}</span>
+                            <span className="font-black text-slate-900 text-sm block">{formatPrice(Number(b.total_price || 0))}</span>
                             <span className="capitalize text-slate-500 text-[11px] block">{b.selected_vehicle_id}</span>
                           </td>
 

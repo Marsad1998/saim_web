@@ -109,10 +109,17 @@ function BookingConfirmationContent() {
               </div>
               <div className="sm:text-right">
                 <span className="text-xs text-gray-400 block">Payment Status</span>
-                <span className="inline-flex items-center space-x-1 text-xs font-extrabold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
+                <span className={`inline-flex items-center space-x-1 text-xs font-extrabold px-2.5 py-1 rounded-full border ${
+                  quote?.paymentMethod === 'cash_to_driver'
+                    ? 'text-amber-800 bg-amber-50 border-amber-200'
+                    : 'text-green-700 bg-green-50 border-green-200'
+                }`}>
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>PAID &amp; CONFIRMED</span>
+                  <span>{quote?.paymentMethod === 'cash_to_driver' ? 'CASH UPON ARRIVAL' : 'PAID & CONFIRMED'}</span>
                 </span>
+                <div className="mt-1 text-lg font-black text-gray-900">
+                  {formatPrice(quote?.paidAmount || quote?.pricing?.totalPrice || 45)}
+                </div>
               </div>
             </div>
 

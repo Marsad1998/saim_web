@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { 
@@ -10,14 +12,16 @@ import {
   Star, 
   MapPin, 
   Car, 
-  ChevronRight,
-  Award,
-  Users
+  ChevronRight, 
+  Award, 
+  Users 
 } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import { UK_AIRPORTS } from '@/lib/airports-data';
+import { useApp } from '@/components/context/AppContext';
 
 export default function HomePage() {
+  const { formatPrice } = useApp();
   const popularAirports = UK_AIRPORTS.slice(0, 8);
 
   const testimonials = [
@@ -317,7 +321,7 @@ export default function HomePage() {
                 <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-gray-400 uppercase font-semibold block">From</span>
-                    <span className="text-base font-extrabold text-gray-900">£35.00</span>
+                    <span className="text-base font-extrabold text-gray-900">{formatPrice(35)}</span>
                   </div>
                   <span className="text-xs font-bold text-gray-900 group-hover:text-ots-yellow flex items-center space-x-1">
                     <span>Book Taxi</span>

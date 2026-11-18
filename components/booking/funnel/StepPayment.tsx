@@ -37,7 +37,7 @@ export default function StepPayment({
   onBack,
 }: StepPaymentProps) {
   const router = useRouter();
-  const { formatPrice } = useApp();
+  const { currency, formatPrice } = useApp();
 
   const vehicleTier = quote.pricing?.vehicles?.find((v: any) => v.id === selectedVehicleId) || quote.pricing?.vehicles?.[0];
   const totalAmount = vehicleTier?.finalPrice || vehicleTier?.totalPrice || 45;
@@ -74,6 +74,7 @@ export default function StepPayment({
         quoteRef: quote.quoteRef,
         selectedVehicleId,
         selectedExtras,
+        currency,
       }),
     })
       .then((res) => res.json())
@@ -98,7 +99,7 @@ export default function StepPayment({
     return () => {
       isMounted = false;
     };
-  }, [quote.quoteRef, selectedVehicleId, selectedExtras]);
+  }, [quote.quoteRef, selectedVehicleId, selectedExtras, currency]);
 
   // Card formatting helpers
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,6 +160,7 @@ export default function StepPayment({
           selectedExtras,
           passengerDetails,
           totalAmount,
+          currency,
           paymentMethod,
           cardLast4: cardNumber.replace(/\s/g, '').slice(-4) || '4242',
         }),
@@ -379,7 +381,7 @@ export default function StepPayment({
                 <span>Pay In Cash to Your Chauffeur</span>
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                You can pay the full fare of <strong>{formatPrice(totalAmount)}</strong> in cash (GBP) directly to your allocated driver upon reaching your destination or during meet &amp; greet. A booking voucher with driver coordinates will be sent to your email immediately.
+                You can pay the full fare of <strong>{formatPrice(totalAmount)}</strong> in cash ({currency}) directly to your allocated driver upon reaching your destination or during meet &amp; greet. A booking voucher with driver coordinates will be sent to your email immediately.
               </p>
             </div>
 

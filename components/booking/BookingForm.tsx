@@ -17,6 +17,7 @@ import {
 import LocationModal, { SelectedLocationItem } from './LocationModal';
 import WaypointModal from './WaypointModal';
 import TimePickerModal from './TimePickerModal';
+import { useApp } from '@/components/context/AppContext';
 
 interface LocationItem {
   id?: string;
@@ -33,6 +34,7 @@ interface LocationItem {
 
 export default function BookingForm({ initialValues }: { initialValues?: any }) {
   const router = useRouter();
+  const { currency } = useApp();
 
   // State
   const [pickup, setPickup] = useState<LocationItem | null>(() => {
@@ -141,6 +143,7 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
         returnDate: isReturn ? returnDate : undefined,
         returnTime: isReturn ? returnTime : undefined,
         passengers,
+        currency,
       };
 
       const res = await fetch('/api/quotes/create', {

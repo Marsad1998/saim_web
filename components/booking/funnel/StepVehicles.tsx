@@ -41,31 +41,31 @@ export default function StepVehicles({
       id: 'baby_seat',
       title: 'Baby / Infant Car Seat (0 - 12 Months)',
       desc: 'Rear-facing safety seat for babies up to 13kg',
-      price: 'Free',
+      priceGbp: 0,
     },
     {
       id: 'child_seat',
       title: 'Toddler Car Seat (1 - 4 Years)',
       desc: 'Forward-facing seat with 5-point safety harness (9 - 18kg)',
-      price: 'Free',
+      priceGbp: 0,
     },
-  {
+    {
       id: 'booster_seat',
       title: 'Booster Cushion (4 - 11 Years)',
       desc: 'High-backed booster seat conforming to ECE R44/04 safety standards',
-      price: 'Free',
+      priceGbp: 0,
     },
     {
       id: 'meet_and_greet',
       title: 'VIP Meet & Greet Inside Arrivals Hall',
       desc: 'Driver waits directly at the terminal exit barrier holding your name board',
-      price: 'Free',
+      priceGbp: 0,
     },
     {
       id: 'extra_wait_30',
       title: 'Extra 30 Mins Airport Waiting Time',
       desc: 'Extended buffer time for long customs or baggage delays',
-      price: '£15.00',
+      priceGbp: 15,
     },
   ];
 
@@ -220,9 +220,9 @@ export default function StepVehicles({
                       {extra.title}
                     </span>
                     <span className={`text-xs font-extrabold ml-2 ${
-                      extra.price === 'Free' ? 'text-green-600' : 'text-gray-900'
+                      extra.priceGbp === 0 ? 'text-green-600' : 'text-gray-900'
                     }`}>
-                      {extra.price}
+                      {extra.priceGbp === 0 ? 'Free' : formatPrice(extra.priceGbp)}
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">

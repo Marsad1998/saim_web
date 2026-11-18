@@ -13,9 +13,10 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
   USD: { code: "USD", name: "US Dollar", symbol: "$", rate: 1.30 },
 };
 
-export function convertFromGbp(amountGbp: number, targetCurrency: CurrencyCode = "GBP"): number {
+export function convertFromGbp(amountGbp: number = 0, targetCurrency: CurrencyCode = "GBP"): number {
+  const num = Number(amountGbp) || 0;
   const rate = CURRENCIES[targetCurrency]?.rate || 1.0;
-  return Math.round(amountGbp * rate * 100) / 100;
+  return Math.round(num * rate * 100) / 100;
 }
 
 export function formatPrice(amountGbp: number, currency: CurrencyCode = "GBP"): string {

@@ -102,6 +102,7 @@ export const quoteStore = {
     waypoints?: string[];
     distanceMiles?: number;
     estimatedTimeMins?: number;
+    currency?: string;
   }): Promise<StoredQuote> {
     const booking = await BookingModel.create(params);
     const quote = mapBookingToStoredQuote(booking);
@@ -145,6 +146,7 @@ export const quoteStore = {
       await BookingModel.markPaymentCompleted(quoteRef, {
         paidAmount: updates.paidAmount,
         paymentMethod: updates.paymentMethod || "stripe",
+        currency: updates.currency,
       });
     }
 

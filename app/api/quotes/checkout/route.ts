@@ -18,6 +18,7 @@ export async function POST(request: Request) {
       selectedVehicleId,
       selectedExtras,
       totalAmount,
+      currency: requestedCurrency,
       paymentIntentId,
       cardLast4,
     } = body;
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
 
     const isCash = paymentMethod === "cash_to_driver";
     const paymentStatus = isCash ? "unpaid" : "completed";
+    const finalCurrency = (requestedCurrency || quote.currency || "GBP").toUpperCase();
 
     // Mark quote as completed in memory store
     await quoteStore.update(quoteRef, {
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
       passenger: finalPassenger,
       paymentStatus: isCash ? "cancelled" : "completed",
       paidAmount: finalPaidAmount,
+      currency: finalCurrency,
       paymentMethod,
     });
 
@@ -89,6 +92,7 @@ export async function POST(request: Request) {
           flightNumber: finalPassenger?.flightNumber,
           terminal: finalPassenger?.terminal,
           specialNotes: finalPassenger?.specialNotes,
+          currency: finalCurrency,
           totalPrice: finalPaidAmount,
         });
       } else {
@@ -96,6 +100,7 @@ export async function POST(request: Request) {
           paidAmount: finalPaidAmount,
           paymentMethod,
           stripePaymentId: verifiedPaymentId || (cardLast4 ? `sim_card_${cardLast4}` : undefined),
+          currency: finalCurrency,
         });
       }
     } catch (dbErr: any) {
@@ -114,6 +119,7 @@ export async function POST(request: Request) {
       status: true,
       quoteRef,
       paidAmount: finalPaidAmount,
+      currency: finalCurrency,
       paymentMethod,
       paymentStatus,
       message: isCash

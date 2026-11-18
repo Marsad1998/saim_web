@@ -64,6 +64,7 @@ export interface CreateBookingInput {
   userId?: string;
   distanceMiles?: number;
   estimatedTimeMins?: number;
+  currency?: string;
 }
 
 export interface UpdateBookingInput {
@@ -168,6 +169,7 @@ export class BookingModel {
     const pickupDate = input.pickupDate || input.pickUpDate || new Date().toISOString().split("T")[0];
     const pickupTime = input.pickupTime || input.pickUpTime || "12:00";
     const bookReturn = Boolean(input.bookReturn);
+    const bookingCurrency = (input.currency || "GBP").toUpperCase();
 
     try {
       await dbQuery(
@@ -203,7 +205,7 @@ export class BookingModel {
           JSON.stringify(selectedExtras),
           JSON.stringify(pricing),
           initialPrice,
-          "GBP",
+          bookingCurrency,
           "unpaid",
           "quoted",
         ]
@@ -237,7 +239,7 @@ export class BookingModel {
       selected_extras: selectedExtras,
       pricing_details: pricing,
       total_price: initialPrice,
-      currency: "GBP",
+      currency: bookingCurrency,
       payment_status: "unpaid",
       booking_status: "quoted",
       created_at: new Date().toISOString(),
@@ -349,19 +351,33 @@ export class BookingModel {
    */
   static async markPaymentCompleted(
     quoteRef: string,
-    details: { paidAmount: number; paymentMethod: string; stripePaymentId?: string }
+    details: { paidAmount: number; paymentMethod: string; stripePaymentId?: string; currency?: string }
   ): Promise<boolean> {
     try {
-      await dbQuery(
-        `UPDATE bookings 
-         SET payment_status = 'completed', 
-             booking_status = 'confirmed',
-             total_price = ?,
-             payment_method = ?,
-             stripe_payment_id = ?
-         WHERE quote_ref = ?`,
-        [details.paidAmount, details.paymentMethod, details.stripePaymentId || null, quoteRef]
-      );
+      if (details.currency) {
+        await dbQuery(
+          `UPDATE bookings 
+           SET payment_status = 'completed', 
+               booking_status = 'confirmed',
+               total_price = ?,
+               payment_method = ?,
+               stripe_payment_id = ?,
+               currency = ?
+           WHERE quote_ref = ?`,
+          [details.paidAmount, details.paymentMethod, details.stripePaymentId || null, details.currency.toUpperCase(), quoteRef]
+        );
+      } else {
+        await dbQuery(
+          `UPDATE bookings 
+           SET payment_status = 'completed', 
+               booking_status = 'confirmed',
+               total_price = ?,
+               payment_method = ?,
+               stripe_payment_id = ?
+           WHERE quote_ref = ?`,
+          [details.paidAmount, details.paymentMethod, details.stripePaymentId || null, quoteRef]
+        );
+      }
       return true;
     } catch (error: any) {
       console.error("BookingModel.markPaymentCompleted error:", error.message);

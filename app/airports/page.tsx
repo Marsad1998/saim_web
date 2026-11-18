@@ -12,8 +12,10 @@ import {
   Check
 } from 'lucide-react';
 import { UK_AIRPORTS } from '@/lib/airports-data';
+import { useApp } from '@/components/context/AppContext';
 
 export default function AirportsDirectoryPage() {
+  const { formatPrice } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredAirports = UK_AIRPORTS.filter((airport) =>
@@ -93,7 +95,7 @@ export default function AirportsDirectoryPage() {
               <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-gray-400 uppercase font-bold block">Fares From</span>
-                  <span className="text-base font-extrabold text-gray-900">£35.00</span>
+                  <span className="text-base font-extrabold text-gray-900">{formatPrice(35)}</span>
                 </div>
                 <span className="text-xs font-bold text-gray-900 group-hover:text-ots-yellow flex items-center space-x-1">
                   <span>View Details</span>

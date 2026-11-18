@@ -32,7 +32,7 @@ export default function StripeRealPaymentElement({
 }: StripeRealPaymentElementProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const { formatPrice } = useApp();
+  const { currency, formatPrice } = useApp();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -89,6 +89,7 @@ export default function StripeRealPaymentElement({
             selectedVehicleId,
             selectedExtras,
             totalAmount,
+            currency,
           }),
         });
 

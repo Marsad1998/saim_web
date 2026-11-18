@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       waypoints: Array.isArray(body.waypoints) ? body.waypoints : [],
       distanceMiles,
       estimatedTimeMins,
+      currency: (body.currency || "GBP").toUpperCase(),
     });
 
     return NextResponse.json({

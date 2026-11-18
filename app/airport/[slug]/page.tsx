@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import { UK_AIRPORTS } from '@/lib/airports-data';
+import AirportPopularRoutes from '@/components/airport/AirportPopularRoutes';
 
 export function generateStaticParams() {
   return UK_AIRPORTS.map((airport) => ({
@@ -30,12 +31,12 @@ export default function AirportDetailPage({
   ) || UK_AIRPORTS[0];
 
   const popularRoutes = [
-    { destination: 'Central London (Westminster / Soho)', distance: '16 miles', price: '£55.00' },
-    { destination: 'Canary Wharf / Docklands', distance: '22 miles', price: '£68.00' },
-    { destination: 'London Heathrow Airport (Airport Transfer)', distance: '28 miles', price: '£75.00' },
-    { destination: 'Cambridge University & City Center', distance: '65 miles', price: '£135.00' },
-    { destination: 'Oxford City Center', distance: '50 miles', price: '£110.00' },
-    { destination: 'Brighton & South Coast', distance: '58 miles', price: '£125.00' },
+    { destination: 'Central London (Westminster / Soho)', distance: '16 miles', priceGbp: 55 },
+    { destination: 'Canary Wharf / Docklands', distance: '22 miles', priceGbp: 68 },
+    { destination: 'London Heathrow Airport (Airport Transfer)', distance: '28 miles', priceGbp: 75 },
+    { destination: 'Cambridge University & City Center', distance: '65 miles', priceGbp: 135 },
+    { destination: 'Oxford City Center', distance: '50 miles', priceGbp: 110 },
+    { destination: 'Brighton & South Coast', distance: '58 miles', priceGbp: 125 },
   ];
 
   return (
@@ -141,31 +142,7 @@ export default function AirportDetailPage({
           </div>
 
           {/* Popular Routes from this Airport */}
-          <div className="pt-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900">
-                Popular Fixed-Price Routes from {airport.name}
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Estimated fixed fares for Standard Saloon vehicles. All airport car park exit barriers are included.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {popularRoutes.map((route, i) => (
-                <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-900">{route.destination}</h4>
-                    <span className="text-[11px] text-gray-500">{route.distance}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-extrabold text-gray-900 block">{route.price}</span>
-                    <span className="text-[10px] text-green-600 font-semibold">Fixed Fare</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <AirportPopularRoutes routes={popularRoutes} airportName={airport.name} />
 
         </div>
       </section>

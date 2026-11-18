@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { quoteStore } from "@/lib/quote-store";
 import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
 import { getStripeServer, getStripePublishableKey } from "@/lib/stripe";
+import { CurrencyCode, convertFromGbp } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { quoteRef, selectedVehicleId, selectedExtras = [] } = body;
+    const { quoteRef, selectedVehicleId, selectedExtras = [], currency: requestedCurrency } = body;
 
     if (!quoteRef) {
       return NextResponse.json({ status: false, message: "quoteRef is required" }, { status: 400 });
@@ -31,8 +32,10 @@ export async function POST(request: Request) {
       if (ext) extrasTotal += ext.price;
     });
 
-    const finalAmount = Math.round((basePrice + extrasTotal) * 100) / 100;
-    const currency = (quote.currency || "gbp").toLowerCase();
+    const totalGbp = Math.round((basePrice + extrasTotal) * 100) / 100;
+    const targetCurrency = (requestedCurrency || quote.currency || "GBP").toUpperCase() as CurrencyCode;
+    const finalAmount = convertFromGbp(totalGbp, targetCurrency);
+    const stripeCurrency = targetCurrency.toLowerCase();
 
     // Check if Stripe is live/configured
     const stripe = getStripeServer();
@@ -41,8 +44,8 @@ export async function POST(request: Request) {
     if (stripe && pubKey) {
       try {
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: Math.round(finalAmount * 100), // in smallest currency unit (pence)
-          currency,
+          amount: Math.round(finalAmount * 100), // in smallest currency unit (pence/cents)
+          currency: stripeCurrency,
           automatic_payment_methods: {
             enabled: true,
           },
@@ -54,6 +57,7 @@ export async function POST(request: Request) {
             passengerName: quote.passenger?.fullName || "Guest Passenger",
             passengerEmail: quote.passenger?.email || "",
             vehicle: selectedVeh?.name || vehId,
+            currency: targetCurrency,
           },
         });
 
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
           clientSecret: paymentIntent.client_secret,
           paymentIntentId: paymentIntent.id,
           amount: finalAmount,
-          currency: currency.toUpperCase(),
+          currency: targetCurrency,
         });
       } catch (stripeErr: any) {
         console.error("Stripe create-payment-intent API error:", stripeErr.message);
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
           status: true,
           configured: false,
           amount: finalAmount,
-          currency: currency.toUpperCase(),
+          currency: targetCurrency,
           fallbackReason: stripeErr.message,
         });
       }
@@ -84,7 +88,7 @@ export async function POST(request: Request) {
       status: true,
       configured: false,
       amount: finalAmount,
-      currency: currency.toUpperCase(),
+      currency: targetCurrency,
       message: "Stripe test mode active",
     });
   } catch (error: any) {

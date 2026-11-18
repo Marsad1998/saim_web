@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { CurrencyCode, CURRENCIES, formatPrice } from "@/lib/currency";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { CurrencyCode, CURRENCIES, formatPrice, convertFromGbp } from "@/lib/currency";
 
 interface UserProfile {
   id: string;
@@ -17,6 +17,7 @@ interface AppContextType {
   language: string;
   setLanguage: (lang: string) => void;
   formatPrice: (amountGbp: number) => string;
+  convertPrice: (amountGbp: number) => number;
   user: UserProfile | null;
   setUser: (user: UserProfile | null) => void;
   logout: () => void;
@@ -44,12 +45,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedCurr = localStorage.getItem("ots_currency") as CurrencyCode;
       if (savedCurr && CURRENCIES[savedCurr]) {
         setCurrencyState(savedCurr);
+      } else {
+        const match = document.cookie.match(/(?:^|;\s*)selectedcurrency=([^;]+)/);
+        if (match && match[1] && CURRENCIES[match[1] as CurrencyCode]) {
+          setCurrencyState(match[1] as CurrencyCode);
+        }
       }
       const savedUser = localStorage.getItem("ots_user");
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
     } catch (e) {}
+
+    // Listen to storage or cross-component currency changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "ots_currency" && e.newValue && CURRENCIES[e.newValue as CurrencyCode]) {
+        setCurrencyState(e.newValue as CurrencyCode);
+      }
+    };
+    const handleCustomChange = (e: any) => {
+      if (e.detail && CURRENCIES[e.detail as CurrencyCode]) {
+        setCurrencyState(e.detail as CurrencyCode);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("ots_currency_change", handleCustomChange);
 
     // Verify session with server HTTP-Only cookie
     fetch("/api/auth/me")
@@ -64,15 +85,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {});
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("ots_currency_change", handleCustomChange);
+    };
   }, []);
 
-  const setCurrency = (code: CurrencyCode) => {
+  const setCurrency = useCallback((code: CurrencyCode) => {
+    if (!CURRENCIES[code]) return;
     setCurrencyState(code);
     try {
       localStorage.setItem("ots_currency", code);
-      document.cookie = `selectedcurrency=${code}; path=/; max-age=31536000`;
+      document.cookie = `selectedcurrency=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      window.dispatchEvent(new CustomEvent("ots_currency_change", { detail: code }));
     } catch (e) {}
-  };
+  }, []);
 
   const logout = (redirectUrl: string = "/account/login") => {
     setUser(null);
@@ -86,9 +114,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
   };
 
-  const customFormatPrice = (amountGbp: number) => {
-    return formatPrice(amountGbp, currency);
-  };
+  const customFormatPrice = useCallback(
+    (amountGbp: number) => formatPrice(amountGbp, currency),
+    [currency]
+  );
+
+  const customConvertPrice = useCallback(
+    (amountGbp: number) => convertFromGbp(amountGbp, currency),
+    [currency]
+  );
 
   return (
     <AppContext.Provider
@@ -98,6 +132,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         language,
         setLanguage,
         formatPrice: customFormatPrice,
+        convertPrice: customConvertPrice,
         user,
         setUser: (u) => {
           setUser(u);
