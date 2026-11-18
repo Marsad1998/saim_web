@@ -280,22 +280,22 @@ export default function StepDetails({
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between gap-2 sm:gap-4 pt-2">
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-3 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-xl transition-colors flex items-center space-x-2"
+          className="px-3 sm:px-6 py-2.5 sm:py-3.5 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-center space-x-1.5 sm:space-x-2 whitespace-nowrap flex-shrink-0"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Vehicles</span>
+          <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="whitespace-nowrap">Back to Vehicles</span>
         </button>
 
         <button
           type="submit"
-          className="px-8 py-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-base rounded-xl shadow-lg transition-all flex items-center space-x-2"
+          className="px-3.5 sm:px-8 py-2.5 sm:py-3.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs sm:text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-1.5 sm:space-x-2 whitespace-nowrap flex-shrink-0"
         >
-          <span>Proceed to Payment</span>
-          <ArrowRight className="w-5 h-5" />
+          <span className="whitespace-nowrap">Proceed to Payment</span>
+          <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 flex-shrink-0" />
         </button>
       </div>
     </form>

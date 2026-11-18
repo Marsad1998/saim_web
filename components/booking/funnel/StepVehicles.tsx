@@ -240,10 +240,10 @@ export default function StepVehicles({
         <button
           type="button"
           onClick={onNext}
-          className="w-full sm:w-auto px-8 py-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+          className="w-full sm:w-auto px-4 sm:px-8 py-3.5 sm:py-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm sm:text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 whitespace-nowrap"
         >
-          <span>Continue to Passenger Details</span>
-          <ArrowRight className="w-5 h-5" />
+          <span className="whitespace-nowrap">Continue to Passenger Details</span>
+          <ArrowRight className="w-5 h-5 flex-shrink-0" />
         </button>
       </div>
     </div>

@@ -389,17 +389,17 @@ export default function StepPayment({
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60"
+                className="w-full py-3.5 sm:py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60 whitespace-nowrap"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Confirming Reservation...</span>
+                    <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                    <span className="whitespace-nowrap">Confirming Reservation...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Confirm Booking &amp; Pay Cash on Arrival</span>
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Confirm Booking (Pay Cash on Arrival)</span>
                   </>
                 )}
               </button>
@@ -501,17 +501,17 @@ export default function StepPayment({
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-75 disabled:cursor-not-allowed mt-4"
+              className="w-full py-3.5 sm:py-4 px-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-75 disabled:cursor-not-allowed mt-4 whitespace-nowrap"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Processing Payment via Stripe...</span>
+                  <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                  <span className="whitespace-nowrap">Processing Payment via Stripe...</span>
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
-                  <span>Pay &amp; Confirm Booking ({formatPrice(totalAmount)})</span>
+                  <Lock className="w-4 h-4 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Pay &amp; Confirm Booking ({formatPrice(totalAmount)})</span>
                 </>
               )}
             </button>
@@ -540,10 +540,10 @@ export default function StepPayment({
           type="button"
           onClick={onBack}
           disabled={isProcessing}
-          className="px-6 py-3 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
+          className="px-4 sm:px-6 py-2.5 sm:py-3.5 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-xs sm:text-sm rounded-xl transition-colors flex items-center space-x-1.5 sm:space-x-2 disabled:opacity-50 whitespace-nowrap"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Details</span>
+          <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="whitespace-nowrap">Back to Details</span>
         </button>
       </div>
     </div>

@@ -127,17 +127,17 @@ export default function StripeRealPaymentElement({
       <button
         type="submit"
         disabled={isProcessing || !stripe || !elements}
-        className="w-full py-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-base md:text-lg rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60"
+        className="w-full py-3.5 sm:py-4 px-4 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs sm:text-base md:text-lg rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60 whitespace-nowrap"
       >
         {isProcessing ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Authorizing Payment via Stripe...</span>
+            <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+            <span className="whitespace-nowrap">Authorizing Payment via Stripe...</span>
           </>
         ) : (
           <>
-            <Lock className="w-4 h-4" />
-            <span>Pay &amp; Confirm Booking ({formatPrice(totalAmount)})</span>
+            <Lock className="w-4 h-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">Pay &amp; Confirm Booking ({formatPrice(totalAmount)})</span>
           </>
         )}
       </button>

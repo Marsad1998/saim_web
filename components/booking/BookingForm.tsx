@@ -408,15 +408,15 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 px-6 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-3.5 sm:py-4 px-4 sm:px-6 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <span>Calculating Best Fares...</span>
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin flex-shrink-0" />
+                <span className="whitespace-nowrap">Calculating Best Fares...</span>
               </>
             ) : (
-              <span>Get Instant Quote & Book</span>
+              <span className="whitespace-nowrap">Get Instant Quote &amp; Book</span>
             )}
           </button>
         </div>

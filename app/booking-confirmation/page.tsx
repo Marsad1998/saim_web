@@ -239,15 +239,20 @@ function BookingConfirmationContent() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
           <Link
             href="/"
-            className="w-full sm:w-auto px-6 py-3 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-xl transition-colors flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto px-6 py-3 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-xl transition-colors flex items-center justify-center space-x-2 whitespace-nowrap"
           >
-            <Home className="w-4 h-4" />
-            <span>Return to Homepage</span>
+            <Home className="w-4 h-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">Return to Homepage</span>
           </Link>
 
           <button
             onClick={handlePrint}
-            className="w-full sm:w-auto px-6 py-3 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto px-6 py-3 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2 whitespace-nowrap"
+          >
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">Print / Save Booking Voucher</span>
+          </button>
+        </div>
           >
             <Printer className="w-4 h-4" />
             <span>Print / Save Booking Voucher</span>
