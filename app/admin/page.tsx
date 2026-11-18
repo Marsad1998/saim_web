@@ -658,47 +658,154 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {drivers.map((d) => {
-                const isVerified = d.verification_status === 'approved' || (Boolean(d.license_number) && d.verification_status !== 'incomplete');
-                const isPending = d.verification_status === 'pending_approval' || (Boolean(d.license_number) && !d.is_active);
+                const score = d.completion_score !== undefined && d.completion_score !== null ? Number(d.completion_score) : (d.license_number ? 75 : 0);
+                const isVerified = d.verification_status === 'approved';
+                const isPending = d.verification_status === 'pending_approval' || (score === 100 && !isVerified);
 
                 return (
-                  <div key={d.id} className="p-4 border border-gray-200 rounded-xl space-y-3 bg-gray-50/50">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-900 text-sm">{d.driver_name || 'Chauffeur'}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isVerified
-                          ? 'bg-green-100 text-green-800'
-                          : isPending
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {isVerified ? '✓ Approved' : isPending ? '⏳ Pending Approval' : 'Incomplete Profile'}
-                      </span>
+                  <div key={d.id} className="p-5 border border-gray-200 rounded-2xl space-y-4 bg-white shadow-sm hover:shadow-md transition">
+                    
+                    {/* Header: Name, Score Badge, Status */}
+                    <div className="flex items-start justify-between gap-2 border-b border-gray-100 pb-3">
+                      <div>
+                        <span className="font-extrabold text-gray-900 text-sm block">{d.driver_name || 'Chauffeur'}</span>
+                        <span className="text-[11px] text-gray-400 font-mono">ID: {d.id}</span>
+                        {d.driver_email && <span className="text-[11px] text-gray-500 block truncate">{d.driver_email}</span>}
+                      </div>
+
+                      <div className="text-right flex flex-col items-end">
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase ${
+                          isVerified
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isPending
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {isVerified ? '✓ Approved' : isPending ? '⏳ Pending Approval' : 'Incomplete'}
+                        </span>
+                        <div className="flex items-center space-x-1 mt-1.5">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase">Score:</span>
+                          <span className={`text-xs font-black ${
+                            score === 100 ? 'text-emerald-600' : score >= 50 ? 'text-amber-600' : 'text-red-500'
+                          }`}>
+                            {score}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <div><strong>Car:</strong> {d.vehicle_model || 'Not set'} ({d.vehicle_category || 'Saloon'})</div>
-                      <div><strong>Plate:</strong> <span className="font-mono bg-white px-1.5 py-0.5 border rounded">{d.vehicle_plate || 'PENDING'}</span></div>
-                      <div><strong>License:</strong> {d.license_number || 'Awaiting submission'}</div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          score === 100 ? 'bg-emerald-500' : score >= 50 ? 'bg-ots-yellow' : 'bg-red-400'
+                        }`}
+                        style={{ width: `${score}%` }}
+                      ></div>
+                    </div>
+
+                    {/* 4 Steps Breakdown */}
+                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                      <div className={`p-1.5 rounded-lg border flex items-center space-x-1.5 ${
+                        d.step1_completed || d.address ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-400'
+                      }`}>
+                        <span>{(d.step1_completed || d.address) ? '✓' : '○'}</span>
+                        <span>Personal (25%)</span>
+                      </div>
+
+                      <div className={`p-1.5 rounded-lg border flex items-center space-x-1.5 ${
+                        d.step2_completed || d.license_number ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-400'
+                      }`}>
+                        <span>{(d.step2_completed || d.license_number) ? '✓' : '○'}</span>
+                        <span>PCO Badge (25%)</span>
+                      </div>
+
+                      <div className={`p-1.5 rounded-lg border flex items-center space-x-1.5 ${
+                        d.step3_completed || d.vehicle_plate ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-400'
+                      }`}>
+                        <span>{(d.step3_completed || d.vehicle_plate) ? '✓' : '○'}</span>
+                        <span>Vehicle (25%)</span>
+                      </div>
+
+                      <div className={`p-1.5 rounded-lg border flex items-center space-x-1.5 ${
+                        d.step4_completed || (d.sort_code && d.account_number) ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-400'
+                      }`}>
+                        <span>{(d.step4_completed || (d.sort_code && d.account_number)) ? '✓' : '○'}</span>
+                        <span>Bank / Ins. (25%)</span>
+                      </div>
+                    </div>
+
+                    {/* Vehicle & PCO License Info */}
+                    <div className="text-xs text-gray-600 space-y-1 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <div><strong>Vehicle:</strong> {d.vehicle_model || 'Not provided'} ({d.vehicle_category || 'Saloon'})</div>
+                      <div><strong>Reg Plate:</strong> <span className="font-mono bg-white px-1.5 py-0.5 border rounded font-bold">{d.vehicle_plate || 'PENDING'}</span></div>
+                      <div><strong>PCO License:</strong> {d.license_number || 'Awaiting submission'}</div>
+                      {d.pco_expiry && <div><strong>PCO Expiry:</strong> {d.pco_expiry}</div>}
                       {d.driver_phone && <div><strong>Phone:</strong> {d.driver_phone}</div>}
                     </div>
 
-                    {!isVerified && d.license_number && (
+                    {/* Uploaded Documents Links */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Compliance Documents:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {d.doc_pco_badge && (
+                          <a
+                            href={d.doc_pco_badge}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 font-semibold inline-flex items-center space-x-1"
+                          >
+                            <span>📄 PCO Badge</span>
+                          </a>
+                        )}
+                        {d.doc_phv_mot && (
+                          <a
+                            href={d.doc_phv_mot}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 font-semibold inline-flex items-center space-x-1"
+                          >
+                            <span>📄 PHV MOT</span>
+                          </a>
+                        )}
+                        {d.doc_insurance && (
+                          <a
+                            href={d.doc_insurance}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 font-semibold inline-flex items-center space-x-1"
+                          >
+                            <span>📄 Insurance</span>
+                          </a>
+                        )}
+                        {!d.doc_pco_badge && !d.doc_phv_mot && !d.doc_insurance && (
+                          <span className="text-[11px] text-gray-400 italic">No files uploaded yet</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Admin Action: Approve Button */}
+                    {!isVerified ? (
                       <button
                         onClick={() => handleApproveDriver(d.id)}
                         disabled={actionLoading === d.id}
-                        className="w-full mt-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5"
+                        className="w-full mt-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5"
                       >
                         {actionLoading === d.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <>
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>Approve Chauffeur</span>
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>Approve Chauffeur (Activate On-Duty)</span>
                           </>
                         )}
                       </button>
+                    ) : (
+                      <div className="w-full py-2 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold text-center border border-emerald-200">
+                        ✓ Verified &amp; Authorized
+                      </div>
                     )}
                   </div>
                 );

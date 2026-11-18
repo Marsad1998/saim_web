@@ -9,7 +9,6 @@ import {
   Calendar, 
   Clock, 
   Phone, 
-  MessageSquare, 
   Navigation, 
   CheckCircle2, 
   AlertCircle, 
@@ -20,12 +19,18 @@ import {
   Star, 
   Power,
   ChevronRight,
-  Plane,
+  ChevronLeft,
   Lock,
-  FileCheck,
+  Upload,
+  FileText,
   CreditCard,
   Save,
-  Check
+  Check,
+  User,
+  Shield,
+  FileCheck2,
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -38,27 +43,47 @@ export default function DriverDashboardPage() {
     completedTrips: 0,
     totalEarnings: 0,
     todayEarnings: 0,
-    rating: 4.95,
+    rating: 5.0,
   });
   const [trips, setTrips] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingTripId, setUpdatingTripId] = useState<string | null>(null);
   const [isOnDuty, setIsOnDuty] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'vehicle'>('active');
+  const [activeTab, setActiveTab] = useState<'onboarding' | 'active' | 'completed'>('onboarding');
 
-  // Chauffeur Onboarding / Profile Form State
+  // Step Wizard State
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+
+  // Chauffeur Onboarding Form State
   const [profileForm, setProfileForm] = useState({
+    // Step 1: Personal
+    address: '',
+    niNumber: '',
+    emergencyContact: '',
+    // Step 2: PCO & DVLA Licensing
     licenseNumber: '',
     pcoExpiry: '',
+    dvlaLicenseNumber: '',
+    docPcoBadge: '',
+    docDvlaLicense: '',
+    // Step 3: Vehicle Specification
     vehicleModel: '',
     vehiclePlate: '',
+    vehicleYear: '',
     vehicleCategory: 'saloon',
+    docPhvMot: '',
+    // Step 4: Insurance & Payout Banking
     insuranceNumber: '',
+    insuranceExpiry: '',
+    bankName: '',
     sortCode: '',
     accountNumber: '',
+    docInsurance: '',
   });
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [isSavingStep, setIsSavingStep] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadDriverData = async () => {
     setIsLoading(true);
@@ -83,15 +108,33 @@ export default function DriverDashboardPage() {
           // Populate profile form if driver data exists
           if (sData.driver) {
             setProfileForm({
+              address: sData.driver.address || '',
+              niNumber: sData.driver.ni_number || '',
+              emergencyContact: sData.driver.emergency_contact || '',
               licenseNumber: sData.driver.license_number || '',
               pcoExpiry: sData.driver.pco_expiry ? sData.driver.pco_expiry.split('T')[0] : '',
+              dvlaLicenseNumber: sData.driver.dvla_license_number || '',
+              docPcoBadge: sData.driver.doc_pco_badge || '',
+              docDvlaLicense: sData.driver.doc_dvla_license || '',
               vehicleModel: sData.driver.vehicle_model || '',
               vehiclePlate: sData.driver.vehicle_plate || '',
+              vehicleYear: sData.driver.vehicle_year || '',
               vehicleCategory: sData.driver.vehicle_category || 'saloon',
+              docPhvMot: sData.driver.doc_phv_mot || '',
               insuranceNumber: sData.driver.insurance_number || '',
+              insuranceExpiry: sData.driver.insurance_expiry ? sData.driver.insurance_expiry.split('T')[0] : '',
+              bankName: sData.driver.bank_name || '',
               sortCode: sData.driver.sort_code || '',
               accountNumber: sData.driver.account_number || '',
+              docInsurance: sData.driver.doc_insurance || '',
             });
+
+            // If driver is fully verified & active, default active tab to 'active' trips
+            if (sData.driver.verification_status === 'approved') {
+              setActiveTab('active');
+            } else {
+              setActiveTab('onboarding');
+            }
           }
         }
       }
@@ -113,14 +156,39 @@ export default function DriverDashboardPage() {
     loadDriverData();
   }, []);
 
-  const isProfileIncomplete = !driver?.license_number || driver?.verification_status === 'incomplete';
+  // Compute live step scores
+  const isStep1Done = Boolean(
+    (profileForm.address && profileForm.address.trim().length > 3) ||
+    (profileForm.emergencyContact && profileForm.emergencyContact.trim().length > 3)
+  );
 
+  const isStep2Done = Boolean(
+    profileForm.licenseNumber && profileForm.licenseNumber.trim().length >= 4 &&
+    (profileForm.pcoExpiry || profileForm.docPcoBadge || profileForm.dvlaLicenseNumber)
+  );
+
+  const isStep3Done = Boolean(
+    profileForm.vehicleModel && profileForm.vehicleModel.trim().length >= 3 &&
+    profileForm.vehiclePlate && profileForm.vehiclePlate.trim().length >= 3
+  );
+
+  const isStep4Done = Boolean(
+    (profileForm.insuranceNumber || profileForm.docInsurance) &&
+    profileForm.sortCode && profileForm.sortCode.replace(/\D/g, '').length >= 6 &&
+    profileForm.accountNumber && profileForm.accountNumber.replace(/\D/g, '').length >= 8
+  );
+
+  const completionScore = (isStep1Done ? 25 : 0) + (isStep2Done ? 25 : 0) + (isStep3Done ? 25 : 0) + (isStep4Done ? 25 : 0);
+  const isFullyCompleted = completionScore === 100;
+  const isApproved = driver?.verification_status === 'approved';
+
+  // Toggle On-Duty
   const handleToggleDuty = async () => {
-    if (isProfileIncomplete) {
-      setActiveTab('vehicle');
-      setProfileFeedback({
+    if (!isApproved || !isFullyCompleted) {
+      setActiveTab('onboarding');
+      setFeedback({
         type: 'error',
-        text: 'Chauffeur verification required: Please complete your PCO license and vehicle registration below to go On-Duty.',
+        text: `Compliance Required: You cannot go On-Duty until all 4 profile steps are completed and approved by OTS Taxi Admin (Current Score: ${completionScore}%).`,
       });
       return;
     }
@@ -144,52 +212,109 @@ export default function DriverDashboardPage() {
     }
   };
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingProfile(true);
-    setProfileFeedback(null);
+  // Document File Upload Handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (!profileForm.licenseNumber.trim() || !profileForm.vehicleModel.trim() || !profileForm.vehiclePlate.trim()) {
-      setProfileFeedback({
-        type: 'error',
-        text: 'Please fill in your PCO License Number, Vehicle Model, and Registration Plate.',
+    setUploadingDocType(docType);
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('docType', docType);
+
+    try {
+      const res = await fetch('/api/driver/upload', {
+        method: 'POST',
+        body: formData,
       });
-      setIsSavingProfile(false);
-      return;
+
+      const data = await res.json();
+
+      if (res.ok && data.status && data.fileUrl) {
+        setProfileForm((prev) => ({ ...prev, [docType]: data.fileUrl }));
+        setFeedback({
+          type: 'success',
+          text: `Document uploaded successfully: ${data.fileName}`,
+        });
+
+        // Auto-save to driver profile
+        await fetch('/api/driver/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [docType]: data.fileUrl }),
+        });
+
+        // Refresh driver data
+        const sRes = await fetch('/api/driver/status');
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData.status) setDriver(sData.driver);
+        }
+      } else {
+        setFeedback({
+          type: 'error',
+          text: data.message || 'Failed to upload document. Please try again.',
+        });
+      }
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      setFeedback({
+        type: 'error',
+        text: 'Network error while uploading file.',
+      });
+    } finally {
+      setUploadingDocType(null);
     }
+  };
+
+  // Save Step Action
+  const handleSaveStep = async (stepNum: 1 | 2 | 3 | 4) => {
+    setIsSavingStep(true);
+    setFeedback(null);
 
     try {
       const res = await fetch('/api/driver/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileForm),
+        body: JSON.stringify({
+          ...profileForm,
+          stepSubmitted: stepNum,
+        }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.status) {
-        setProfileFeedback({
+        setFeedback({
           type: 'success',
-          text: data.message || 'Chauffeur profile and vehicle documentation updated successfully!',
+          text: data.message || `Step ${stepNum} saved successfully!`,
         });
+
         if (data.driver) {
           setDriver(data.driver);
           setIsOnDuty(Boolean(data.driver.is_active));
         }
+
+        // Auto-advance to next step if not final
+        if (stepNum < 4) {
+          setCurrentStep((stepNum + 1) as 1 | 2 | 3 | 4);
+        }
       } else {
-        setProfileFeedback({
+        setFeedback({
           type: 'error',
-          text: data.message || 'Failed to update profile.',
+          text: data.message || 'Failed to save details.',
         });
       }
     } catch (err: any) {
-      console.error('Save profile error:', err);
-      setProfileFeedback({
+      console.error('Save step error:', err);
+      setFeedback({
         type: 'error',
-        text: 'Network error while saving profile. Please try again.',
+        text: 'Network error while saving details.',
       });
     } finally {
-      setIsSavingProfile(false);
+      setIsSavingStep(false);
     }
   };
 
@@ -214,12 +339,6 @@ export default function DriverDashboardPage() {
     }
   };
 
-  const handleLogout = async () => {
-    logout();
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    router.push('/account/login');
-  };
-
   const activeTrips = trips.filter((t) => t.booking_status !== 'completed' && t.booking_status !== 'cancelled');
   const completedTrips = trips.filter((t) => t.booking_status === 'completed');
 
@@ -231,6 +350,10 @@ export default function DriverDashboardPage() {
       </div>
     );
   }
+
+  // Circular progress stroke calculation (radius = 40, circumference = 251.2)
+  const circleCircumference = 251.2;
+  const strokeDashoffset = circleCircumference - (circleCircumference * completionScore) / 100;
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-6 md:py-10">
@@ -245,48 +368,52 @@ export default function DriverDashboardPage() {
                   Chauffeur Portal
                 </span>
                 <span className="text-xs text-neutral-400 font-mono">
-                  ID: {driver?.id || 'DRV-781'}
+                  ID: {driver?.id || 'DRV-NEW'}
                 </span>
-                {driver?.verification_status && (
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                    driver.verification_status === 'approved'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : driver.verification_status === 'pending_approval'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      : 'bg-red-500/20 text-red-300 border border-red-500/40'
-                  }`}>
-                    {driver.verification_status.replace('_', ' ')}
-                  </span>
-                )}
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                  isApproved
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : isFullyCompleted
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                }`}>
+                  {isApproved
+                    ? '✓ Verified Chauffeur'
+                    : isFullyCompleted
+                    ? '⏳ Pending Admin Approval'
+                    : `Incomplete (${completionScore}% Score)`}
+                </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
-                {driver?.name || user?.name || 'Authorized Driver'}
+
+              <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1.5">
+                {driver?.name || user?.name || 'Chauffeur Partner'}
               </h1>
+
               <p className="text-xs text-neutral-400 mt-0.5 flex items-center space-x-2">
                 <Car className="w-3.5 h-3.5 text-ots-yellow" />
-                <span>{driver?.vehicle_model || (isProfileIncomplete ? 'Profile Incomplete' : 'Executive Saloon')} • </span>
+                <span>{profileForm.vehicleModel || (isFullyCompleted ? 'Executive Vehicle' : 'Vehicle Not Specified')} • </span>
                 <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white font-bold">
-                  {driver?.vehicle_plate || (isProfileIncomplete ? 'NO PLATE' : 'LO71 ABC')}
+                  {profileForm.vehiclePlate || 'NO PLATE'}
                 </span>
               </p>
             </div>
 
             {/* Duty Status Button & Logout */}
             <div className="flex items-center space-x-3">
-              {isProfileIncomplete ? (
+              {!isApproved ? (
                 <button
                   onClick={() => {
-                    setActiveTab('vehicle');
-                    setProfileFeedback({
+                    setActiveTab('onboarding');
+                    setFeedback({
                       type: 'error',
-                      text: 'You must complete and submit your PCO & vehicle details below before going On-Duty.',
+                      text: `On-Duty is locked! Please complete all 4 onboarding steps to reach 100% score (Current: ${completionScore}%).`,
                     });
                   }}
                   className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2 border shadow-sm bg-neutral-800 text-neutral-400 border-neutral-700 hover:border-ots-yellow hover:text-white"
                   title="Complete profile to unlock On-Duty"
                 >
                   <Lock className="w-4 h-4 text-amber-400" />
-                  <span>🔒 Verification Required</span>
+                  <span>🔒 Locked ({completionScore}%)</span>
                 </button>
               ) : (
                 <button
@@ -303,7 +430,7 @@ export default function DriverDashboardPage() {
               )}
 
               <button
-                onClick={handleLogout}
+                onClick={() => logout()}
                 className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition"
                 title="Sign Out"
               >
@@ -336,41 +463,32 @@ export default function DriverDashboardPage() {
             </div>
 
             <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-              <div className="text-xs text-neutral-400">Rating</div>
+              <div className="text-xs text-neutral-400">Chauffeur Rating</div>
               <div className="text-xl font-extrabold text-amber-300 mt-1 flex items-center space-x-1">
                 <Star className="w-4 h-4 fill-amber-300" />
-                <span>{stats.rating || 4.95}</span>
+                <span>{stats.rating || 5.0}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Profile Incomplete Warning Banner */}
-        {isProfileIncomplete && (
-          <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-start space-x-3">
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-extrabold text-amber-950">
-                  Chauffeur Onboarding Action Required: Complete Your Vehicle &amp; PCO Profile
-                </h4>
-                <p className="text-xs text-amber-800 mt-0.5">
-                  Welcome to OTS Taxi! Your driver account is active, but you cannot switch to <strong>On-Duty</strong> or accept passenger rides until your TfL/Council PCO license and vehicle registration are submitted.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setActiveTab('vehicle')}
-              className="px-4 py-2.5 bg-black hover:bg-neutral-800 text-ots-yellow font-bold text-xs rounded-xl flex-shrink-0 transition shadow flex items-center space-x-1.5 self-start sm:self-center"
-            >
-              <span>Complete Profile</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Navigation Tabs */}
         <div className="flex border-b border-gray-200 mt-8 space-x-6">
+          <button
+            onClick={() => setActiveTab('onboarding')}
+            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2 ${
+              activeTab === 'onboarding'
+                ? 'border-ots-yellow text-gray-900'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Onboarding &amp; Compliance ({completionScore}%)</span>
+            {!isApproved && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            )}
+          </button>
+
           <button
             onClick={() => setActiveTab('active')}
             className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2 ${
@@ -390,28 +508,742 @@ export default function DriverDashboardPage() {
                 : 'border-transparent text-gray-400 hover:text-gray-700'
             }`}
           >
-            <span>Trip History</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('vehicle')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2 ${
-              activeTab === 'vehicle'
-                ? 'border-ots-yellow text-gray-900'
-                : 'border-transparent text-gray-400 hover:text-gray-700'
-            }`}
-          >
-            <span>Vehicle &amp; PCO License</span>
-            {isProfileIncomplete && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-            )}
+            <span>Trip History ({completedTrips.length})</span>
           </button>
         </div>
 
-        {/* Tab 1: Active Trips */}
+        {/* ============================================================== */}
+        {/* TAB 1: 4-STEP ONBOARDING WIZARD WITH PROGRESS CIRCLE & DOCS     */}
+        {/* ============================================================== */}
+        {activeTab === 'onboarding' && (
+          <div className="mt-6 space-y-6">
+            
+            {/* Progress Circle & Status Card */}
+            <div className="bg-white rounded-3xl border border-gray-200 p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+              
+              <div className="flex items-center space-x-5">
+                {/* SVG Circular Progress Meter */}
+                <div className="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="#f1f5f9"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke={completionScore === 100 ? '#10b981' : completionScore >= 50 ? '#FFCC00' : '#f59e0b'}
+                      strokeWidth="8"
+                      strokeDasharray={circleCircumference}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <span className="text-xl font-black text-gray-900 leading-none">{completionScore}%</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 mt-0.5">Score</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs uppercase font-extrabold tracking-wider text-ots-yellow bg-black px-2.5 py-0.5 rounded">
+                      Step {currentStep} of 4
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500">
+                      {isFullyCompleted ? '4 of 4 Steps Complete' : `${(completionScore / 25)} of 4 Steps Finished`}
+                    </span>
+                  </div>
+
+                  <h2 className="text-lg md:text-xl font-black text-gray-900 mt-1">
+                    {completionScore === 100 && isApproved
+                      ? '✓ All Compliance Verified & Active'
+                      : completionScore === 100
+                      ? '🎉 Profile 100% Complete – Pending Admin Review'
+                      : 'Complete Your Chauffeur Onboarding'}
+                  </h2>
+
+                  <p className="text-xs text-gray-500 mt-0.5 max-w-lg">
+                    {completionScore === 100
+                      ? 'Your PCO license, vehicle documentation, and insurance details are submitted. Admin will authorize your account.'
+                      : 'Fill in each section and upload required compliance files to unlock your On-Duty status and receive transfers.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step Summary Badges */}
+              <div className="grid grid-cols-2 gap-2 text-xs w-full md:w-auto">
+                <div className={`p-2.5 rounded-xl border flex items-center space-x-2 ${
+                  isStep1Done ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}>
+                  {isStep1Done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px]">1</div>}
+                  <span className="font-semibold text-[11px]">1. Personal (25%)</span>
+                </div>
+
+                <div className={`p-2.5 rounded-xl border flex items-center space-x-2 ${
+                  isStep2Done ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}>
+                  {isStep2Done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px]">2</div>}
+                  <span className="font-semibold text-[11px]">2. PCO License (25%)</span>
+                </div>
+
+                <div className={`p-2.5 rounded-xl border flex items-center space-x-2 ${
+                  isStep3Done ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}>
+                  {isStep3Done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px]">3</div>}
+                  <span className="font-semibold text-[11px]">3. Vehicle (25%)</span>
+                </div>
+
+                <div className={`p-2.5 rounded-xl border flex items-center space-x-2 ${
+                  isStep4Done ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}>
+                  {isStep4Done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> : <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px]">4</div>}
+                  <span className="font-semibold text-[11px]">4. Insurance (25%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback Message */}
+            {feedback && (
+              <div className={`p-4 rounded-2xl text-xs flex items-center space-x-2.5 shadow-sm ${
+                feedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                  : 'bg-red-50 text-red-900 border border-red-200'
+              }`}>
+                {feedback.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                )}
+                <span className="font-medium">{feedback.text}</span>
+              </div>
+            )}
+
+            {/* Stepper Navigation Pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className={`p-3 rounded-2xl border text-left transition-all ${
+                  currentStep === 1
+                    ? 'border-ots-yellow bg-white shadow-md ring-2 ring-ots-yellow/30'
+                    : isStep1Done
+                    ? 'border-emerald-200 bg-emerald-50/50'
+                    : 'border-gray-200 bg-white/70'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase text-gray-400">Step 01</span>
+                  {isStep1Done && <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />}
+                </div>
+                <div className="text-xs font-bold text-gray-900 mt-0.5">Personal Info</div>
+                <div className="text-[10px] text-gray-500">+25% Points</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                className={`p-3 rounded-2xl border text-left transition-all ${
+                  currentStep === 2
+                    ? 'border-ots-yellow bg-white shadow-md ring-2 ring-ots-yellow/30'
+                    : isStep2Done
+                    ? 'border-emerald-200 bg-emerald-50/50'
+                    : 'border-gray-200 bg-white/70'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase text-gray-400">Step 02</span>
+                  {isStep2Done && <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />}
+                </div>
+                <div className="text-xs font-bold text-gray-900 mt-0.5">PCO &amp; DVLA License</div>
+                <div className="text-[10px] text-gray-500">+25% Points</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className={`p-3 rounded-2xl border text-left transition-all ${
+                  currentStep === 3
+                    ? 'border-ots-yellow bg-white shadow-md ring-2 ring-ots-yellow/30'
+                    : isStep3Done
+                    ? 'border-emerald-200 bg-emerald-50/50'
+                    : 'border-gray-200 bg-white/70'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase text-gray-400">Step 03</span>
+                  {isStep3Done && <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />}
+                </div>
+                <div className="text-xs font-bold text-gray-900 mt-0.5">Vehicle &amp; MOT</div>
+                <div className="text-[10px] text-gray-500">+25% Points</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className={`p-3 rounded-2xl border text-left transition-all ${
+                  currentStep === 4
+                    ? 'border-ots-yellow bg-white shadow-md ring-2 ring-ots-yellow/30'
+                    : isStep4Done
+                    ? 'border-emerald-200 bg-emerald-50/50'
+                    : 'border-gray-200 bg-white/70'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase text-gray-400">Step 04</span>
+                  {isStep4Done && <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />}
+                </div>
+                <div className="text-xs font-bold text-gray-900 mt-0.5">Insurance &amp; Banking</div>
+                <div className="text-[10px] text-gray-500">+25% Points</div>
+              </button>
+            </div>
+
+            {/* Step Form Box */}
+            <div className="bg-white rounded-3xl border border-gray-200 p-6 md:p-8 shadow-sm space-y-6">
+              
+              {/* ======================================================= */}
+              {/* STEP 1: Personal & Chauffeur Profile                     */}
+              {/* ======================================================= */}
+              {currentStep === 1 && (
+                <div className="space-y-5">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+                      <User className="w-4 h-4 text-ots-yellow" />
+                      <span>Step 1: Chauffeur Profile &amp; Contact Details</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Enter your residential address and emergency contact information for TfL licensing records.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Full Legal Name</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={driver?.name || user?.name || ''}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs bg-gray-50 text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Contact Phone Number</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={driver?.phone || user?.phone || ''}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs bg-gray-50 text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Residential UK Address <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 24 High Street, Kensington, London W8 4PT"
+                        value={profileForm.address}
+                        onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        National Insurance (NI) Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. QQ 12 34 56 A"
+                        value={profileForm.niNumber}
+                        onChange={(e) => setProfileForm({ ...profileForm, niNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Emergency Contact (Name &amp; Phone) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sarah Wilson (+44 7911 123456)"
+                        value={profileForm.emergencyContact}
+                        onChange={(e) => setProfileForm({ ...profileForm, emergencyContact: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Step 1 completes 25% of your total score.</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveStep(1)}
+                      disabled={isSavingStep}
+                      className="px-6 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-1.5"
+                    >
+                      {isSavingStep ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save &amp; Continue ➔</span>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ======================================================= */}
+              {/* STEP 2: PCO & DVLA Licensing + Document Upload          */}
+              {/* ======================================================= */}
+              {currentStep === 2 && (
+                <div className="space-y-5">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+                      <Shield className="w-4 h-4 text-ots-yellow" />
+                      <span>Step 2: PCO Driver Licensing &amp; Badge Upload</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Upload your Transport for London (TfL) or Local Council Private Hire Driver badge.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        PCO Private Hire License Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. PCO-984321"
+                        value={profileForm.licenseNumber}
+                        onChange={(e) => setProfileForm({ ...profileForm, licenseNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase font-bold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        PCO License Expiry Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={profileForm.pcoExpiry}
+                        onChange={(e) => setProfileForm({ ...profileForm, pcoExpiry: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        DVLA Driving License Number (16 Digits)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. WILSO812045JW99"
+                        value={profileForm.dvlaLicenseNumber}
+                        onChange={(e) => setProfileForm({ ...profileForm, dvlaLicenseNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    {/* Document Upload: PCO Badge */}
+                    <div className="sm:col-span-2 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-300 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-gray-800 block">
+                            Upload PCO Driver Badge (Photo or PDF) <span className="text-red-500">*</span>
+                          </span>
+                          <span className="text-[10px] text-gray-400">Front photo showing badge number, photo, and expiry</span>
+                        </div>
+                        {profileForm.docPcoBadge ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold text-emerald-600 flex items-center space-x-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Uploaded</span>
+                            </span>
+                            <a
+                              href={profileForm.docPcoBadge}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 underline flex items-center space-x-0.5"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 hover:border-ots-yellow rounded-xl text-xs font-bold text-gray-700 shadow-sm transition flex items-center space-x-1.5">
+                          {uploadingDocType === 'docPcoBadge' ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-ots-yellow" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-ots-yellow" />
+                          )}
+                          <span>{profileForm.docPcoBadge ? 'Replace PCO Badge' : 'Select PCO Badge File'}</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => handleFileUpload(e, 'docPcoBadge')}
+                            className="hidden"
+                          />
+                        </label>
+                        <span className="text-[11px] text-gray-400">Supports JPG, PNG, PDF up to 10MB</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(1)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-50 flex items-center space-x-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Previous</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveStep(2)}
+                      disabled={isSavingStep}
+                      className="px-6 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-1.5"
+                    >
+                      {isSavingStep ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save &amp; Continue ➔</span>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ======================================================= */}
+              {/* STEP 3: Vehicle Specification & Compliance              */}
+              {/* ======================================================= */}
+              {currentStep === 3 && (
+                <div className="space-y-5">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+                      <Car className="w-4 h-4 text-ots-yellow" />
+                      <span>Step 3: Vehicle Specification &amp; PHV MOT Compliance</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Register your vehicle make, model, registration plate, and council MOT license certificate.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Vehicle Make &amp; Model <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Mercedes-Benz E-Class"
+                        value={profileForm.vehicleModel}
+                        onChange={(e) => setProfileForm({ ...profileForm, vehicleModel: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Vehicle Registration Plate (VRN) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. LO71 ABC"
+                        value={profileForm.vehiclePlate}
+                        onChange={(e) => setProfileForm({ ...profileForm, vehiclePlate: e.target.value.toUpperCase() })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase font-bold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Year of Manufacture</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 2023"
+                        value={profileForm.vehicleYear}
+                        onChange={(e) => setProfileForm({ ...profileForm, vehicleYear: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Vehicle Service Category</label>
+                      <select
+                        value={profileForm.vehicleCategory}
+                        onChange={(e) => setProfileForm({ ...profileForm, vehicleCategory: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none bg-white"
+                      >
+                        <option value="saloon">Standard Saloon (Up to 4 Pax)</option>
+                        <option value="estate">Estate / Station Wagon (Large Luggage)</option>
+                        <option value="executive">Executive Class (Mercedes E-Class / BMW 5)</option>
+                        <option value="mpv">MPV 6-Seater (Ford Galaxy / Sharan)</option>
+                        <option value="minibus">8-Seater Minibus (Mercedes Vito / V-Class)</option>
+                      </select>
+                    </div>
+
+                    {/* Document Upload: PHV MOT */}
+                    <div className="sm:col-span-2 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-300 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-gray-800 block">
+                            Upload PHV Vehicle License / MOT Document
+                          </span>
+                          <span className="text-[10px] text-gray-400">Valid MOT and private hire vehicle council disc/paper</span>
+                        </div>
+                        {profileForm.docPhvMot ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold text-emerald-600 flex items-center space-x-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Uploaded</span>
+                            </span>
+                            <a
+                              href={profileForm.docPhvMot}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 underline flex items-center space-x-0.5"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 hover:border-ots-yellow rounded-xl text-xs font-bold text-gray-700 shadow-sm transition flex items-center space-x-1.5">
+                          {uploadingDocType === 'docPhvMot' ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-ots-yellow" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-ots-yellow" />
+                          )}
+                          <span>{profileForm.docPhvMot ? 'Replace MOT / PHV Doc' : 'Select MOT / PHV File'}</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => handleFileUpload(e, 'docPhvMot')}
+                            className="hidden"
+                          />
+                        </label>
+                        <span className="text-[11px] text-gray-400">Supports JPG, PNG, PDF</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(2)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-50 flex items-center space-x-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Previous</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveStep(3)}
+                      disabled={isSavingStep}
+                      className="px-6 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-1.5"
+                    >
+                      {isSavingStep ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save &amp; Continue ➔</span>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ======================================================= */}
+              {/* STEP 4: Insurance & Payout Banking Details              */}
+              {/* ======================================================= */}
+              {currentStep === 4 && (
+                <div className="space-y-5">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+                      <CreditCard className="w-4 h-4 text-ots-yellow" />
+                      <span>Step 4: Hire &amp; Reward Insurance &amp; Bank Payouts</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Enter your commercial Hire &amp; Reward insurance certificate and UK bank account for weekly fare payouts.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Hire &amp; Reward Insurance Policy No. <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. INS-882914-UK"
+                        value={profileForm.insuranceNumber}
+                        onChange={(e) => setProfileForm({ ...profileForm, insuranceNumber: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Insurance Policy Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        value={profileForm.insuranceExpiry}
+                        onChange={(e) => setProfileForm({ ...profileForm, insuranceExpiry: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    {/* Document Upload: Insurance Certificate */}
+                    <div className="sm:col-span-2 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-300 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-gray-800 block">
+                            Upload Insurance Certificate (Cover Note / PDF) <span className="text-red-500">*</span>
+                          </span>
+                          <span className="text-[10px] text-gray-400">Showing policyholder name, vehicle reg, and valid dates</span>
+                        </div>
+                        {profileForm.docInsurance ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold text-emerald-600 flex items-center space-x-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Uploaded</span>
+                            </span>
+                            <a
+                              href={profileForm.docInsurance}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 underline flex items-center space-x-0.5"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 hover:border-ots-yellow rounded-xl text-xs font-bold text-gray-700 shadow-sm transition flex items-center space-x-1.5">
+                          {uploadingDocType === 'docInsurance' ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-ots-yellow" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-ots-yellow" />
+                          )}
+                          <span>{profileForm.docInsurance ? 'Replace Insurance Doc' : 'Select Insurance File'}</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => handleFileUpload(e, 'docInsurance')}
+                            className="hidden"
+                          />
+                        </label>
+                        <span className="text-[11px] text-gray-400">Supports JPG, PNG, PDF</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Bank Name (e.g. Barclays, NatWest)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Barclays Bank UK"
+                        value={profileForm.bankName}
+                        onChange={(e) => setProfileForm({ ...profileForm, bankName: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Sort Code (6 Digits) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 20-04-15"
+                        value={profileForm.sortCode}
+                        onChange={(e) => setProfileForm({ ...profileForm, sortCode: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Account Number (8 Digits) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 12345678"
+                        value={profileForm.accountNumber}
+                        onChange={(e) => setProfileForm({ ...profileForm, accountNumber: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(3)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-50 flex items-center space-x-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Previous</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveStep(4)}
+                      disabled={isSavingStep}
+                      className="px-6 py-2.5 bg-black hover:bg-neutral-800 text-ots-yellow font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-1.5"
+                    >
+                      {isSavingStep ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-ots-yellow" />
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          <span>Submit All 4 Steps (100% Score)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 2: ACTIVE DISPATCH TRIPS (GATED BY COMPLETION & APPROVAL)    */}
+        {/* ============================================================== */}
         {activeTab === 'active' && (
           <div className="mt-6 space-y-4">
-            {activeTrips.length === 0 ? (
+            {!isApproved ? (
+              <div className="bg-white rounded-3xl border border-amber-200 p-8 text-center space-y-4 shadow-sm bg-amber-50/20">
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Live Dispatch Locked – Onboarding Incomplete ({completionScore}%)
+                  </h3>
+                  <p className="text-xs text-gray-600 max-w-md mx-auto mt-1">
+                    To comply with UK Private Hire Operator regulations, you cannot receive ride assignments or go On-Duty until your PCO badge, vehicle, and insurance documents are 100% submitted and authorized.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveTab('onboarding')}
+                  className="px-5 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow transition inline-flex items-center space-x-1.5"
+                >
+                  <span>Complete Onboarding Form (Score: {completionScore}%) ➔</span>
+                </button>
+              </div>
+            ) : activeTrips.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center space-y-3 shadow-sm">
                 <Car className="w-12 h-12 text-gray-300 mx-auto" />
                 <h3 className="text-base font-bold text-gray-800">No Active Trips Assigned</h3>
@@ -474,43 +1306,6 @@ export default function DriverDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Meta Info */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 text-xs">
-                      <div>
-                        <span className="text-gray-400 block">Date &amp; Time</span>
-                        <span className="font-semibold text-gray-800">
-                          {trip.pickup_date} at {trip.pickup_time}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-gray-400 block">Lead Passenger</span>
-                        <span className="font-semibold text-gray-800">
-                          {trip.passenger_name || 'VIP Client'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-gray-400 block">Vehicle Category</span>
-                        <span className="font-semibold text-gray-800 capitalize">
-                          {trip.vehicle_tier || 'Executive Saloon'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-gray-400 block">Distance &amp; Time</span>
-                        <span className="font-semibold text-gray-800">
-                          {trip.distance_miles} miles • ~{trip.estimated_time_mins} mins
-                        </span>
-                      </div>
-                    </div>
-
-                    {trip.special_notes && (
-                      <div className="p-3 bg-amber-50 text-amber-900 rounded-xl text-xs border border-amber-200">
-                        <strong>Driver Note:</strong> {trip.special_notes}
-                      </div>
-                    )}
-
                     {/* Action Bar */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                       <div className="flex items-center space-x-2">
@@ -535,7 +1330,6 @@ export default function DriverDashboardPage() {
                         </a>
                       </div>
 
-                      {/* State Transitions */}
                       <div>
                         {trip.booking_status === 'assigned' && (
                           <button
@@ -579,7 +1373,9 @@ export default function DriverDashboardPage() {
           </div>
         )}
 
-        {/* Tab 2: Trip History */}
+        {/* ============================================================== */}
+        {/* TAB 3: COMPLETED TRIP HISTORY                                  */}
+        {/* ============================================================== */}
         {activeTab === 'completed' && (
           <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
             <h3 className="text-base font-bold text-gray-900">Completed Transfers</h3>
@@ -605,212 +1401,6 @@ export default function DriverDashboardPage() {
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Tab 3: Vehicle & Documents / Onboarding Form */}
-        {activeTab === 'vehicle' && (
-          <div className="mt-6 space-y-6">
-            
-            {/* Status Card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isProfileIncomplete ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {isProfileIncomplete ? <AlertCircle className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">Chauffeur Licensing &amp; Vehicle Compliance</h3>
-                    <p className="text-xs text-gray-500">TfL / Local Council Private Hire Operator documentation.</p>
-                  </div>
-                </div>
-
-                <div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-                    driver?.verification_status === 'approved'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : driver?.verification_status === 'pending_approval'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    Status: {driver?.verification_status || 'Incomplete'}
-                  </span>
-                </div>
-              </div>
-
-              {profileFeedback && (
-                <div className={`mt-4 p-4 rounded-xl text-xs flex items-center space-x-2 ${
-                  profileFeedback.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
-                  {profileFeedback.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  )}
-                  <span>{profileFeedback.text}</span>
-                </div>
-              )}
-
-              {/* Profile Completion Form */}
-              <form onSubmit={handleSaveProfile} className="mt-6 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* PCO License Number */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      PCO Private Hire License Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. PCO-984321"
-                      value={profileForm.licenseNumber}
-                      onChange={(e) => setProfileForm({ ...profileForm, licenseNumber: e.target.value })}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                    <span className="text-[10px] text-gray-400 block mt-0.5">TfL or Local Authority Badge ID</span>
-                  </div>
-
-                  {/* PCO Expiry Date */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      PCO License Expiry Date
-                    </label>
-                    <input
-                      type="date"
-                      value={profileForm.pcoExpiry}
-                      onChange={(e) => setProfileForm({ ...profileForm, pcoExpiry: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                  {/* Vehicle Model */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Vehicle Make &amp; Model <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mercedes-Benz E-Class 2023"
-                      value={profileForm.vehicleModel}
-                      onChange={(e) => setProfileForm({ ...profileForm, vehicleModel: e.target.value })}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                  {/* Vehicle Plate */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Vehicle Registration Plate <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. LO71 ABC"
-                      value={profileForm.vehiclePlate}
-                      onChange={(e) => setProfileForm({ ...profileForm, vehiclePlate: e.target.value.toUpperCase() })}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono uppercase font-bold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                  {/* Vehicle Category */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Vehicle Service Category
-                    </label>
-                    <select
-                      value={profileForm.vehicleCategory}
-                      onChange={(e) => setProfileForm({ ...profileForm, vehicleCategory: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none bg-white"
-                    >
-                      <option value="saloon">Standard Saloon (Up to 4 Pax)</option>
-                      <option value="estate">Estate / Station Wagon (Large Luggage)</option>
-                      <option value="executive">Executive Class (Mercedes E-Class / BMW 5)</option>
-                      <option value="mpv">MPV 6-Seater (Ford Galaxy / Sharan)</option>
-                      <option value="minibus">8-Seater Minibus (Mercedes Vito / V-Class)</option>
-                    </select>
-                  </div>
-
-                  {/* Private Hire Insurance Policy */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Hire &amp; Reward Insurance Policy No.
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. INS-882914-UK"
-                      value={profileForm.insuranceNumber}
-                      onChange={(e) => setProfileForm({ ...profileForm, insuranceNumber: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                  {/* Payout Sort Code */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Bank Sort Code (For Weekly Payouts)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 20-04-15"
-                      value={profileForm.sortCode}
-                      onChange={(e) => setProfileForm({ ...profileForm, sortCode: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                  {/* Payout Account Number */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      Bank Account Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 12345678"
-                      value={profileForm.accountNumber}
-                      onChange={(e) => setProfileForm({ ...profileForm, accountNumber: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-mono focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none"
-                    />
-                  </div>
-
-                </div>
-
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-500">
-                    All chauffeur details are reviewed in accordance with UK Private Hire Operator regulations.
-                  </span>
-
-                  <button
-                    type="submit"
-                    disabled={isSavingProfile}
-                    className="px-6 py-2.5 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-xs rounded-xl shadow-md transition flex items-center space-x-2"
-                  >
-                    {isSavingProfile ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>Save &amp; Submit Documents</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Compliance FAQ */}
-            <div className="p-4 bg-gray-100 rounded-2xl text-xs text-gray-600 space-y-1">
-              <span className="font-bold text-gray-800 block">Why do I need to complete this?</span>
-              <p>
-                To maintain London TfL &amp; UK Council compliance, only drivers with verified PCO licenses, vehicle registrations, and Hire &amp; Reward insurance are allowed to receive live dispatch requests. Once submitted, your profile will be authorized immediately.
-              </p>
-            </div>
-
           </div>
         )}
 

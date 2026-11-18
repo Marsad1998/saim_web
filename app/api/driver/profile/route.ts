@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwtToken, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { DriverModel } from "@/models/Driver";
+import { DriverModel, computeDriverProgress } from "@/models/Driver";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,61 +16,90 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      address,
+      niNumber,
+      emergencyContact,
       licenseNumber,
+      pcoExpiry,
+      dvlaLicenseNumber,
       vehicleModel,
       vehiclePlate,
+      vehicleYear,
       vehicleCategory,
-      pcoExpiry,
       insuranceNumber,
+      insuranceExpiry,
+      bankName,
       sortCode,
       accountNumber,
+      docPcoBadge,
+      docDvlaLicense,
+      docPhvMot,
+      docInsurance,
+      stepSubmitted, // Optional step identifier: 1, 2, 3, or 4
     } = body;
-
-    if (!licenseNumber || !vehicleModel || !vehiclePlate) {
-      return NextResponse.json(
-        { status: false, message: "Please fill in all required fields (PCO License, Vehicle Model, and Registration Plate)." },
-        { status: 400 }
-      );
-    }
 
     let driver = await DriverModel.findByUserId(payload.userId);
 
+    const updatePayload: any = {
+      ...(address !== undefined && { address }),
+      ...(niNumber !== undefined && { niNumber }),
+      ...(emergencyContact !== undefined && { emergencyContact }),
+      ...(licenseNumber !== undefined && { licenseNumber }),
+      ...(pcoExpiry !== undefined && { pcoExpiry }),
+      ...(dvlaLicenseNumber !== undefined && { dvlaLicenseNumber }),
+      ...(vehicleModel !== undefined && { vehicleModel }),
+      ...(vehiclePlate !== undefined && { vehiclePlate }),
+      ...(vehicleYear !== undefined && { vehicleYear }),
+      ...(vehicleCategory !== undefined && { vehicleCategory }),
+      ...(insuranceNumber !== undefined && { insuranceNumber }),
+      ...(insuranceExpiry !== undefined && { insuranceExpiry }),
+      ...(bankName !== undefined && { bankName }),
+      ...(sortCode !== undefined && { sortCode }),
+      ...(accountNumber !== undefined && { accountNumber }),
+      ...(docPcoBadge !== undefined && { docPcoBadge }),
+      ...(docDvlaLicense !== undefined && { docDvlaLicense }),
+      ...(docPhvMot !== undefined && { docPhvMot }),
+      ...(docInsurance !== undefined && { docInsurance }),
+    };
+
     if (!driver) {
-      // Create new driver record
       driver = await DriverModel.create({
         userId: payload.userId,
-        licenseNumber,
-        vehicleModel,
-        vehiclePlate,
-        vehicleCategory: vehicleCategory || "saloon",
-        pcoExpiry,
-        insuranceNumber,
-        sortCode,
-        accountNumber,
-        verificationStatus: "approved",
-        isActive: true,
+        ...updatePayload,
       });
     } else {
-      // Update existing driver record
+      await DriverModel.update(driver.id, updatePayload);
+      driver = await DriverModel.findById(driver.id);
+    }
+
+    // Determine verification status based on completion score
+    const progress = computeDriverProgress(driver || {});
+    let nextVerificationStatus = driver?.verification_status || "incomplete";
+
+    if (progress.isComplete) {
+      if (nextVerificationStatus === "incomplete") {
+        nextVerificationStatus = "pending_approval";
+      }
+    } else {
+      nextVerificationStatus = "incomplete";
+    }
+
+    if (driver) {
       await DriverModel.update(driver.id, {
-        licenseNumber,
-        vehicleModel,
-        vehiclePlate,
-        vehicleCategory: vehicleCategory || "saloon",
-        pcoExpiry,
-        insuranceNumber,
-        sortCode,
-        accountNumber,
-        verificationStatus: "approved",
-        isActive: true,
+        completionScore: progress.score,
+        verificationStatus: nextVerificationStatus,
+        isActive: nextVerificationStatus === "approved" ? driver.is_active : false,
       });
       driver = await DriverModel.findById(driver.id);
     }
 
     return NextResponse.json({
       status: true,
-      message: "Chauffeur profile and vehicle documentation verified successfully! On-Duty status is now unlocked.",
+      message: progress.isComplete
+        ? "All 4 steps completed! Your chauffeur compliance profile is submitted for approval."
+        : `Step saved successfully! Profile progress is now ${progress.score}%.`,
       driver,
+      progress,
     });
   } catch (error: any) {
     console.error("POST /api/driver/profile error:", error.message);
