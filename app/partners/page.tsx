@@ -23,14 +23,40 @@ export default function PartnersPage() {
   
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/partners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          partnerType,
+          companyName,
+          contactName,
+          email,
+          phone,
+          fleetSize,
+          message,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setSubmitted(true);
+      } else {
+        setErrorMessage(data.message || 'Failed to submit application. Please check your details.');
+      }
+    } catch (err) {
+      console.error('Partner submission error:', err);
+      setErrorMessage('A connection error occurred. Please try again.');
+    } finally {
       setLoading(false);
-      setSubmitted(true);
-    }, 800);
+    }
   };
 
   return (
@@ -134,6 +160,11 @@ export default function PartnersPage() {
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">
                   Complete the inquiry form to start working with OTS Taxi.
                 </p>
+                {errorMessage && (
+                  <div className="mt-3 p-3 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold">
+                    {errorMessage}
+                  </div>
+                )}
               </div>
 
               <div>

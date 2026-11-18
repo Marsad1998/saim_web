@@ -151,3 +151,21 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 8. Partner Applications Table (B2B, Travel Agents, Corporate, Fleets)
+CREATE TABLE IF NOT EXISTS `partner_applications` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `company_name` VARCHAR(150) NOT NULL,
+  `contact_name` VARCHAR(150) NOT NULL,
+  `email` VARCHAR(150) NOT NULL,
+  `phone` VARCHAR(50) DEFAULT NULL,
+  `partner_type` VARCHAR(100) NOT NULL,
+  `fleet_size` VARCHAR(50) DEFAULT NULL,
+  `message` TEXT DEFAULT NULL,
+  `status` ENUM('new', 'under_review', 'approved', 'rejected') NOT NULL DEFAULT 'new',
+  `admin_notes` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_partner_status` (`status`),
+  INDEX `idx_partner_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

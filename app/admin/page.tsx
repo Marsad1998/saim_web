@@ -39,7 +39,8 @@ import {
   UserCheck,
   Building2,
   AlertTriangle,
-  ArrowUpRight
+  ArrowUpRight,
+  Briefcase
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -49,13 +50,14 @@ export default function AdminPage() {
 
   // Active Navigation Tab
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'bookings' | 'drivers' | 'users' | 'vehicles' | 'inquiries' | 'settings'
+    'dashboard' | 'bookings' | 'drivers' | 'partners' | 'users' | 'vehicles' | 'inquiries' | 'settings'
   >('dashboard');
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
+  const [partnerStatusFilter, setPartnerStatusFilter] = useState<string>('all');
 
   const [liveClock, setLiveClock] = useState<string>('');
 
@@ -73,6 +75,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
 
   // SMTP & System Settings State
   const [settings, setSettings] = useState({
@@ -122,13 +125,14 @@ export default function AdminPage() {
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
-      const [bookingsRes, driversRes, inquiriesRes, settingsRes, usersRes, vehiclesRes] = await Promise.all([
+      const [bookingsRes, driversRes, inquiriesRes, settingsRes, usersRes, vehiclesRes, partnersRes] = await Promise.all([
         fetch(`/api/admin/bookings?status=${statusFilter}`),
         fetch('/api/admin/drivers'),
         fetch('/api/admin/inquiries'),
         fetch('/api/admin/settings'),
         fetch('/api/admin/users'),
         fetch('/api/admin/vehicles'),
+        fetch('/api/admin/partners'),
       ]);
 
       if (bookingsRes.status === 401 || driversRes.status === 401) {
@@ -170,6 +174,11 @@ export default function AdminPage() {
       if (vehiclesRes && vehiclesRes.ok) {
         const vData = await vehiclesRes.json();
         if (vData.status && vData.vehicles) setVehicles(vData.vehicles);
+      }
+
+      if (partnersRes && partnersRes.ok) {
+        const pData = await partnersRes.json();
+        if (pData.status && pData.partners) setPartners(pData.partners);
       }
     } catch (err) {
       console.error('Failed to load admin data:', err);
@@ -323,6 +332,22 @@ export default function AdminPage() {
     }
   };
 
+  // Update Partner Application Status
+  const handleUpdatePartnerStatus = async (id: number, status: string, adminNotes?: string) => {
+    try {
+      const res = await fetch('/api/admin/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status, adminNotes }),
+      });
+      if (res.ok) {
+        await loadAdminData();
+      }
+    } catch (err) {
+      console.error('Failed to update partner:', err);
+    }
+  };
+
   // Save SMTP Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,6 +411,10 @@ export default function AdminPage() {
     return inquiries.filter(i => i.status !== 'resolved').length;
   }, [inquiries]);
 
+  const pendingPartnersCount = useMemo(() => {
+    return partners.filter(p => p.status === 'new' || p.status === 'under_review').length;
+  }, [partners]);
+
   // Filtered Bookings for search
   const filteredBookings = useMemo(() => {
     const term = searchTerm.toLowerCase();
@@ -413,6 +442,21 @@ export default function AdminPage() {
     });
   }, [users, userRoleFilter, searchTerm]);
 
+  // Filtered Partners
+  const filteredPartners = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return partners.filter((p) => {
+      const matchesStatus = partnerStatusFilter === 'all' || p.status === partnerStatusFilter;
+      const matchesSearch =
+        p.company_name?.toLowerCase().includes(term) ||
+        p.contact_name?.toLowerCase().includes(term) ||
+        p.email?.toLowerCase().includes(term) ||
+        p.partner_type?.toLowerCase().includes(term) ||
+        p.phone?.toLowerCase().includes(term);
+      return matchesStatus && matchesSearch;
+    });
+  }, [partners, partnerStatusFilter, searchTerm]);
+
   // Navigation Links Definition
   const navigationItems = [
     {
@@ -426,6 +470,7 @@ export default function AdminPage() {
     {
       group: 'MANAGEMENT & FLEET',
       items: [
+        { id: 'partners', label: 'B2B & Partners', icon: Briefcase, badge: pendingPartnersCount > 0 ? `${pendingPartnersCount} new` : (partners.length > 0 ? partners.length : null), badgeColor: 'bg-blue-500' },
         { id: 'users', label: 'Users & Customers', icon: Users, badge: users.length > 0 ? users.length : null },
         { id: 'vehicles', label: 'Vehicles & Pricing', icon: Car, badge: vehicles.length > 0 ? `${vehicles.length} classes` : null },
         { id: 'inquiries', label: 'Support Inquiries', icon: MessageSquare, badge: unresolvedInquiriesCount > 0 ? unresolvedInquiriesCount : null, badgeColor: 'bg-red-500' },
@@ -650,8 +695,8 @@ export default function AdminPage() {
             <div className="space-y-6">
               
               {/* Top Operational Alerts Banner (if any) */}
-              {(pendingDriversCount > 0 || unassignedBookingsCount > 0 || unresolvedInquiriesCount > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {(pendingDriversCount > 0 || unassignedBookingsCount > 0 || unresolvedInquiriesCount > 0 || pendingPartnersCount > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                   {pendingDriversCount > 0 && (
                     <div 
                       onClick={() => setActiveTab('drivers')}
@@ -661,7 +706,7 @@ export default function AdminPage() {
                         <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                         <div>
                           <span className="font-extrabold text-xs block">{pendingDriversCount} Chauffeur Approvals</span>
-                          <span className="text-[11px] text-amber-700">Dossiers ready for document verification</span>
+                          <span className="text-[11px] text-amber-700">Dossiers ready for verification</span>
                         </div>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-amber-700" />
@@ -677,10 +722,26 @@ export default function AdminPage() {
                         <Car className="w-5 h-5 text-blue-600 flex-shrink-0" />
                         <div>
                           <span className="font-extrabold text-xs block">{unassignedBookingsCount} Unassigned Trips</span>
-                          <span className="text-[11px] text-blue-700">Scheduled bookings awaiting driver dispatch</span>
+                          <span className="text-[11px] text-blue-700">Awaiting driver dispatch</span>
                         </div>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-blue-700" />
+                    </div>
+                  )}
+
+                  {pendingPartnersCount > 0 && (
+                    <div 
+                      onClick={() => setActiveTab('partners')}
+                      className="p-3.5 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-indigo-100/70 transition shadow-sm"
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <Briefcase className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                        <div>
+                          <span className="font-extrabold text-xs block">{pendingPartnersCount} Partner Requests</span>
+                          <span className="text-[11px] text-indigo-700">B2B &amp; agency onboarding</span>
+                        </div>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-indigo-700" />
                     </div>
                   )}
 
@@ -692,8 +753,8 @@ export default function AdminPage() {
                       <div className="flex items-center space-x-2.5">
                         <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0" />
                         <div>
-                          <span className="font-extrabold text-xs block">{unresolvedInquiriesCount} Customer Inquiries</span>
-                          <span className="text-[11px] text-purple-700">New support requests awaiting resolution</span>
+                          <span className="font-extrabold text-xs block">{unresolvedInquiriesCount} Inquiries</span>
+                          <span className="text-[11px] text-purple-700">Customer requests awaiting reply</span>
                         </div>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-purple-700" />
@@ -1150,6 +1211,168 @@ export default function AdminPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              VIEW: B2B & CORPORATE PARTNERS PROGRAM
+          ══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'partners' && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900">B2B &amp; Corporate Partnerships</h2>
+                  <p className="text-xs text-slate-500">
+                    Review and onboard Travel Agents, Corporate Accounts, Fleet Operators, and Hotel Concierges
+                  </p>
+                </div>
+
+                {/* Status Filter Buttons */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  {['all', 'new', 'under_review', 'approved', 'rejected'].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setPartnerStatusFilter(st)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition whitespace-nowrap min-h-[34px] ${
+                        partnerStatusFilter === st
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {st.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredPartners.length === 0 ? (
+                <div className="p-16 text-center text-slate-400 text-xs">
+                  No partnership applications found matching your criteria.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredPartners.map((p) => {
+                    const isApproved = p.status === 'approved';
+                    const isUnderReview = p.status === 'under_review';
+                    const isNew = p.status === 'new';
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
+                      >
+                        <div className="space-y-3">
+                          {/* Company Name & Status Pill */}
+                          <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                              <h3 className="font-black text-slate-900 text-sm">{p.company_name}</h3>
+                              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-ots-yellow/20 text-slate-900 border border-ots-yellow/40 inline-block mt-1">
+                                {p.partner_type}
+                              </span>
+                            </div>
+
+                            <span
+                              className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                                isApproved
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : isUnderReview
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : isNew
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {p.status.replace('_', ' ')}
+                            </span>
+                          </div>
+
+                          {/* Contact Details */}
+                          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5 text-slate-700">
+                            <div>
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold">Contact Name:</span>
+                              <strong className="text-slate-900">{p.contact_name}</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold">Email:</span>
+                              <a href={`mailto:${p.email}`} className="text-blue-600 font-semibold hover:underline block truncate">
+                                {p.email}
+                              </a>
+                            </div>
+                            {p.phone && (
+                              <div>
+                                <span className="text-slate-400 block text-[10px] uppercase font-bold">Phone:</span>
+                                <a href={`tel:${p.phone}`} className="font-mono text-slate-900 hover:text-blue-600">
+                                  {p.phone}
+                                </a>
+                              </div>
+                            )}
+                            {p.fleet_size && (
+                              <div>
+                                <span className="text-slate-400 block text-[10px] uppercase font-bold">Fleet Size / Volume:</span>
+                                <span className="font-bold text-slate-800">{p.fleet_size}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Message / Requirements */}
+                          {p.message && (
+                            <div className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200/80 leading-relaxed">
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Application Notes:</span>
+                              {p.message}
+                            </div>
+                          )}
+
+                          {p.created_at && (
+                            <div className="text-[10px] text-slate-400">
+                              Applied on {new Date(p.created_at).toLocaleDateString('en-GB')} at {new Date(p.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Admin Action Decision Buttons */}
+                        <div className="pt-3 border-t border-slate-100 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            {p.status !== 'approved' && (
+                              <button
+                                onClick={() => handleUpdatePartnerStatus(p.id, 'approved')}
+                                className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow transition"
+                              >
+                                Approve Partner
+                              </button>
+                            )}
+
+                            {p.status !== 'under_review' && (
+                              <button
+                                onClick={() => handleUpdatePartnerStatus(p.id, 'under_review')}
+                                className="py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow transition"
+                              >
+                                Review
+                              </button>
+                            )}
+
+                            {p.status !== 'rejected' && (
+                              <button
+                                onClick={() => handleUpdatePartnerStatus(p.id, 'rejected')}
+                                className="py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 rounded-xl font-bold text-xs transition"
+                              >
+                                Reject
+                              </button>
+                            )}
+
+                            <a
+                              href={`mailto:${p.email}?subject=OTS Taxi Partnership - ${encodeURIComponent(p.company_name)}`}
+                              className="py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center space-x-1"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Email</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
