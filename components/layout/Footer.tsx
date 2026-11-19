@@ -15,7 +15,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-ots-dark text-white pt-16 pb-8 border-t border-neutral-800">
+    <footer className="bg-ots-dark text-white pt-16 pb-8 border-t border-neutral-800 print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Columns */}

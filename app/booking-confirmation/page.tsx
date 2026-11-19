@@ -61,11 +61,11 @@ function BookingConfirmationContent() {
   };
 
   return (
-    <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+    <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16 print:bg-white print:py-0 print:m-0 print:min-h-0">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 print:max-w-none print:px-0 print:mx-0 print:w-full">
         
-        {/* Success Header */}
-        <div className="text-center mb-8">
+        {/* Success Header (Screen only, hidden on print so voucher fits cleanly on 1 page) */}
+        <div className="text-center mb-8 print:hidden">
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounce-subtle">
             <CheckCircle2 className="w-12 h-12" />
           </div>
@@ -93,12 +93,12 @@ function BookingConfirmationContent() {
         </div>
 
         {/* Voucher Print Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8 print:border-none print:shadow-none">
-          {/* Card Top Accent */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8 print:border print:border-gray-300 print:shadow-none print:rounded-xl print:m-0 print-page-break-avoid">
+          {/* Card Top Accent (Signature Taxi Yellow/Black Checker) */}
           <div className="taxi-pattern h-2 w-full" />
 
-          <div className="p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-5 gap-3">
+          <div className="p-6 sm:p-8 space-y-6 print:p-6 print:space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 pb-5 gap-3">
               <div>
                 <div className="flex items-center space-x-2">
                   {siteSettings?.logo_light ? (
@@ -108,25 +108,31 @@ function BookingConfirmationContent() {
                       className="h-8 w-auto object-contain"
                     />
                   ) : null}
-                  <span className="text-xs uppercase font-extrabold text-ots-yellow bg-black px-2.5 py-1 rounded">
+                  <span className="text-xs uppercase font-extrabold text-ots-yellow bg-black px-2.5 py-1 rounded print:bg-black print:text-ots-yellow">
                     {siteSettings?.brand_name || "OTS TAXI"} VOUCHER
                   </span>
+                  <span className="text-xs font-mono font-bold bg-gray-100 text-gray-800 px-2.5 py-1 rounded border border-gray-300 print:bg-gray-100 print:text-black">
+                    REF: {quoteRef}
+                  </span>
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 mt-2">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-2">
                   Airport Transfer Itinerary
                 </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Official Passenger Travel Voucher &amp; Dispatch Confirmation
+                </p>
               </div>
               <div className="sm:text-right">
-                <span className="text-xs text-gray-400 block">Payment Status</span>
-                <span className={`inline-flex items-center space-x-1 text-xs font-extrabold px-2.5 py-1 rounded-full border ${
+                <span className="text-xs text-gray-400 block font-medium">Payment Status</span>
+                <span className={`inline-flex items-center space-x-1 text-xs font-extrabold px-3 py-1 rounded-full border ${
                   quote?.paymentMethod === 'cash_to_driver'
-                    ? 'text-amber-800 bg-amber-50 border-amber-200'
-                    : 'text-green-700 bg-green-50 border-green-200'
+                    ? 'text-amber-800 bg-amber-50 border-amber-300 print:bg-amber-50 print:text-amber-900'
+                    : 'text-green-700 bg-green-50 border-green-300 print:bg-green-50 print:text-green-900'
                 }`}>
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
                   <span>{quote?.paymentMethod === 'cash_to_driver' ? 'CASH UPON ARRIVAL' : 'PAID & CONFIRMED'}</span>
                 </span>
-                <div className="mt-1 text-lg font-black text-gray-900">
+                <div className="mt-1 text-xl font-black text-gray-900">
                   {formatPrice(quote?.paidAmount || quote?.pricing?.totalPrice || 45)}
                 </div>
               </div>
@@ -138,9 +144,9 @@ function BookingConfirmationContent() {
                 Route &amp; Timings
               </h3>
 
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-200 print:bg-gray-50 print:border-gray-200">
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 mt-0.5 print:bg-green-100 print:text-green-800">
                     <MapPin className="w-3.5 h-3.5" />
                   </div>
                   <div>
@@ -162,7 +168,7 @@ function BookingConfirmationContent() {
                 )}
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5 print:bg-red-100 print:text-red-700">
                     <MapPin className="w-3.5 h-3.5" />
                   </div>
                   <div>
@@ -176,7 +182,7 @@ function BookingConfirmationContent() {
 
               {/* Date & Time Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 print:bg-gray-50 print:border-gray-200">
                   <span className="text-[10px] text-gray-400 uppercase font-bold block">Pick-up Date</span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 text-gray-500" />
@@ -184,7 +190,7 @@ function BookingConfirmationContent() {
                   </span>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 print:bg-gray-50 print:border-gray-200">
                   <span className="text-[10px] text-gray-400 uppercase font-bold block">Pick-up Time</span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 mt-0.5">
                     <Clock className="w-3.5 h-3.5 text-gray-500" />
@@ -192,11 +198,11 @@ function BookingConfirmationContent() {
                   </span>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 col-span-2 sm:col-span-1">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 col-span-2 sm:col-span-1 print:bg-gray-50 print:border-gray-200">
                   <span className="text-[10px] text-gray-400 uppercase font-bold block">Vehicle Tier</span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 mt-0.5">
                     <Car className="w-3.5 h-3.5 text-gray-500" />
-                    <span>Standard Saloon</span>
+                    <span>{quote?.vehicleCategory || quote?.selectedVehicle?.name || 'Standard Saloon'}</span>
                   </span>
                 </div>
               </div>
@@ -210,29 +216,31 @@ function BookingConfirmationContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="flex items-center space-x-2 text-gray-700">
-                  <User className="w-4 h-4 text-gray-400" />
+                  <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <span>Lead Passenger: <strong>{quote?.passenger?.fullName || 'John Smith'}</strong></span>
                 </div>
                 <div className="flex items-center space-x-2 text-gray-700">
-                  <Mail className="w-4 h-4 text-gray-400" />
+                  <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <span>Email: <strong>{quote?.passenger?.email || 'customer@example.com'}</strong></span>
                 </div>
                 <div className="flex items-center space-x-2 text-gray-700">
-                  <Phone className="w-4 h-4 text-gray-400" />
+                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <span>Contact Phone: <strong>{quote?.passenger?.phone || '+44 7123 456789'}</strong></span>
                 </div>
                 {quote?.passenger?.flightNumber && (
                   <div className="flex items-center space-x-2 text-gray-700">
-                    <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">Flight: {quote.passenger.flightNumber}</span>
+                    <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 print:bg-gray-100">
+                      Flight: <strong>{quote.passenger.flightNumber}</strong>
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Airport Instructions Banner */}
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 text-xs text-gray-800 space-y-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-gray-800 space-y-2 print:bg-amber-50 print:border-amber-300">
               <div className="font-bold text-gray-900 flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0" />
                 <span>Driver Meeting Instructions:</span>
               </div>
               <ul className="list-disc pl-5 space-y-1 text-gray-700">
@@ -241,6 +249,19 @@ function BookingConfirmationContent() {
                 <li>You will receive an SMS and WhatsApp with the driver&apos;s direct mobile number and vehicle registration prior to arrival.</li>
               </ul>
             </div>
+
+            {/* Official Travel Voucher Footer */}
+            <div className="border-t border-gray-200 pt-4 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-2 print:text-gray-600">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span><strong>24/7 Helpline:</strong> {siteSettings?.contact_phone || '+44 (0) 208 090 4992'}</span>
+                <span className="hidden sm:inline">•</span>
+                <span><strong>Email:</strong> {siteSettings?.contact_email || 'dispatch@otstaxi.co.uk'}</span>
+              </div>
+              <div className="text-gray-400 print:text-gray-500 text-[10px]">
+                {siteSettings?.brand_name || 'OTS Taxi'} Ltd • Licensed UK Private Hire Operator
+              </div>
+            </div>
+
           </div>
         </div>
 
