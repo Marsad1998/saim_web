@@ -202,7 +202,7 @@ function BookingConfirmationContent() {
                   <span className="text-[10px] text-gray-400 uppercase font-bold block">Vehicle Tier</span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 mt-0.5">
                     <Car className="w-3.5 h-3.5 text-gray-500" />
-                    <span>{quote?.vehicleCategory || quote?.selectedVehicle?.name || 'Standard Saloon'}</span>
+                    <span className="capitalize">{(quote as any)?.vehicleCategory || (quote as any)?.selectedVehicle?.name || quote?.selectedVehicleId || 'Standard Saloon'}</span>
                   </span>
                 </div>
               </div>
@@ -253,9 +253,9 @@ function BookingConfirmationContent() {
             {/* Official Travel Voucher Footer */}
             <div className="border-t border-gray-200 pt-4 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-2 print:text-gray-600">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span><strong>24/7 Helpline:</strong> {siteSettings?.contact_phone || '+44 (0) 208 090 4992'}</span>
+                <span><strong>24/7 Helpline:</strong> {siteSettings?.support_phone || '+44 (0) 208 090 4992'}</span>
                 <span className="hidden sm:inline">•</span>
-                <span><strong>Email:</strong> {siteSettings?.contact_email || 'dispatch@otstaxi.co.uk'}</span>
+                <span><strong>Email:</strong> {siteSettings?.support_email || 'dispatch@otstaxi.co.uk'}</span>
               </div>
               <div className="text-gray-400 print:text-gray-500 text-[10px]">
                 {siteSettings?.brand_name || 'OTS Taxi'} Ltd • Licensed UK Private Hire Operator

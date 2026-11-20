@@ -90,7 +90,18 @@ export class UserModel {
       if (rows && rows.length > 0) {
         return rows[0] as IUser;
       }
+      return null;
     } catch (error: any) {
+      try {
+        const rows = await dbQuery<any[]>(
+          "SELECT id, name, email, phone, password_hash, role, created_at, updated_at FROM users WHERE email = ? LIMIT 1",
+          [cleanEmail]
+        );
+        if (rows && rows.length > 0) {
+          return { ...rows[0], is_verified: true } as IUser;
+        }
+        return null;
+      } catch {}
       console.warn("UserModel.findByEmail DB fallback:", error.message);
     }
     return DEFAULT_FALLBACK_USERS[cleanEmail] || null;
@@ -108,7 +119,18 @@ export class UserModel {
       if (rows && rows.length > 0) {
         return rows[0] as IUser;
       }
+      return null;
     } catch (error: any) {
+      try {
+        const rows = await dbQuery<any[]>(
+          "SELECT id, name, email, phone, role, created_at, updated_at FROM users WHERE id = ? LIMIT 1",
+          [id]
+        );
+        if (rows && rows.length > 0) {
+          return { ...rows[0], is_verified: true } as IUser;
+        }
+        return null;
+      } catch {}
       console.warn("UserModel.findById DB fallback:", error.message);
     }
     const fallback = Object.values(DEFAULT_FALLBACK_USERS).find((u) => u.id === id);
@@ -133,7 +155,15 @@ export class UserModel {
         [id, input.name.trim(), cleanEmail, input.phone?.trim() || null, passwordHash, role, isVerified ? 1 : 0, verificationCode]
       );
     } catch (error: any) {
-      console.error("UserModel.create error:", error.message);
+      try {
+        await dbQuery(
+          `INSERT INTO users (id, name, email, phone, password_hash, role)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, input.name.trim(), cleanEmail, input.phone?.trim() || null, passwordHash, role]
+        );
+      } catch (err2: any) {
+        console.error("UserModel.create error:", err2.message);
+      }
     }
 
     const newUser: IUser = {
@@ -289,6 +319,101 @@ export class UserModel {
   }
 
   /**
+   * Full update for a user (Admin management)
+   */
+  static async update(
+    id: string,
+    updates: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      role?: "customer" | "admin" | "driver";
+      is_verified?: boolean;
+      password?: string;
+    }
+  ): Promise<boolean> {
+    try {
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      if (updates.name !== undefined) {
+        fields.push("name = ?");
+        values.push(updates.name.trim());
+      }
+      if (updates.email !== undefined) {
+        fields.push("email = ?");
+        values.push(updates.email.trim().toLowerCase());
+      }
+      if (updates.phone !== undefined) {
+        fields.push("phone = ?");
+        values.push(updates.phone ? updates.phone.trim() : null);
+      }
+      if (updates.role !== undefined) {
+        fields.push("role = ?");
+        values.push(updates.role);
+      }
+      if (updates.is_verified !== undefined) {
+        fields.push("is_verified = ?");
+        values.push(updates.is_verified ? 1 : 0);
+      }
+      if (updates.password && updates.password.trim().length > 0) {
+        const passwordHash = await hashPassword(updates.password.trim());
+        fields.push("password_hash = ?");
+        values.push(passwordHash);
+      }
+
+      if (fields.length === 0) return true;
+
+      try {
+        const updateValues = [...values, id];
+        await dbQuery(`UPDATE users SET ${fields.join(", ")} WHERE id = ?`, updateValues);
+      } catch (err: any) {
+        // Retry without is_verified if column doesn't exist in table
+        const filteredFields: string[] = [];
+        const filteredValues: any[] = [];
+        for (let i = 0; i < fields.length; i++) {
+          if (!fields[i].startsWith("is_verified")) {
+            filteredFields.push(fields[i]);
+            filteredValues.push(values[i]);
+          }
+        }
+        if (filteredFields.length > 0) {
+          filteredValues.push(id);
+          await dbQuery(`UPDATE users SET ${filteredFields.join(", ")} WHERE id = ?`, filteredValues);
+        }
+      }
+
+      // Keep in-memory cache updated
+      const user = await this.findById(id);
+      if (user && DEFAULT_FALLBACK_USERS[user.email]) {
+        Object.assign(DEFAULT_FALLBACK_USERS[user.email], updates);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("UserModel.update error:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Delete a user by ID
+   */
+  static async delete(id: string): Promise<boolean> {
+    try {
+      const user = await this.findById(id);
+      await dbQuery("DELETE FROM users WHERE id = ?", [id]);
+      if (user?.email && DEFAULT_FALLBACK_USERS[user.email]) {
+        delete DEFAULT_FALLBACK_USERS[user.email];
+      }
+      return true;
+    } catch (error: any) {
+      console.error("UserModel.delete error:", error.message);
+      return false;
+    }
+  }
+
+  /**
    * Get all users (useful for Admin dashboard)
    */
   static async getAll(role?: "customer" | "admin" | "driver"): Promise<IUser[]> {
@@ -304,6 +429,16 @@ export class UserModel {
       );
       if (rows && rows.length > 0) return rows;
     } catch (error: any) {
+      try {
+        const fallbackSql = role
+          ? "SELECT id, name, email, phone, role, created_at FROM users WHERE role = ? ORDER BY created_at DESC"
+          : "SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC";
+        const fallbackParams = role ? [role] : [];
+        const rows = await dbQuery<any[]>(fallbackSql, fallbackParams);
+        if (rows && rows.length > 0) {
+          return rows.map((r) => ({ ...r, is_verified: true }));
+        }
+      } catch {}
       console.warn("UserModel.getAll fallback:", error.message);
     }
     const fallbacks = Object.values(DEFAULT_FALLBACK_USERS);

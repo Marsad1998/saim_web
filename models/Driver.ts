@@ -524,6 +524,25 @@ export class DriverModel {
   }
 
   /**
+   * Delete a driver record from MySQL and memory
+   */
+  static async delete(id: string): Promise<boolean> {
+    try {
+      const driver = await this.findById(id);
+      await dbQuery("DELETE FROM drivers WHERE id = ?", [id]);
+      delete inMemoryDrivers[id];
+      if (driver?.user_id) {
+        delete inMemoryDrivers[driver.user_id];
+      }
+      return true;
+    } catch (error: any) {
+      console.error("DriverModel.delete error:", error.message);
+      delete inMemoryDrivers[id];
+      return false;
+    }
+  }
+
+  /**
    * Get all drivers with their full profile details (for Admin management)
    */
   static async getAll(): Promise<IDriver[]> {

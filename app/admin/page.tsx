@@ -47,7 +47,9 @@ import {
   Sparkles,
   Trash2,
   HelpCircle,
-  CheckCircle
+  CheckCircle,
+  Plus,
+  Pencil
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -248,6 +250,104 @@ export default function AdminPage() {
   });
   const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
   const [driverUpdateSuccess, setDriverUpdateSuccess] = useState<string | null>(null);
+
+  // User Modal State
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [userFormData, setUserFormData] = useState({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    role: 'customer',
+    password: '',
+    is_verified: true,
+  });
+  const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+
+  // Driver Modal State (Create / Full Edit)
+  const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
+  const [driverModalMode, setDriverModalMode] = useState<'create' | 'edit'>('create');
+  const [driverFormData, setDriverFormData] = useState({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    licenseNumber: '',
+    vehicleModel: '',
+    vehiclePlate: '',
+    vehicleYear: '',
+    vehicleCategory: 'saloon',
+    insuranceNumber: '',
+    insuranceExpiry: '',
+    bankName: '',
+    sortCode: '',
+    accountNumber: '',
+    adminNotes: '',
+    verificationStatus: 'approved',
+    isActive: true,
+  });
+  const [isSubmittingDriver, setIsSubmittingDriver] = useState(false);
+
+  // Booking Modal State (Create / Edit)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingModalMode, setBookingModalMode] = useState<'create' | 'edit'>('create');
+  const [bookingFormData, setBookingFormData] = useState({
+    quoteRef: '',
+    passengerName: '',
+    passengerEmail: '',
+    passengerPhone: '',
+    fromLocation: '',
+    toLocation: '',
+    pickupDate: '',
+    pickupTime: '12:00',
+    passengers: 1,
+    suitcases: 1,
+    selectedVehicleId: 'saloon',
+    totalPrice: 50,
+    currency: 'GBP',
+    flightNumber: '',
+    specialNotes: '',
+    bookingStatus: 'confirmed',
+    paymentStatus: 'completed',
+    driverId: '',
+  });
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+
+  // Vehicle Modal State (Create / Edit)
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [vehicleModalMode, setVehicleModalMode] = useState<'create' | 'edit'>('create');
+  const [vehicleFormData, setVehicleFormData] = useState({
+    id: '',
+    name: '',
+    categoryName: '',
+    image: '',
+    passengers: 4,
+    suitcases: 2,
+    handLuggage: 2,
+    description: '',
+    multiplier: 1.0,
+    sampleVehicles: '',
+    isActive: true,
+  });
+  const [isSubmittingVehicle, setIsSubmittingVehicle] = useState(false);
+
+  // Partner Modal State (Create / Edit)
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [partnerModalMode, setPartnerModalMode] = useState<'create' | 'edit'>('create');
+  const [partnerFormData, setPartnerFormData] = useState({
+    id: 0,
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    partnerType: 'corporate_account',
+    fleetSize: '',
+    message: '',
+    status: 'approved',
+    adminNotes: '',
+  });
+  const [isSubmittingPartner, setIsSubmittingPartner] = useState(false);
 
   // Real-time London Clock
   useEffect(() => {
@@ -484,6 +584,524 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Failed to update partner:', err);
+    }
+  };
+
+  // User CRUD Handlers
+  const openCreateUserModal = () => {
+    setUserModalMode('create');
+    setUserFormData({
+      id: '',
+      name: '',
+      email: '',
+      phone: '',
+      role: 'customer',
+      password: '',
+      is_verified: true,
+    });
+    setIsUserModalOpen(true);
+  };
+
+  const openEditUserModal = (u: any) => {
+    setUserModalMode('edit');
+    setUserFormData({
+      id: u.id,
+      name: u.name || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      role: u.role || 'customer',
+      password: '',
+      is_verified: Boolean(u.is_verified),
+    });
+    setIsUserModalOpen(true);
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingUser(true);
+    try {
+      const url = '/api/admin/users';
+      const method = userModalMode === 'create' ? 'POST' : 'PATCH';
+      const body = userModalMode === 'create'
+        ? {
+            name: userFormData.name,
+            email: userFormData.email,
+            phone: userFormData.phone,
+            role: userFormData.role,
+            password: userFormData.password,
+            isVerified: userFormData.is_verified,
+          }
+        : {
+            userId: userFormData.id,
+            name: userFormData.name,
+            email: userFormData.email,
+            phone: userFormData.phone,
+            role: userFormData.role,
+            isVerified: userFormData.is_verified,
+            ...(userFormData.password ? { password: userFormData.password } : {}),
+          };
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setIsUserModalOpen(false);
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to save user.');
+      }
+    } catch (err) {
+      console.error('Error saving user:', err);
+      alert('Network error while saving user.');
+    } finally {
+      setIsSubmittingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete user "${userName || userId}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/users?id=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete user.');
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('Network error while deleting user.');
+    }
+  };
+
+  // Driver CRUD Handlers
+  const openCreateDriverModal = () => {
+    setDriverModalMode('create');
+    setDriverFormData({
+      id: '',
+      name: '',
+      email: '',
+      phone: '',
+      licenseNumber: '',
+      vehicleModel: 'Mercedes-Benz E-Class',
+      vehiclePlate: '',
+      vehicleYear: '2023',
+      vehicleCategory: 'saloon',
+      insuranceNumber: '',
+      insuranceExpiry: '',
+      bankName: '',
+      sortCode: '',
+      accountNumber: '',
+      adminNotes: '',
+      verificationStatus: 'approved',
+      isActive: true,
+    });
+    setIsDriverModalOpen(true);
+  };
+
+  const openEditDriverModal = (d: any) => {
+    setDriverModalMode('edit');
+    setDriverFormData({
+      id: d.id,
+      name: d.driver_name || '',
+      email: d.driver_email || '',
+      phone: d.driver_phone || '',
+      licenseNumber: d.license_number || '',
+      vehicleModel: d.vehicle_model || '',
+      vehiclePlate: d.vehicle_plate || '',
+      vehicleYear: d.vehicle_year || '',
+      vehicleCategory: d.vehicle_category || 'saloon',
+      insuranceNumber: d.insurance_number || '',
+      insuranceExpiry: d.insurance_expiry ? String(d.insurance_expiry).split('T')[0] : '',
+      bankName: d.bank_name || '',
+      sortCode: d.sort_code || '',
+      accountNumber: d.account_number || '',
+      adminNotes: d.admin_notes || '',
+      verificationStatus: d.verification_status || 'approved',
+      isActive: Boolean(d.is_active),
+    });
+    setIsDriverModalOpen(true);
+  };
+
+  const handleSaveDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingDriver(true);
+    try {
+      const url = '/api/admin/drivers';
+      const method = driverModalMode === 'create' ? 'POST' : 'PATCH';
+      const body = driverModalMode === 'create'
+        ? {
+            name: driverFormData.name,
+            email: driverFormData.email,
+            phone: driverFormData.phone,
+            licenseNumber: driverFormData.licenseNumber,
+            vehicleModel: driverFormData.vehicleModel,
+            vehiclePlate: driverFormData.vehiclePlate,
+            vehicleCategory: driverFormData.vehicleCategory,
+          }
+        : {
+            driverId: driverFormData.id,
+            name: driverFormData.name,
+            email: driverFormData.email,
+            phone: driverFormData.phone,
+            licenseNumber: driverFormData.licenseNumber,
+            vehicleModel: driverFormData.vehicleModel,
+            vehiclePlate: driverFormData.vehiclePlate,
+            vehicleYear: driverFormData.vehicleYear,
+            vehicleCategory: driverFormData.vehicleCategory,
+            insuranceNumber: driverFormData.insuranceNumber,
+            insuranceExpiry: driverFormData.insuranceExpiry,
+            bankName: driverFormData.bankName,
+            sortCode: driverFormData.sortCode,
+            accountNumber: driverFormData.accountNumber,
+            adminNotes: driverFormData.adminNotes,
+            verificationStatus: driverFormData.verificationStatus,
+            isActive: driverFormData.isActive,
+          };
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setIsDriverModalOpen(false);
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to save chauffeur.');
+      }
+    } catch (err) {
+      console.error('Error saving driver:', err);
+      alert('Network error while saving chauffeur.');
+    } finally {
+      setIsSubmittingDriver(false);
+    }
+  };
+
+  const handleDeleteDriver = async (driverId: string, driverName: string) => {
+    if (!confirm(`Are you sure you want to delete chauffeur "${driverName || driverId}"? This will remove their driver profile and license data.`)) return;
+    try {
+      const res = await fetch(`/api/admin/drivers?id=${encodeURIComponent(driverId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete driver.');
+      }
+    } catch (err) {
+      console.error('Error deleting driver:', err);
+      alert('Network error while deleting driver.');
+    }
+  };
+
+  // Booking CRUD Handlers
+  const openCreateBookingModal = () => {
+    setBookingModalMode('create');
+    setBookingFormData({
+      quoteRef: '',
+      passengerName: '',
+      passengerEmail: '',
+      passengerPhone: '',
+      fromLocation: '',
+      toLocation: '',
+      pickupDate: new Date().toISOString().split('T')[0],
+      pickupTime: '12:00',
+      passengers: 1,
+      suitcases: 1,
+      selectedVehicleId: 'saloon',
+      totalPrice: 65,
+      currency: 'GBP',
+      flightNumber: '',
+      specialNotes: '',
+      bookingStatus: 'confirmed',
+      paymentStatus: 'completed',
+      driverId: '',
+    });
+    setIsBookingModalOpen(true);
+  };
+
+  const openEditBookingModal = (b: any) => {
+    setBookingModalMode('edit');
+    setBookingFormData({
+      quoteRef: b.quote_ref || '',
+      passengerName: b.passenger_name || '',
+      passengerEmail: b.passenger_email || '',
+      passengerPhone: b.passenger_phone || '',
+      fromLocation: b.from_location || '',
+      toLocation: b.to_location || '',
+      pickupDate: b.pickup_date || '',
+      pickupTime: b.pickup_time || '',
+      passengers: Number(b.passengers || 1),
+      suitcases: Number(b.suitcases || 1),
+      selectedVehicleId: b.selected_vehicle_id || 'saloon',
+      totalPrice: Number(b.total_price || 0),
+      currency: b.currency || 'GBP',
+      flightNumber: b.flight_number || '',
+      specialNotes: b.special_notes || '',
+      bookingStatus: b.booking_status || 'confirmed',
+      paymentStatus: b.payment_status || 'unpaid',
+      driverId: b.driver_id || '',
+    });
+    setIsBookingModalOpen(true);
+  };
+
+  const handleSaveBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingBooking(true);
+    try {
+      const url = '/api/admin/bookings';
+      const method = bookingModalMode === 'create' ? 'POST' : 'PATCH';
+      const body = {
+        ...bookingFormData,
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setIsBookingModalOpen(false);
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to save booking.');
+      }
+    } catch (err) {
+      console.error('Error saving booking:', err);
+      alert('Network error while saving booking.');
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  };
+
+  const handleDeleteBooking = async (quoteRef: string) => {
+    if (!confirm(`Are you sure you want to permanently delete booking ref "${quoteRef}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/bookings?quoteRef=${encodeURIComponent(quoteRef)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete booking.');
+      }
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      alert('Network error while deleting booking.');
+    }
+  };
+
+  // Vehicle CRUD Handlers
+  const openCreateVehicleModal = () => {
+    setVehicleModalMode('create');
+    setVehicleFormData({
+      id: '',
+      name: '',
+      categoryName: 'Standard',
+      image: 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png',
+      passengers: 4,
+      suitcases: 2,
+      handLuggage: 2,
+      description: 'Comfortable and reliable transfer vehicle.',
+      multiplier: 1.0,
+      sampleVehicles: '',
+      isActive: true,
+    });
+    setIsVehicleModalOpen(true);
+  };
+
+  const openEditVehicleModal = (v: any) => {
+    setVehicleModalMode('edit');
+    setVehicleFormData({
+      id: v.id,
+      name: v.name || '',
+      categoryName: v.categoryName || '',
+      image: v.image || '',
+      passengers: Number(v.passengers || 4),
+      suitcases: Number(v.suitcases || 2),
+      handLuggage: Number(v.handLuggage || 2),
+      description: v.description || '',
+      multiplier: Number(v.multiplier || 1.0),
+      sampleVehicles: v.sampleVehicles || '',
+      isActive: v.isActive !== false,
+    });
+    setIsVehicleModalOpen(true);
+  };
+
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingVehicle(true);
+    try {
+      const url = '/api/admin/vehicles';
+      const method = vehicleModalMode === 'create' ? 'POST' : 'PATCH';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vehicleFormData),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setIsVehicleModalOpen(false);
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to save vehicle class.');
+      }
+    } catch (err) {
+      console.error('Error saving vehicle:', err);
+      alert('Network error while saving vehicle class.');
+    } finally {
+      setIsSubmittingVehicle(false);
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicleId: string, vehicleName: string) => {
+    if (!confirm(`Are you sure you want to delete vehicle class "${vehicleName || vehicleId}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/vehicles?id=${encodeURIComponent(vehicleId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete vehicle class.');
+      }
+    } catch (err) {
+      console.error('Error deleting vehicle:', err);
+      alert('Network error while deleting vehicle class.');
+    }
+  };
+
+  // Partner CRUD Handlers
+  const openCreatePartnerModal = () => {
+    setPartnerModalMode('create');
+    setPartnerFormData({
+      id: 0,
+      companyName: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      partnerType: 'corporate_account',
+      fleetSize: '',
+      message: '',
+      status: 'approved',
+      adminNotes: '',
+    });
+    setIsPartnerModalOpen(true);
+  };
+
+  const openEditPartnerModal = (p: any) => {
+    setPartnerModalMode('edit');
+    setPartnerFormData({
+      id: p.id,
+      companyName: p.company_name || '',
+      contactName: p.contact_name || '',
+      email: p.email || '',
+      phone: p.phone || '',
+      partnerType: p.partner_type || 'corporate_account',
+      fleetSize: p.fleet_size || '',
+      message: p.notes || p.message || '',
+      status: p.status || 'new',
+      adminNotes: p.admin_notes || '',
+    });
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleSavePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingPartner(true);
+    try {
+      const url = '/api/admin/partners';
+      const method = partnerModalMode === 'create' ? 'POST' : 'PATCH';
+      const body = partnerModalMode === 'create'
+        ? {
+            companyName: partnerFormData.companyName,
+            contactName: partnerFormData.contactName,
+            email: partnerFormData.email,
+            phone: partnerFormData.phone,
+            partnerType: partnerFormData.partnerType,
+            fleetSize: partnerFormData.fleetSize,
+            message: partnerFormData.message,
+            status: partnerFormData.status,
+            adminNotes: partnerFormData.adminNotes,
+          }
+        : {
+            id: partnerFormData.id,
+            companyName: partnerFormData.companyName,
+            contactName: partnerFormData.contactName,
+            email: partnerFormData.email,
+            phone: partnerFormData.phone,
+            partnerType: partnerFormData.partnerType,
+            fleetSize: partnerFormData.fleetSize,
+            notes: partnerFormData.message,
+            status: partnerFormData.status,
+            adminNotes: partnerFormData.adminNotes,
+          };
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        setIsPartnerModalOpen(false);
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to save partner application.');
+      }
+    } catch (err) {
+      console.error('Error saving partner:', err);
+      alert('Network error while saving partner.');
+    } finally {
+      setIsSubmittingPartner(false);
+    }
+  };
+
+  const handleDeletePartner = async (partnerId: number, companyName: string) => {
+    if (!confirm(`Are you sure you want to delete partner "${companyName}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/partners?id=${partnerId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete partner.');
+      }
+    } catch (err) {
+      console.error('Error deleting partner:', err);
+      alert('Network error while deleting partner.');
+    }
+  };
+
+  // Inquiry Delete Handler
+  const handleDeleteInquiry = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this customer inquiry?')) return;
+    try {
+      const res = await fetch(`/api/admin/inquiries?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.status) {
+        await loadAdminData();
+      } else {
+        alert(data.message || 'Failed to delete inquiry.');
+      }
+    } catch (err) {
+      console.error('Error deleting inquiry:', err);
+      alert('Network error while deleting inquiry.');
     }
   };
 
@@ -1099,21 +1717,31 @@ export default function AdminPage() {
                   <p className="text-xs text-slate-500">Manage client ride reservations, passenger contacts, and driver dispatch</p>
                 </div>
 
-                {/* Status Filter Buttons */}
-                <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {['all', 'confirmed', 'assigned', 'in_progress', 'completed', 'quoted', 'cancelled'].map((st) => (
-                    <button
-                      key={st}
-                      onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition whitespace-nowrap min-h-[34px] ${
-                        statusFilter === st
-                          ? 'bg-slate-900 text-white shadow-sm'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {st.replace('_', ' ')}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={openCreateBookingModal}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px]"
+                  >
+                    <Plus className="w-4 h-4 text-ots-yellow" />
+                    <span>Create Booking</span>
+                  </button>
+
+                  {/* Status Filter Buttons */}
+                  <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    {['all', 'confirmed', 'assigned', 'in_progress', 'completed', 'quoted', 'cancelled'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setStatusFilter(st)}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition whitespace-nowrap min-h-[34px] ${
+                          statusFilter === st
+                            ? 'bg-slate-900 text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {st.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1193,21 +1821,41 @@ export default function AdminPage() {
                           </td>
 
                           <td className="p-4 align-top text-right space-y-1.5 whitespace-nowrap">
-                            <Link
-                              href={`/booking-confirmation?ref=${b.quote_ref}`}
-                              target="_blank"
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg inline-flex items-center space-x-1 min-h-[32px]"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>Voucher</span>
-                            </Link>
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <Link
+                                href={`/booking-confirmation?ref=${b.quote_ref}`}
+                                target="_blank"
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg inline-flex items-center space-x-1 min-h-[32px]"
+                                title="View Customer Voucher"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Voucher</span>
+                              </Link>
+
+                              <button
+                                onClick={() => openEditBookingModal(b)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg inline-flex items-center space-x-1 min-h-[32px]"
+                                title="Edit Booking Details"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                                <span>Edit</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteBooking(b.quote_ref)}
+                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                title="Delete Booking"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              </button>
+                            </div>
 
                             {b.booking_status !== 'completed' && (
                               <button
                                 onClick={() => handleUpdateBooking(b.quote_ref, { status: 'completed' })}
                                 className="block w-full px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition"
                               >
-                                Complete
+                                Mark Completed
                               </button>
                             )}
                           </td>
@@ -1225,11 +1873,18 @@ export default function AdminPage() {
           ══════════════════════════════════════════════════════════════ */}
           {activeTab === 'drivers' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <h2 className="text-base font-extrabold text-slate-900">Registered Driver Fleet</h2>
                   <p className="text-xs text-slate-500">TfL / Local Council Private Hire licensed chauffeurs &amp; compliance dossiers</p>
                 </div>
+                <button
+                  onClick={openCreateDriverModal}
+                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px] self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4 text-ots-yellow" />
+                  <span>Onboard Chauffeur</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1349,6 +2004,24 @@ export default function AdminPage() {
                             <span>Verified &amp; Cleared for Dispatches</span>
                           </div>
                         )}
+
+                        {/* Edit and Delete Chauffeur Actions */}
+                        <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                          <button
+                            onClick={() => openEditDriverModal(d)}
+                            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5 min-h-[34px]"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Edit Chauffeur</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDriver(d.id, d.driver_name)}
+                            className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                            title="Delete Driver"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1370,21 +2043,31 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                {/* Status Filter Buttons */}
-                <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {['all', 'new', 'under_review', 'approved', 'rejected'].map((st) => (
-                    <button
-                      key={st}
-                      onClick={() => setPartnerStatusFilter(st)}
-                      className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition whitespace-nowrap min-h-[34px] ${
-                        partnerStatusFilter === st
-                          ? 'bg-slate-900 text-white shadow-sm'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {st.replace('_', ' ')}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={openCreatePartnerModal}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px]"
+                  >
+                    <Plus className="w-4 h-4 text-ots-yellow" />
+                    <span>Add Partner</span>
+                  </button>
+
+                  {/* Status Filter Buttons */}
+                  <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    {['all', 'new', 'under_review', 'approved', 'rejected'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setPartnerStatusFilter(st)}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition whitespace-nowrap min-h-[34px] ${
+                          partnerStatusFilter === st
+                            ? 'bg-slate-900 text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {st.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1510,6 +2193,24 @@ export default function AdminPage() {
                               <span>Email</span>
                             </a>
                           </div>
+
+                          {/* Edit and Delete Partner Actions */}
+                          <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                            <button
+                              onClick={() => openEditPartnerModal(p)}
+                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 min-h-[32px]"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Edit Details</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeletePartner(p.id, p.company_name)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition min-h-[32px] min-w-[32px] flex items-center justify-center"
+                              title="Delete Partner Application"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1530,20 +2231,30 @@ export default function AdminPage() {
                   <p className="text-xs text-slate-500">Directory of registered passengers, verified drivers, and administrators</p>
                 </div>
 
-                <div className="flex items-center space-x-1.5">
-                  {['all', 'customer', 'driver', 'admin'].map((role) => (
-                    <button
-                      key={role}
-                      onClick={() => setUserRoleFilter(role)}
-                      className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition ${
-                        userRoleFilter === role 
-                          ? 'bg-slate-900 text-white' 
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {role}s
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={openCreateUserModal}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px]"
+                  >
+                    <Plus className="w-4 h-4 text-ots-yellow" />
+                    <span>Add New User</span>
+                  </button>
+
+                  <div className="flex items-center space-x-1.5">
+                    {['all', 'customer', 'driver', 'admin'].map((role) => (
+                      <button
+                        key={role}
+                        onClick={() => setUserRoleFilter(role)}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition ${
+                          userRoleFilter === role 
+                            ? 'bg-slate-900 text-white' 
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {role}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1561,7 +2272,7 @@ export default function AdminPage() {
                         <th className="p-4">Phone</th>
                         <th className="p-4">Role</th>
                         <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Role Actions</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1594,15 +2305,23 @@ export default function AdminPage() {
                           </td>
 
                           <td className="p-4 text-right whitespace-nowrap">
-                            <select
-                              value={u.role}
-                              onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
-                              className="text-xs p-1 bg-slate-50 border border-slate-200 rounded-lg font-semibold"
-                            >
-                              <option value="customer">Customer</option>
-                              <option value="driver">Driver</option>
-                              <option value="admin">Admin</option>
-                            </select>
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={() => openEditUserModal(u)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition inline-flex items-center space-x-1 min-h-[32px]"
+                                title="Edit User Details & Password"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.id, u.name)}
+                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                title="Delete User"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1618,61 +2337,90 @@ export default function AdminPage() {
           ══════════════════════════════════════════════════════════════ */}
           {activeTab === 'vehicles' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <h2 className="text-base font-extrabold text-slate-900">Vehicle Classes &amp; Multipliers</h2>
                   <p className="text-xs text-slate-500">Configure vehicle models, passenger/luggage capacities, and dynamic pricing multipliers</p>
                 </div>
+                <button
+                  onClick={openCreateVehicleModal}
+                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px] self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4 text-ots-yellow" />
+                  <span>Add Vehicle Class</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {vehicles.map((v) => (
-                  <div key={v.id} className="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-black text-slate-900 text-sm">{v.name}</h3>
-                        <span className="text-[11px] text-slate-400">{v.categoryName}</span>
+                  <div key={v.id} className="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-black text-slate-900 text-sm">{v.name}</h3>
+                          <span className="text-[11px] text-slate-400 font-mono block">{v.id} &bull; {v.categoryName}</span>
+                        </div>
+                        <span className="font-mono text-xs font-black bg-slate-100 px-2 py-1 rounded-lg">
+                          {v.multiplier}x Rate
+                        </span>
                       </div>
-                      <span className="font-mono text-xs font-black bg-slate-100 px-2 py-1 rounded-lg">
-                        {v.multiplier}x Rate
-                      </span>
+
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Passengers:</span>
+                          <strong className="text-slate-900">{v.passengers} pax</strong>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Luggage capacity:</span>
+                          <strong className="text-slate-900">{v.suitcases} bags / {v.handLuggage} hand</strong>
+                        </div>
+                        <div className="text-slate-500 text-[11px] pt-1 border-t border-slate-200/60 truncate">
+                          Samples: {v.sampleVehicles}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Passengers:</span>
-                        <strong className="text-slate-900">{v.passengers} pax</strong>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Luggage capacity:</span>
-                        <strong className="text-slate-900">{v.suitcases} bags / {v.handLuggage} hand</strong>
-                      </div>
-                      <div className="text-slate-500 text-[11px] pt-1 border-t border-slate-200/60 truncate">
-                        Samples: {v.sampleVehicles}
-                      </div>
-                    </div>
+                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-slate-500 font-bold">Multiplier:</span>
+                          <input
+                            type="number"
+                            step="0.05"
+                            defaultValue={v.multiplier}
+                            onBlur={(e) => handleUpdateVehicle(v.id, { multiplier: parseFloat(e.target.value) })}
+                            className="w-20 p-1 border border-slate-300 rounded text-center font-bold text-xs"
+                          />
+                        </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-slate-500 font-bold">Multiplier:</span>
-                        <input
-                          type="number"
-                          step="0.05"
-                          defaultValue={v.multiplier}
-                          onBlur={(e) => handleUpdateVehicle(v.id, { multiplier: parseFloat(e.target.value) })}
-                          className="w-20 p-1 border border-slate-300 rounded text-center font-bold text-xs"
-                        />
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            defaultChecked={v.isActive !== false}
+                            onChange={(e) => handleUpdateVehicle(v.id, { isActive: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                        </label>
                       </div>
 
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          defaultChecked={v.isActive !== false}
-                          onChange={(e) => handleUpdateVehicle(v.id, { isActive: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                      </label>
+                      {/* Edit and Delete Actions */}
+                      <div className="flex items-center space-x-2 pt-1 border-t border-slate-100">
+                        <button
+                          onClick={() => openEditVehicleModal(v)}
+                          className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 min-h-[32px]"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Edit Details</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(v.id, v.name)}
+                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition min-h-[32px] min-w-[32px] flex items-center justify-center"
+                          title="Delete Vehicle Class"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1715,14 +2463,23 @@ export default function AdminPage() {
                         </p>
                       </div>
 
-                      {inq.status !== 'resolved' && (
+                      <div className="flex items-center space-x-2">
+                        {inq.status !== 'resolved' && (
+                          <button
+                            onClick={() => handleResolveInquiry(inq.id)}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition whitespace-nowrap min-h-[38px]"
+                          >
+                            Mark as Resolved
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleResolveInquiry(inq.id)}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition whitespace-nowrap min-h-[38px]"
+                          onClick={() => handleDeleteInquiry(inq.id)}
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition min-h-[38px] min-w-[38px] flex items-center justify-center"
+                          title="Delete Inquiry"
                         >
-                          Mark as Resolved
+                          <Trash2 className="w-4 h-4 text-red-500" />
                         </button>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2977,6 +3734,968 @@ export default function AdminPage() {
 
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          USER CRUD MODAL (ADD / EDIT)
+      ══════════════════════════════════════════════════════════════ */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 flex flex-col text-slate-800 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-[#121622] text-white p-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-ots-yellow text-gray-900 font-black flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    {userModalMode === 'create' ? 'Add New User Account' : 'Edit User Account'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {userModalMode === 'create' ? 'Create customer, chauffeur or admin profile' : `User ID: ${userFormData.id}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsUserModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveUser} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                  placeholder="e.g. John Smith"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  placeholder="john@example.com"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  value={userFormData.phone}
+                  onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
+                  placeholder="+44 7123 456789"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Role *</label>
+                  <select
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-bold"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="driver">Chauffeur / Driver</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Account Status</label>
+                  <select
+                    value={userFormData.is_verified ? 'verified' : 'unverified'}
+                    onChange={(e) => setUserFormData({ ...userFormData, is_verified: e.target.value === 'verified' })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-bold"
+                  >
+                    <option value="verified">Verified</option>
+                    <option value="unverified">Unverified</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  {userModalMode === 'create' ? 'Initial Password' : 'Reset Password (optional)'}
+                </label>
+                <input
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  placeholder={userModalMode === 'create' ? 'Default: DefaultPass@123' : 'Leave blank to keep current password'}
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingUser}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-xl shadow transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  {isSubmittingUser && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{userModalMode === 'create' ? 'Create User' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          DRIVER CRUD MODAL (ONBOARD / FULL EDIT)
+      ══════════════════════════════════════════════════════════════ */}
+      {isDriverModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 flex flex-col text-slate-800 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="bg-[#121622] text-white p-5 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-ots-yellow text-gray-900 font-black flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    {driverModalMode === 'create' ? 'Onboard New Chauffeur' : 'Edit Chauffeur Profile'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {driverModalMode === 'create' ? 'Register driver account and vehicle assignment' : `Chauffeur ID: ${driverFormData.id}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDriverModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveDriver} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Chauffeur Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={driverFormData.name}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, name: e.target.value })}
+                    placeholder="e.g. Tariq Mehmood"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={driverFormData.email}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, email: e.target.value })}
+                    placeholder="driver@otstaxi.co.uk"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Contact Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={driverFormData.phone}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, phone: e.target.value })}
+                    placeholder="+44 7123 456789"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">PCO / PHV Driver License *</label>
+                  <input
+                    type="text"
+                    required
+                    value={driverFormData.licenseNumber}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, licenseNumber: e.target.value })}
+                    placeholder="e.g. 098765"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Plate (VRN) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={driverFormData.vehiclePlate}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, vehiclePlate: e.target.value.toUpperCase() })}
+                    placeholder="e.g. LO23 ABC"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Model</label>
+                  <input
+                    type="text"
+                    value={driverFormData.vehicleModel}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, vehicleModel: e.target.value })}
+                    placeholder="e.g. Mercedes-Benz E-Class"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Category</label>
+                  <select
+                    value={driverFormData.vehicleCategory}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, vehicleCategory: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-bold"
+                  >
+                    <option value="saloon">Saloon Car</option>
+                    <option value="estate">Estate / Station Wagon</option>
+                    <option value="executive">Executive Chauffeur</option>
+                    <option value="mpv">MPV / People Carrier</option>
+                    <option value="minibus">8-Seater Minibus</option>
+                  </select>
+                </div>
+              </div>
+
+              {driverModalMode === 'edit' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Bank Name</label>
+                      <input
+                        type="text"
+                        value={driverFormData.bankName}
+                        onChange={(e) => setDriverFormData({ ...driverFormData, bankName: e.target.value })}
+                        placeholder="e.g. Barclays"
+                        className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Sort Code</label>
+                      <input
+                        type="text"
+                        value={driverFormData.sortCode}
+                        onChange={(e) => setDriverFormData({ ...driverFormData, sortCode: e.target.value })}
+                        placeholder="20-00-00"
+                        className="w-full p-2.5 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Account Number</label>
+                      <input
+                        type="text"
+                        value={driverFormData.accountNumber}
+                        onChange={(e) => setDriverFormData({ ...driverFormData, accountNumber: e.target.value })}
+                        placeholder="12345678"
+                        className="w-full p-2.5 border border-slate-200 rounded-xl font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Verification Status</label>
+                      <select
+                        value={driverFormData.verificationStatus}
+                        onChange={(e) => setDriverFormData({ ...driverFormData, verificationStatus: e.target.value })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                      >
+                        <option value="incomplete">Incomplete Dossier</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="approved">Approved &amp; Cleared</option>
+                        <option value="rejected">Suspended / Rejected</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Active Dispatch Status</label>
+                      <select
+                        value={driverFormData.isActive ? 'active' : 'inactive'}
+                        onChange={(e) => setDriverFormData({ ...driverFormData, isActive: e.target.value === 'active' })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                      >
+                        <option value="active">Active (Eligible for Roster)</option>
+                        <option value="inactive">Inactive / Off Duty</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Internal Admin Notes</label>
+                    <textarea
+                      rows={2}
+                      value={driverFormData.adminNotes}
+                      onChange={(e) => setDriverFormData({ ...driverFormData, adminNotes: e.target.value })}
+                      placeholder="Compliance notes, council badge renewal reminders, etc."
+                      className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsDriverModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingDriver}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-xl shadow transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  {isSubmittingDriver && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{driverModalMode === 'create' ? 'Onboard Chauffeur' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          BOOKING CRUD MODAL (CREATE / EDIT)
+      ══════════════════════════════════════════════════════════════ */}
+      {isBookingModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 flex flex-col text-slate-800 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="bg-[#121622] text-white p-5 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-ots-yellow text-gray-900 font-black flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    {bookingModalMode === 'create' ? 'Create New Airport Transfer' : 'Edit Booking Details'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {bookingModalMode === 'create' ? 'Manual dispatch & telephone reservation' : `Quote Ref: ${bookingFormData.quoteRef}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBookingModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveBooking} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pickup Location *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingFormData.fromLocation}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, fromLocation: e.target.value })}
+                    placeholder="e.g. Heathrow Airport Terminal 2"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Dropoff Location *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingFormData.toLocation}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, toLocation: e.target.value })}
+                    placeholder="e.g. Central London, Mayfair W1"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Passenger Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingFormData.passengerName}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, passengerName: e.target.value })}
+                    placeholder="e.g. Sarah Jenkins"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Passenger Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={bookingFormData.passengerEmail}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, passengerEmail: e.target.value })}
+                    placeholder="sarah@example.com"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Passenger Phone</label>
+                  <input
+                    type="tel"
+                    value={bookingFormData.passengerPhone}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, passengerPhone: e.target.value })}
+                    placeholder="+44 7123 456789"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pickup Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingFormData.pickupDate}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, pickupDate: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pickup Time</label>
+                  <input
+                    type="time"
+                    required
+                    value={bookingFormData.pickupTime}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, pickupTime: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Passengers</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="16"
+                    value={bookingFormData.passengers}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, passengers: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Suitcases</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="16"
+                    value={bookingFormData.suitcases}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, suitcases: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Category</label>
+                  <select
+                    value={bookingFormData.selectedVehicleId}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, selectedVehicleId: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    {vehicles.length > 0 ? (
+                      vehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.categoryName || v.id})
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="saloon">Saloon Car</option>
+                        <option value="estate">Estate</option>
+                        <option value="executive">Executive</option>
+                        <option value="mpv">MPV</option>
+                        <option value="minibus">8-Seater Minibus</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Total Fare (GBP £)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    required
+                    value={bookingFormData.totalPrice}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, totalPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-black text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Assign Chauffeur</label>
+                  <select
+                    value={bookingFormData.driverId}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, driverId: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="">-- No Chauffeur Assigned --</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.driver_name || d.id} ({d.vehicle_plate || 'No plate'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Booking Status</label>
+                  <select
+                    value={bookingFormData.bookingStatus}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, bookingStatus: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="confirmed">Confirmed</option>
+                    <option value="assigned">Assigned to Driver</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Payment Status</label>
+                  <select
+                    value={bookingFormData.paymentStatus}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, paymentStatus: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="completed">Paid / Completed</option>
+                    <option value="unpaid">Unpaid / Cash on Arrival</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Flight Number (optional)</label>
+                  <input
+                    type="text"
+                    value={bookingFormData.flightNumber}
+                    onChange={(e) => setBookingFormData({ ...bookingFormData, flightNumber: e.target.value.toUpperCase() })}
+                    placeholder="e.g. BA123"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Special Instructions &amp; Meet &amp; Greet</label>
+                <textarea
+                  rows={2}
+                  value={bookingFormData.specialNotes}
+                  onChange={(e) => setBookingFormData({ ...bookingFormData, specialNotes: e.target.value })}
+                  placeholder="e.g. Terminal 2 Arrival Hall near Costa Coffee, holding name board"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsBookingModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingBooking}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-xl shadow transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  {isSubmittingBooking && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{bookingModalMode === 'create' ? 'Create Booking' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          VEHICLE CLASS CRUD MODAL (ADD / EDIT)
+      ══════════════════════════════════════════════════════════════ */}
+      {isVehicleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 flex flex-col text-slate-800 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="bg-[#121622] text-white p-5 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-ots-yellow text-gray-900 font-black flex items-center justify-center">
+                  <Car className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    {vehicleModalMode === 'create' ? 'Add Vehicle Class' : 'Edit Vehicle Class'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {vehicleModalMode === 'create' ? 'Define new fleet category and pricing multiplier' : `Category: ${vehicleFormData.id}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsVehicleModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveVehicle} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Slug / ID *</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={vehicleModalMode === 'edit'}
+                    value={vehicleFormData.id}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, id: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-') })}
+                    placeholder="e.g. executive-van"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-mono font-bold disabled:bg-slate-100 disabled:text-slate-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Display Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={vehicleFormData.name}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, name: e.target.value })}
+                    placeholder="e.g. Mercedes V-Class Executive"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Category Badge *</label>
+                  <input
+                    type="text"
+                    required
+                    value={vehicleFormData.categoryName}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, categoryName: e.target.value })}
+                    placeholder="e.g. Executive Van"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Price Multiplier (Base 1.0x)</label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0.5"
+                    max="10.0"
+                    required
+                    value={vehicleFormData.multiplier}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, multiplier: parseFloat(e.target.value) || 1.0 })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-black text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Passenger Cap</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={vehicleFormData.passengers}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, passengers: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Large Bags</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={vehicleFormData.suitcases}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, suitcases: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Hand Luggage</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={vehicleFormData.handLuggage}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, handLuggage: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Sample Cars</label>
+                <input
+                  type="text"
+                  value={vehicleFormData.sampleVehicles}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, sampleVehicles: e.target.value })}
+                  placeholder="e.g. Mercedes-Benz V-Class, Ford Tourneo Custom"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Vehicle Image URL</label>
+                <input
+                  type="text"
+                  value={vehicleFormData.image}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, image: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-mono text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={vehicleFormData.description}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, description: e.target.value })}
+                  placeholder="Short fleet tier description shown during booking checkout"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="vehicleIsActive"
+                  checked={vehicleFormData.isActive}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, isActive: e.target.checked })}
+                  className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-900"
+                />
+                <label htmlFor="vehicleIsActive" className="font-bold text-slate-700 cursor-pointer">
+                  Active (Show this vehicle option to passengers on website)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsVehicleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingVehicle}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-xl shadow transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  {isSubmittingVehicle && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{vehicleModalMode === 'create' ? 'Add Class' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          PARTNER CRUD MODAL (ADD / EDIT)
+      ══════════════════════════════════════════════════════════════ */}
+      {isPartnerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-6 flex flex-col text-slate-800 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="bg-[#121622] text-white p-5 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-ots-yellow text-gray-900 font-black flex items-center justify-center">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    {partnerModalMode === 'create' ? 'Add B2B Partner' : 'Edit Partner Application'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {partnerModalMode === 'create' ? 'Onboard corporate client or travel partner' : `Partner ID: ${partnerFormData.id}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsPartnerModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSavePartner} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Company / Organization *</label>
+                  <input
+                    type="text"
+                    required
+                    value={partnerFormData.companyName}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, companyName: e.target.value })}
+                    placeholder="e.g. British Airways Executive Travel"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Key Contact Person *</label>
+                  <input
+                    type="text"
+                    required
+                    value={partnerFormData.contactName}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, contactName: e.target.value })}
+                    placeholder="e.g. Amanda Clark"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={partnerFormData.email}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, email: e.target.value })}
+                    placeholder="contact@company.com"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={partnerFormData.phone}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, phone: e.target.value })}
+                    placeholder="+44 20 8123 4567"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Partner Type</label>
+                  <select
+                    value={partnerFormData.partnerType}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, partnerType: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="corporate_account">Corporate Account</option>
+                    <option value="travel_agency">Travel Agency</option>
+                    <option value="hotel_concierge">Hotel Concierge</option>
+                    <option value="fleet_operator">Fleet Operator</option>
+                    <option value="event_planner">Event Planner</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Monthly Volume / Fleet</label>
+                  <input
+                    type="text"
+                    value={partnerFormData.fleetSize}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, fleetSize: e.target.value })}
+                    placeholder="e.g. 50+ rides/month"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Application Status</label>
+                  <select
+                    value={partnerFormData.status}
+                    onChange={(e) => setPartnerFormData({ ...partnerFormData, status: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="new">New Submission</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="approved">Approved &amp; Active</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Application Details / Message</label>
+                <textarea
+                  rows={2}
+                  value={partnerFormData.message}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, message: e.target.value })}
+                  placeholder="Partner service requirements or commission arrangements"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Internal Admin Notes</label>
+                <textarea
+                  rows={2}
+                  value={partnerFormData.adminNotes}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, adminNotes: e.target.value })}
+                  placeholder="B2B contract notes, negotiated discounts, payment terms"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsPartnerModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPartner}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-xl shadow transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  {isSubmittingPartner && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{partnerModalMode === 'create' ? 'Add Partner' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

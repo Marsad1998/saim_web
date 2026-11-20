@@ -413,6 +413,63 @@ export class BookingModel {
   }
 
   /**
+   * Update any booking fields (Admin booking editing)
+   */
+  static async update(
+    quoteRef: string,
+    updates: Partial<IBooking>
+  ): Promise<boolean> {
+    try {
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      if (updates.passenger_name !== undefined) { fields.push("passenger_name = ?"); values.push(updates.passenger_name); }
+      if (updates.passenger_email !== undefined) { fields.push("passenger_email = ?"); values.push(updates.passenger_email); }
+      if (updates.passenger_phone !== undefined) { fields.push("passenger_phone = ?"); values.push(updates.passenger_phone); }
+      if (updates.from_location !== undefined) { fields.push("from_location = ?"); values.push(updates.from_location); }
+      if (updates.to_location !== undefined) { fields.push("to_location = ?"); values.push(updates.to_location); }
+      if (updates.pickup_date !== undefined) { fields.push("pickup_date = ?"); values.push(updates.pickup_date); }
+      if (updates.pickup_time !== undefined) { fields.push("pickup_time = ?"); values.push(updates.pickup_time); }
+      if (updates.return_date !== undefined) { fields.push("return_date = ?"); values.push(updates.return_date); }
+      if (updates.return_time !== undefined) { fields.push("return_time = ?"); values.push(updates.return_time); }
+      if (updates.passengers !== undefined) { fields.push("passengers = ?"); values.push(updates.passengers); }
+      if (updates.suitcases !== undefined) { fields.push("suitcases = ?"); values.push(updates.suitcases); }
+      if (updates.flight_number !== undefined) { fields.push("flight_number = ?"); values.push(updates.flight_number); }
+      if (updates.terminal !== undefined) { fields.push("terminal = ?"); values.push(updates.terminal); }
+      if (updates.special_notes !== undefined) { fields.push("special_notes = ?"); values.push(updates.special_notes); }
+      if (updates.selected_vehicle_id !== undefined) { fields.push("selected_vehicle_id = ?"); values.push(updates.selected_vehicle_id); }
+      if (updates.total_price !== undefined) { fields.push("total_price = ?"); values.push(updates.total_price); }
+      if (updates.currency !== undefined) { fields.push("currency = ?"); values.push(updates.currency); }
+      if (updates.booking_status !== undefined) { fields.push("booking_status = ?"); values.push(updates.booking_status); }
+      if (updates.payment_status !== undefined) { fields.push("payment_status = ?"); values.push(updates.payment_status); }
+      if (updates.payment_method !== undefined) { fields.push("payment_method = ?"); values.push(updates.payment_method); }
+      if (updates.driver_id !== undefined) { fields.push("driver_id = ?"); values.push(updates.driver_id || null); }
+
+      if (fields.length === 0) return true;
+
+      values.push(quoteRef);
+      await dbQuery(`UPDATE bookings SET ${fields.join(", ")} WHERE quote_ref = ?`, values);
+      return true;
+    } catch (error: any) {
+      console.error("BookingModel.update error:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Delete a booking/quote by reference
+   */
+  static async delete(quoteRef: string): Promise<boolean> {
+    try {
+      await dbQuery("DELETE FROM bookings WHERE quote_ref = ?", [quoteRef]);
+      return true;
+    } catch (error: any) {
+      console.error("BookingModel.delete error:", error.message);
+      return false;
+    }
+  }
+
+  /**
    * Get all bookings (with optional status filters for Admin)
    */
   static async getAll(filter?: { status?: string; paymentStatus?: string; limit?: number }): Promise<IBooking[]> {

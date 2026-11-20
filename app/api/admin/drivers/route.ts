@@ -90,27 +90,103 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { driverId, verificationStatus, isActive, adminNotes } = body;
+    const { 
+      driverId, 
+      name,
+      email,
+      phone,
+      licenseNumber,
+      vehicleModel,
+      vehiclePlate,
+      vehicleYear,
+      vehicleCategory,
+      insuranceNumber,
+      insuranceExpiry,
+      bankName,
+      sortCode,
+      accountNumber,
+      verificationStatus, 
+      isActive, 
+      adminNotes 
+    } = body;
 
     if (!driverId) {
       return NextResponse.json({ status: false, message: "driverId is required" }, { status: 400 });
     }
 
+    const currentDriver = await DriverModel.findById(driverId);
+    if (!currentDriver) {
+      return NextResponse.json({ status: false, message: "Driver not found" }, { status: 404 });
+    }
+
+    // Update driver profile details
     await DriverModel.update(driverId, {
+      licenseNumber,
+      vehicleModel,
+      vehiclePlate,
+      vehicleYear,
+      vehicleCategory,
+      insuranceNumber,
+      insuranceExpiry,
+      bankName,
+      sortCode,
+      accountNumber,
       verificationStatus,
       isActive,
       adminNotes,
     });
 
+    // If name, email, or phone is provided, update the linked user record
+    if (currentDriver.user_id && (name || email || phone)) {
+      await UserModel.update(currentDriver.user_id, {
+        name,
+        email,
+        phone,
+      });
+    }
+
     const updatedDriver = await DriverModel.findById(driverId);
 
     return NextResponse.json({
       status: true,
-      message: "Driver compliance status updated successfully.",
+      message: "Driver details updated successfully.",
       driver: updatedDriver,
     });
   } catch (error: any) {
     console.error("PATCH /api/admin/drivers error:", error.message);
     return NextResponse.json({ status: false, message: "Failed to update driver" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = checkAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    let driverId = searchParams.get("driverId") || searchParams.get("id");
+
+    if (!driverId) {
+      try {
+        const body = await request.json();
+        driverId = body.driverId || body.id;
+      } catch {}
+    }
+
+    if (!driverId) {
+      return NextResponse.json({ status: false, message: "Driver ID is required" }, { status: 400 });
+    }
+
+    const success = await DriverModel.delete(driverId);
+
+    return NextResponse.json({
+      status: success,
+      message: success ? "Driver removed successfully." : "Failed to remove driver.",
+    });
+  } catch (error: any) {
+    console.error("DELETE /api/admin/drivers error:", error.message);
+    return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });
   }
 }

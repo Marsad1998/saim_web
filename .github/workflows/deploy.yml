@@ -33,5 +33,6 @@ jobs:
             npm install --production=false
             npm run build
 
-            # Restart application with PM2 (or start it if not running)
-            pm2 reload saim_web --update-env || pm2 start npm --name "saim_web" -- start
+            # Restart application with PM2 on port 3010
+            pm2 reload saim_web --update-env || PORT=3010 pm2 start npm --name "saim_web" -- start -- -p 3010
+            pm2 save

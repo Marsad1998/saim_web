@@ -83,6 +83,81 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const admin = checkAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      fromLocation,
+      toLocation,
+      pickupDate,
+      pickupTime,
+      passengers,
+      suitcases,
+      passengerName,
+      passengerEmail,
+      passengerPhone,
+      selectedVehicleId,
+      totalPrice,
+      currency,
+      flightNumber,
+      specialNotes,
+      bookingStatus,
+      paymentStatus,
+      driverId,
+    } = body;
+
+    if (!fromLocation || !toLocation || !passengerName || !passengerEmail) {
+      return NextResponse.json(
+        { status: false, message: "From, To, Passenger Name, and Passenger Email are required." },
+        { status: 400 }
+      );
+    }
+
+    const initialBooking = await BookingModel.create({
+      fromLocation,
+      toLocation,
+      pickupDate: pickupDate || new Date().toISOString().split("T")[0],
+      pickupTime: pickupTime || "12:00",
+      passengers: passengers || 1,
+      suitcases: suitcases || 1,
+      currency: currency || "GBP",
+    });
+
+    const normalizedPaymentStatus = paymentStatus === "paid" ? "completed" : (paymentStatus || "unpaid");
+
+    // Update with details
+    await BookingModel.update(initialBooking.quote_ref, {
+      passenger_name: passengerName,
+      passenger_email: passengerEmail,
+      passenger_phone: passengerPhone || null,
+      selected_vehicle_id: selectedVehicleId || "saloon",
+      total_price: Number(totalPrice || 50),
+      currency: currency || "GBP",
+      flight_number: flightNumber || null,
+      special_notes: specialNotes || null,
+      booking_status: bookingStatus || "confirmed",
+      payment_status: normalizedPaymentStatus,
+      driver_id: driverId || null,
+    });
+
+    const fullBooking = await BookingModel.getByRef(initialBooking.quote_ref);
+
+    return NextResponse.json({
+      status: true,
+      message: "Booking created successfully.",
+      booking: fullBooking,
+    });
+  } catch (error: any) {
+    console.error("POST /api/admin/bookings error:", error.message);
+    return NextResponse.json({ status: false, message: "Failed to create booking" }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const admin = checkAdminAuth(request);
@@ -91,21 +166,56 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { quoteRef, status, driverId } = body;
+    const { 
+      quoteRef, 
+      status, 
+      driverId,
+      passengerName,
+      passengerEmail,
+      passengerPhone,
+      fromLocation,
+      toLocation,
+      pickupDate,
+      pickupTime,
+      passengers,
+      suitcases,
+      flightNumber,
+      terminal,
+      specialNotes,
+      selectedVehicleId,
+      totalPrice,
+      currency,
+      paymentStatus,
+      paymentMethod,
+    } = body;
 
     if (!quoteRef) {
       return NextResponse.json({ status: false, message: "Missing quote reference" }, { status: 400 });
     }
 
-    if (status && driverId !== undefined) {
-      await BookingModel.updateStatus(quoteRef, status, driverId || undefined);
-    } else if (status) {
-      await BookingModel.updateStatus(quoteRef, status);
-    } else if (driverId) {
-      await dbQuery("UPDATE bookings SET driver_id = ?, booking_status = 'assigned' WHERE quote_ref = ?", [
-        driverId,
-        quoteRef,
-      ]);
+    const updates: any = {};
+    if (status !== undefined) updates.booking_status = status;
+    if (driverId !== undefined) updates.driver_id = driverId || null;
+    if (passengerName !== undefined) updates.passenger_name = passengerName;
+    if (passengerEmail !== undefined) updates.passenger_email = passengerEmail;
+    if (passengerPhone !== undefined) updates.passenger_phone = passengerPhone;
+    if (fromLocation !== undefined) updates.from_location = fromLocation;
+    if (toLocation !== undefined) updates.to_location = toLocation;
+    if (pickupDate !== undefined) updates.pickup_date = pickupDate;
+    if (pickupTime !== undefined) updates.pickup_time = pickupTime;
+    if (passengers !== undefined) updates.passengers = Number(passengers);
+    if (suitcases !== undefined) updates.suitcases = Number(suitcases);
+    if (flightNumber !== undefined) updates.flight_number = flightNumber;
+    if (terminal !== undefined) updates.terminal = terminal;
+    if (specialNotes !== undefined) updates.special_notes = specialNotes;
+    if (selectedVehicleId !== undefined) updates.selected_vehicle_id = selectedVehicleId;
+    if (totalPrice !== undefined) updates.total_price = Number(totalPrice);
+    if (currency !== undefined) updates.currency = currency;
+    if (paymentStatus !== undefined) updates.payment_status = paymentStatus === "paid" ? "completed" : paymentStatus;
+    if (paymentMethod !== undefined) updates.payment_method = paymentMethod;
+
+    if (Object.keys(updates).length > 0) {
+      await BookingModel.update(quoteRef, updates);
     }
 
     return NextResponse.json({
@@ -115,5 +225,38 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error("PATCH /api/admin/bookings error:", error.message);
     return NextResponse.json({ status: false, message: "Update failed" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = checkAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    let quoteRef = searchParams.get("quoteRef") || searchParams.get("id");
+
+    if (!quoteRef) {
+      try {
+        const body = await request.json();
+        quoteRef = body.quoteRef || body.id;
+      } catch {}
+    }
+
+    if (!quoteRef) {
+      return NextResponse.json({ status: false, message: "quoteRef is required" }, { status: 400 });
+    }
+
+    const success = await BookingModel.delete(quoteRef);
+
+    return NextResponse.json({
+      status: success,
+      message: success ? `Booking ${quoteRef} deleted successfully.` : "Failed to delete booking.",
+    });
+  } catch (error: any) {
+    console.error("DELETE /api/admin/bookings error:", error.message);
+    return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });
   }
 }

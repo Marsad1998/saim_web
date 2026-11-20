@@ -118,6 +118,43 @@ export class PartnerApplicationModel {
   }
 
   /**
+   * Update full partner application details
+   */
+  static async update(
+    id: number,
+    updates: Partial<IPartnerApplication>
+  ): Promise<boolean> {
+    const inMem = inMemoryPartners.find((p) => p.id === id);
+    if (inMem) {
+      Object.assign(inMem, updates);
+    }
+
+    try {
+      const fields: string[] = [];
+      const values: any[] = [];
+
+      if (updates.company_name !== undefined) { fields.push("company_name = ?"); values.push(updates.company_name); }
+      if (updates.contact_name !== undefined) { fields.push("contact_name = ?"); values.push(updates.contact_name); }
+      if (updates.email !== undefined) { fields.push("email = ?"); values.push(updates.email); }
+      if (updates.phone !== undefined) { fields.push("phone = ?"); values.push(updates.phone); }
+      if (updates.partner_type !== undefined) { fields.push("partner_type = ?"); values.push(updates.partner_type); }
+      if (updates.fleet_size !== undefined) { fields.push("fleet_size = ?"); values.push(updates.fleet_size); }
+      if (updates.message !== undefined) { fields.push("message = ?"); values.push(updates.message); }
+      if (updates.status !== undefined) { fields.push("status = ?"); values.push(updates.status); }
+      if (updates.admin_notes !== undefined) { fields.push("admin_notes = ?"); values.push(updates.admin_notes); }
+
+      if (fields.length === 0) return true;
+
+      values.push(id);
+      await dbQuery(`UPDATE partner_applications SET ${fields.join(", ")} WHERE id = ?`, values);
+      return true;
+    } catch (error: any) {
+      console.warn("PartnerApplicationModel.update DB fallback:", error.message);
+      return Boolean(inMem);
+    }
+  }
+
+  /**
    * Update partner application status and admin review notes
    */
   static async updateStatus(

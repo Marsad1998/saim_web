@@ -61,3 +61,36 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = checkAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id;
+      } catch {}
+    }
+
+    if (!id) {
+      return NextResponse.json({ status: false, message: "Inquiry ID required" }, { status: 400 });
+    }
+
+    const success = await ContactInquiryModel.delete(Number(id));
+
+    return NextResponse.json({
+      status: success,
+      message: success ? "Inquiry deleted successfully." : "Failed to delete inquiry.",
+    });
+  } catch (error: any) {
+    console.error("DELETE /api/admin/inquiries error:", error.message);
+    return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });
+  }
+}
