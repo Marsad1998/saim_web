@@ -49,7 +49,10 @@ import {
   HelpCircle,
   CheckCircle,
   Plus,
-  Pencil
+  Pencil,
+  Database,
+  Server,
+  HardDrive
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -147,6 +150,12 @@ export default function AdminPage() {
     vat_number: 'GB 123 4567 89',
     copyright_text: '© 2026 OTS Taxi UK Ltd. All rights reserved.',
   });
+
+  // Database Connection & Diagnostics State
+  const [dbStatus, setDbStatus] = useState<any>(null);
+  const [isCheckingDb, setIsCheckingDb] = useState(false);
+  const [isInitializingDb, setIsInitializingDb] = useState(false);
+  const [showDbGuide, setShowDbGuide] = useState(false);
 
   const currentBrandName = settings.brand_name || siteSettings?.brand_name || 'OTS TAXI';
   const currentLogoDark = settings.logo_dark || siteSettings?.logo_dark || '';
@@ -442,6 +451,14 @@ export default function AdminPage() {
         const pData = await partnersRes.json();
         if (pData.status && pData.partners) setPartners(pData.partners);
       }
+
+      // Fetch live database connection & table diagnostics
+      fetch('/api/admin/db-status')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) setDbStatus(data);
+        })
+        .catch(() => {});
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -1181,6 +1198,67 @@ export default function AdminPage() {
     }
   };
 
+  // Test MySQL Connection & Refresh Pool
+  const handleTestDbConnection = async () => {
+    setIsCheckingDb(true);
+    try {
+      const res = await fetch('/api/admin/db-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test' }),
+      });
+      const data = await res.json();
+      setDbStatus(data);
+      if (data.connected) {
+        setSettingsMessage({
+          type: 'success',
+          text: `MySQL Connection Successful! Ping: ${data.latencyMs}ms. Connected to ${data.config?.host}:${data.config?.port}/${data.config?.database}`,
+        });
+      } else {
+        setSettingsMessage({
+          type: 'error',
+          text: `MySQL Connection Offline: ${data.error || data.message}. ${data.hint || ''}`,
+        });
+      }
+    } catch (e: any) {
+      setSettingsMessage({ type: 'error', text: `Failed to test database: ${e.message}` });
+    } finally {
+      setIsCheckingDb(false);
+    }
+  };
+
+  // Initialize / Repair Database Tables & Seed Baseline
+  const handleInitDbSchema = async () => {
+    if (!confirm('This will create all missing tables (users, drivers, bookings, vehicles, system_settings, contact_inquiries, reviews, partner_applications) and seed default records if empty. Continue?')) {
+      return;
+    }
+    setIsInitializingDb(true);
+    try {
+      const res = await fetch('/api/admin/db-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'init_schema' }),
+      });
+      const data = await res.json();
+      if (data.status) {
+        setSettingsMessage({
+          type: 'success',
+          text: `Database Schema Initialized! Tables: ${(data.tablesCreated || []).join(', ')}. ${data.seededItems?.length ? 'Seeded: ' + data.seededItems.join(', ') : ''}`,
+        });
+        await loadAdminData();
+      } else {
+        setSettingsMessage({
+          type: 'error',
+          text: `Schema Init Failed: ${data.message}. ${data.error || ''}`,
+        });
+      }
+    } catch (e: any) {
+      setSettingsMessage({ type: 'error', text: `Database init error: ${e.message}` });
+    } finally {
+      setIsInitializingDb(false);
+    }
+  };
+
   // Computed Counters
   const pendingDriversCount = useMemo(() => {
     return drivers.filter(d => d.verification_status === 'pending_approval' || (Number(d.completion_score) === 100 && d.verification_status !== 'approved')).length;
@@ -1263,7 +1341,13 @@ export default function AdminPage() {
       group: 'CONFIGURATION',
       items: [
         { id: 'website_settings', label: 'Website & Branding', icon: Palette, badge: 'Live Theme', badgeColor: 'bg-amber-400 text-gray-950 font-black' },
-        { id: 'settings', label: 'SMTP & Integrations', icon: Settings, badge: null },
+        {
+          id: 'settings',
+          label: 'SMTP & Database',
+          icon: Settings,
+          badge: dbStatus ? (dbStatus.connected ? 'DB OK' : 'DB Offline') : null,
+          badgeColor: dbStatus?.connected ? 'bg-emerald-500' : 'bg-red-500',
+        },
       ],
     },
   ];
@@ -1727,15 +1811,48 @@ export default function AdminPage() {
 
                   {/* System Environment Status */}
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-3 text-xs">
-                    <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-2">
-                      System Status
-                    </h3>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <h3 className="text-sm font-extrabold text-slate-900 flex items-center space-x-2">
+                        <Server className="w-4 h-4 text-slate-500" />
+                        <span>System Status</span>
+                      </h3>
+                      <button
+                        onClick={handleTestDbConnection}
+                        disabled={isCheckingDb}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-900 flex items-center space-x-1"
+                        title="Ping Database"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isCheckingDb ? 'animate-spin' : ''}`} />
+                        <span>Ping</span>
+                      </button>
+                    </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       <div className="flex items-center justify-between text-slate-600">
-                        <span>Database Engine</span>
-                        <span className="font-mono font-bold text-emerald-600">MySQL / Active Sync</span>
+                        <span className="flex items-center space-x-1.5">
+                          <Database className="w-3.5 h-3.5 text-slate-400" />
+                          <span>MySQL Database</span>
+                        </span>
+                        {dbStatus?.connected ? (
+                          <span className="font-mono font-bold text-emerald-600 flex items-center space-x-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>Connected ({dbStatus.latencyMs}ms)</span>
+                          </span>
+                        ) : (
+                          <span className="font-mono font-bold text-red-600 flex items-center space-x-1.5" title={dbStatus?.error}>
+                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                            <span>Disconnected</span>
+                          </span>
+                        )}
                       </div>
+
+                      {dbStatus && (
+                        <div className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 flex items-center justify-between">
+                          <span>{dbStatus.config?.host}:{dbStatus.config?.port}</span>
+                          <span className="truncate max-w-[120px]">{dbStatus.config?.database}</span>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-slate-600">
                         <span>SMTP Email Server</span>
                         <span className={`font-mono font-bold ${settings.smtp_user ? 'text-emerald-600' : 'text-amber-600'}`}>
@@ -2542,11 +2659,193 @@ export default function AdminPage() {
               VIEW 7: SMTP & INTEGRATION SETTINGS
           ══════════════════════════════════════════════════════════════ */}
           {activeTab === 'settings' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 max-w-4xl">
-              <div className="border-b border-slate-100 pb-4">
-                <h2 className="text-base font-extrabold text-slate-900">SMTP Server &amp; Gateway Settings</h2>
-                <p className="text-xs text-slate-500">Configure email delivery credentials for booking vouchers, OTPs, and notifications</p>
+            <div className="space-y-6 max-w-4xl">
+              {/* CARD 1: MYSQL DATABASE CONNECTION & INFRASTRUCTURE */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Database className="w-5 h-5 text-slate-800" />
+                      <h2 className="text-base font-extrabold text-slate-900">
+                        MySQL Database Connection &amp; Diagnostics
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Live connection status, database tables inspector, and auto-migration tools
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={handleTestDbConnection}
+                      disabled={isCheckingDb}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition flex items-center space-x-1.5"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isCheckingDb ? 'animate-spin' : ''}`} />
+                      <span>{isCheckingDb ? 'Testing...' : 'Test Connection'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleInitDbSchema}
+                      disabled={isInitializingDb}
+                      className="px-4 py-2 bg-ots-yellow hover:bg-yellow-400 text-gray-950 font-black rounded-xl text-xs shadow-sm transition flex items-center space-x-1.5 disabled:opacity-50"
+                    >
+                      <HardDrive className={`w-3.5 h-3.5 ${isInitializingDb ? 'animate-spin' : ''}`} />
+                      <span>{isInitializingDb ? 'Initializing...' : 'Initialize / Repair Tables'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status Indicator Banner */}
+                {dbStatus?.connected ? (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start space-x-3 text-xs text-emerald-900">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse mt-1 flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="font-bold flex items-center space-x-2">
+                        <span>Database Online &amp; Synchronized</span>
+                        <span className="font-mono text-[11px] bg-emerald-100 px-2 py-0.5 rounded text-emerald-800">
+                          {dbStatus.latencyMs}ms latency
+                        </span>
+                      </div>
+                      <p className="text-emerald-700 mt-0.5">
+                        Connected to host <strong className="font-mono">{dbStatus.config?.host}:{dbStatus.config?.port}</strong> with database <strong className="font-mono">{dbStatus.config?.database}</strong>. All bookings, users, and fleet records are persisting to MySQL.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2 text-xs text-red-900">
+                    <div className="flex items-center space-x-2 font-bold text-red-800">
+                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                      <span>Database Connection Offline (Operating in In-Memory Fallback Mode)</span>
+                    </div>
+                    {dbStatus?.error && (
+                      <div className="font-mono text-[11px] bg-white p-2.5 rounded-lg border border-red-200 text-red-700 break-all">
+                        {dbStatus.error}
+                      </div>
+                    )}
+                    {dbStatus?.hint && (
+                      <p className="text-red-700">
+                        <strong>Action Needed:</strong> {dbStatus.hint}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Configuration Breakdown Grid */}
+                {dbStatus?.config && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Host &amp; Port</span>
+                      <span className="font-mono font-bold text-slate-800 mt-0.5 block truncate">
+                        {dbStatus.config.host}:{dbStatus.config.port}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Database</span>
+                      <span className="font-mono font-bold text-slate-800 mt-0.5 block truncate">
+                        {dbStatus.config.database}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Username</span>
+                      <span className="font-mono font-bold text-slate-800 mt-0.5 block truncate">
+                        {dbStatus.config.user}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">SSL Mode</span>
+                      <span className={`font-mono font-bold mt-0.5 block ${dbStatus.config.isSsl ? 'text-emerald-700' : 'text-slate-600'}`}>
+                        {dbStatus.config.isSsl ? 'Active (Cloud SSL)' : 'Disabled (Local)'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tables & Row Counts */}
+                {dbStatus?.tables && dbStatus.tables.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Active Database Tables ({dbStatus.tables.length}):
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      {dbStatus.tables.map((t: any) => (
+                        <div key={t.name} className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                          <span className="font-mono font-semibold text-slate-700">{t.name}</span>
+                          <span className="text-[11px] font-bold text-slate-500">{t.rows >= 0 ? `${t.rows} rows` : 'Active'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Collapsible Live Server Setup Guide */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowDbGuide(!showDbGuide)}
+                    className="w-full p-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-800 transition"
+                  >
+                    <span className="flex items-center space-x-2">
+                      <HelpCircle className="w-4 h-4 text-slate-500" />
+                      <span>Live Server Setup Guide (AWS Lightsail, VPS, Railway, Vercel)</span>
+                    </span>
+                    <span className="text-slate-400 font-normal">{showDbGuide ? '▲ Hide' : '▼ View Setup Steps'}</span>
+                  </button>
+
+                  {showDbGuide && (
+                    <div className="p-4 bg-white border-t border-slate-200 space-y-3 text-xs text-slate-600 leading-relaxed">
+                      <div>
+                        <strong className="text-slate-900 block mb-1">1. Set Database Credentials in .env:</strong>
+                        <p>On your server (e.g. <code>/var/www/saim_web/.env</code>), ensure your MySQL credentials are set:</p>
+                        <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-[11px] mt-1 overflow-x-auto">
+{`MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_USER=otstaxi_user
+MYSQL_PASSWORD=your_secure_password
+MYSQL_DATABASE=otstaxi_db
+# Or use complete connection URL:
+DATABASE_URL="mysql://otstaxi_user:your_secure_password@127.0.0.1:3306/otstaxi_db"`}
+                        </pre>
+                      </div>
+
+                      <div>
+                        <strong className="text-slate-900 block mb-1">2. Create Database &amp; User in MySQL (Ubuntu/Lightsail):</strong>
+                        <p>SSH into your server and run in terminal:</p>
+                        <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-[11px] mt-1 overflow-x-auto">
+{`sudo mysql -u root
+CREATE DATABASE IF NOT EXISTS otstaxi_db;
+CREATE USER IF NOT EXISTS 'otstaxi_user'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON otstaxi_db.* TO 'otstaxi_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;`}
+                        </pre>
+                      </div>
+
+                      <div>
+                        <strong className="text-slate-900 block mb-1">3. Initialize Tables:</strong>
+                        <p>Click the yellow <strong>"Initialize / Repair Tables"</strong> button above, or run <code>npm run db:init</code> in your server folder.</p>
+                      </div>
+
+                      <div>
+                        <strong className="text-slate-900 block mb-1">4. Reload PM2:</strong>
+                        <p>Run <code>pm2 reload saim_web --update-env</code> to apply the new environment variables.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* CARD 2: SMTP SERVER & GATEWAY SETTINGS */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                <div className="border-b border-slate-100 pb-4">
+                  <h2 className="text-base font-extrabold text-slate-900">SMTP Server &amp; Gateway Settings</h2>
+                  <p className="text-xs text-slate-500">Configure email delivery credentials for booking vouchers, OTPs, and notifications</p>
+                </div>
 
               {settingsMessage && (
                 <div className={`p-4 rounded-xl text-xs font-bold flex items-center space-x-2 ${
@@ -2678,7 +2977,8 @@ export default function AdminPage() {
                 </div>
               </form>
             </div>
-          )}
+          </div>
+        )}
 
           {/* ══════════════════════════════════════════════════════════════
               VIEW 8: WEBSITE SETTINGS, BRANDING & LIVE THEME

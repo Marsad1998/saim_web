@@ -27,18 +27,20 @@ function loadEnvFile(filePath) {
   });
 }
 
+loadEnvFile(path.join(__dirname, '..', '.env.production.local'));
+loadEnvFile(path.join(__dirname, '..', '.env.production'));
 loadEnvFile(path.join(__dirname, '..', '.env.local'));
 loadEnvFile(path.join(__dirname, '..', '.env'));
 
 async function initDatabase() {
   console.log('🚀 Starting OTS Taxi MySQL Database Initialization...\n');
 
-  const databaseUrl = process.env.DATABASE_URL;
-  let host = process.env.MYSQL_HOST || '127.0.0.1';
-  let port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : 3306;
-  let user = process.env.MYSQL_USER || 'root';
-  let password = process.env.MYSQL_PASSWORD || '';
-  let database = process.env.MYSQL_DATABASE || 'otstaxi_db';
+  const databaseUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+  let host = process.env.MYSQL_HOST || process.env.MYSQLHOST || '127.0.0.1';
+  let port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : (process.env.MYSQLPORT ? parseInt(process.env.MYSQLPORT, 10) : 3306);
+  let user = process.env.MYSQL_USER || process.env.MYSQLUSER || 'root';
+  let password = process.env.MYSQL_PASSWORD ?? process.env.MYSQLPASSWORD ?? '';
+  let database = process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'otstaxi_db';
 
   if (databaseUrl && databaseUrl.startsWith('mysql://')) {
     try {

@@ -29,9 +29,18 @@ jobs:
             # Pull latest changes from main branch
             git pull origin main
 
+            # If .env does not exist on live server, create baseline from .env.example
+            if [ ! -f .env ] && [ ! -f .env.local ] && [ ! -f .env.production ] && [ -f .env.example ]; then
+              cp .env.example .env
+              echo "Created initial .env from .env.example"
+            fi
+
             # Install dependencies and build
             npm install --production=false
             npm run build
+
+            # Initialize database schema if MySQL server is available
+            node scripts/init-db.mjs || echo "Database init script completed with notice"
 
             # Restart application with PM2 on port 3010
             pm2 reload saim_web --update-env || PORT=3010 pm2 start npm --name "saim_web" -- start -- -p 3010
