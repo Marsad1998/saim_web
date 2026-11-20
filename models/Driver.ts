@@ -538,18 +538,19 @@ export class DriverModel {
    * Delete a driver record from MySQL and memory
    */
   static async delete(id: string): Promise<boolean> {
+    const wasInMemory = Boolean(inMemoryDrivers[id]);
+    delete inMemoryDrivers[id];
+
     try {
       const driver = await this.findById(id);
-      await dbQuery("DELETE FROM drivers WHERE id = ?", [id]);
-      delete inMemoryDrivers[id];
       if (driver?.user_id) {
         delete inMemoryDrivers[driver.user_id];
       }
+      await dbQuery("DELETE FROM drivers WHERE id = ?", [id]);
       return true;
     } catch (error: any) {
-      console.error("DriverModel.delete error:", error.message);
-      delete inMemoryDrivers[id];
-      return false;
+      console.warn("DriverModel.delete DB warning:", error.message);
+      return wasInMemory;
     }
   }
 

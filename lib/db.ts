@@ -220,6 +220,35 @@ export async function testDbConnection(): Promise<{
     const rawError = error?.message || 'Unknown database error';
     let hint = 'Please check database credentials and host accessibility.';
 
+    // Auto-create database if user has permissions and database is missing
+    if (rawError.includes('ER_BAD_DB_ERROR') || rawError.includes('Unknown database')) {
+      try {
+        const adminConn = await mysql.createConnection({
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: config.poolConfig.password,
+          ssl: config.poolConfig.ssl,
+        });
+        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        await adminConn.end();
+
+        // Reset pool and reconnect to target database
+        resetDbPool();
+        const p2 = getDbPool();
+        await p2.query('SELECT 1 + 1 AS result');
+        const latencyMs = Date.now() - startTime;
+        return {
+          connected: true,
+          message: `Database '${config.database}' auto-created and connected successfully (${latencyMs}ms)`,
+          latencyMs,
+          config,
+        };
+      } catch (createErr: any) {
+        console.warn('Auto database creation notice:', createErr.message);
+      }
+    }
+
     if (rawError.includes('ECONNREFUSED')) {
       hint = `Connection refused at ${config.host}:${config.port}. Ensure MySQL is running on the target server and the port is open/whitelisted.`;
     } else if (rawError.includes('ER_ACCESS_DENIED_ERROR') || rawError.includes('Access denied')) {

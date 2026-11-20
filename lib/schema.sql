@@ -1,11 +1,4 @@
 -- OTS Taxi UK - MySQL Database Schema
--- Database: otstaxi_db
-
-CREATE DATABASE IF NOT EXISTS `otstaxi_db` 
-CHARACTER SET utf8mb4 
-COLLATE utf8mb4_unicode_ci;
-
-USE `otstaxi_db`;
 
 -- 1. Users Table (Customers, Admins, Drivers)
 CREATE TABLE IF NOT EXISTS `users` (

@@ -230,6 +230,37 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
       seededItems.push('Default Admin User (admin@otstaxi.co.uk / admin)');
     }
 
+    // Seed default chauffeur if drivers table is empty
+    const driverCheck = await dbQuery<any[]>("SELECT id FROM drivers LIMIT 1");
+    if (!driverCheck || driverCheck.length === 0) {
+      await dbQuery(
+        `INSERT IGNORE INTO users (id, name, email, phone, password_hash, role, is_verified)
+         VALUES (?, ?, ?, ?, ?, 'driver', 1)`,
+        [
+          'usr_driver_1',
+          'James Wilson (Executive Chauffeur)',
+          'driver@otstaxi.co.uk',
+          '+44 7911 123456',
+          '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK',
+        ]
+      );
+      await dbQuery(
+        `INSERT IGNORE INTO drivers 
+         (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_year, vehicle_category, verification_status, is_active, completion_score)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', 1, 100)`,
+        [
+          'drv_1',
+          'usr_driver_1',
+          'PCO-984321',
+          'Mercedes-Benz E-Class AMG Line',
+          'LO71 ABC',
+          '2023',
+          'executive-saloon',
+        ]
+      );
+      seededItems.push('Default Chauffeur (James Wilson - Mercedes LO71 ABC)');
+    }
+
     // Seed default fleet vehicles if empty
     const vehicleCheck = await dbQuery<any[]>("SELECT id FROM vehicles LIMIT 1");
     if (!vehicleCheck || vehicleCheck.length === 0) {

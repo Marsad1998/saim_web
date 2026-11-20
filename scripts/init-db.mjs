@@ -131,16 +131,22 @@ async function initDatabase() {
   }
 
   try {
-    // 2. Read and run schema.sql
-    const schemaPath = path.join(__dirname, '..', 'lib', 'schema.sql');
-    const sql = fs.readFileSync(schemaPath, 'utf8');
-
-    console.log(`📦 Creating database "${database}" and tables from schema.sql...`);
-    await connection.query(sql);
-    console.log('✅ Database and all tables (users, drivers, bookings, contact_inquiries, reviews) created successfully!\n');
-
-    // 3. Switch to target database
+    // 2. Create target database if not exists and switch to it
+    console.log(`📦 Ensuring database "${database}" exists...`);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await connection.query(`USE \`${database}\``);
+    console.log(`✅ Switched to database "${database}" successfully!\n`);
+
+    // 3. Read and run schema.sql inside target database
+    const schemaPath = path.join(__dirname, '..', 'lib', 'schema.sql');
+    let sql = fs.readFileSync(schemaPath, 'utf8');
+    // Sanitize any stray CREATE DATABASE or USE statements
+    sql = sql.replace(/CREATE DATABASE[^\n;]+[;\n]/gi, '');
+    sql = sql.replace(/USE `?[a-zA-Z0-9_-]+`?[;\n]/gi, '');
+
+    console.log(`🔨 Creating tables in database "${database}" from schema.sql...`);
+    await connection.query(sql);
+    console.log('✅ All tables created successfully in database "' + database + '"!\n');
 
     // 4. Seed initial default users (Admin, Driver, Passenger)
     const defaultHash = '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK'; // 12345678 / Admin@123

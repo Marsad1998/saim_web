@@ -408,8 +408,15 @@ export class UserModel {
       }
       return true;
     } catch (error: any) {
-      console.error("UserModel.delete error:", error.message);
-      return false;
+      console.warn("UserModel.delete DB warning:", error.message);
+      let foundFallback = false;
+      for (const [email, u] of Object.entries(DEFAULT_FALLBACK_USERS)) {
+        if (u.id === id) {
+          delete DEFAULT_FALLBACK_USERS[email];
+          foundFallback = true;
+        }
+      }
+      return foundFallback;
     }
   }
 
