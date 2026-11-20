@@ -148,6 +148,29 @@ export default function AdminPage() {
     copyright_text: '© 2026 OTS Taxi UK Ltd. All rights reserved.',
   });
 
+  const currentBrandName = settings.brand_name || siteSettings?.brand_name || 'OTS TAXI';
+  const currentLogoDark = settings.logo_dark || siteSettings?.logo_dark || '';
+  const currentPrimaryColor = settings.primary_color || siteSettings?.primary_color || '#FFCC00';
+
+  // Live document title update reflecting the dynamic brand name
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = `${currentBrandName} - Admin OS • Operations Desk`;
+    }
+  }, [currentBrandName]);
+
+  // Sync settings when siteSettings becomes available from AppContext
+  useEffect(() => {
+    if (siteSettings?.brand_name) {
+      setSettings((prev) => ({
+        ...prev,
+        brand_name: prev.brand_name === 'OTS TAXI' ? siteSettings.brand_name : prev.brand_name,
+        primary_color: prev.primary_color === '#FFCC00' ? siteSettings.primary_color : prev.primary_color,
+        logo_dark: prev.logo_dark === '/images/ots-taxi-logo.png' ? siteSettings.logo_dark : prev.logo_dark,
+      }));
+    }
+  }, [siteSettings]);
+
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
   const [testRecipient, setTestRecipient] = useState('');
@@ -1262,30 +1285,58 @@ export default function AdminPage() {
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Sidebar Header: OTS TAXI Brand */}
+        {/* Sidebar Header: Brand Name & Logo */}
         <div>
           <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-ots-yellow text-gray-950 font-black flex items-center justify-center text-lg shadow-md group-hover:scale-105 transition-transform">
-                OTS
-              </div>
-              <div>
-                <div className="flex items-center space-x-1">
-                  <span className="font-extrabold text-white text-base tracking-wider">OTS</span>
-                  <span className="font-light text-ots-yellow text-base tracking-wider">TAXI</span>
+            <Link href="/" className="flex items-center space-x-2.5 group min-w-0" title={`Visit ${currentBrandName} Website`}>
+              {currentLogoDark ? (
+                <div className="flex items-center space-x-2 min-w-0">
+                  <img
+                    src={currentLogoDark}
+                    alt={currentBrandName}
+                    className="h-10 w-auto max-w-[150px] object-contain group-hover:scale-105 transition-transform"
+                  />
+                  <div className="hidden xl:flex items-center space-x-1.5 flex-shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                      Live
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                    Admin OS &bull; Live
-                  </span>
+              ) : (
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div
+                    style={{ backgroundColor: currentPrimaryColor }}
+                    className="w-10 h-10 rounded-xl text-gray-950 font-black flex items-center justify-center text-lg shadow-md group-hover:scale-105 transition-transform flex-shrink-0"
+                  >
+                    {currentBrandName.split(' ')[0]?.charAt(0)?.toUpperCase() || 'O'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-1 whitespace-nowrap overflow-hidden">
+                      <span className="font-extrabold text-white text-base tracking-wider flex-shrink-0">
+                        {currentBrandName.split(' ')[0] || 'OTS'}
+                      </span>
+                      <span
+                        style={{ color: currentPrimaryColor }}
+                        className="font-light text-base tracking-wider truncate max-w-[110px]"
+                      >
+                        {currentBrandName.split(' ').slice(1).join(' ') || 'TAXI'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                        Admin OS &bull; Live
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </Link>
 
             <button 
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg"
+              className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg flex-shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1396,7 +1447,7 @@ export default function AdminPage() {
             </button>
 
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-400">
-              <span className="font-semibold text-slate-500">Admin Operations</span>
+              <span className="font-semibold text-slate-500">{currentBrandName} Operations</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
               <span className="font-black text-slate-900 capitalize tracking-wide">
                 {activeTab === 'dashboard' ? 'Overview Cockpit' : activeTab === 'website_settings' ? 'Website & Branding' : activeTab}
@@ -2186,7 +2237,7 @@ export default function AdminPage() {
                             )}
 
                             <a
-                              href={`mailto:${p.email}?subject=OTS Taxi Partnership - ${encodeURIComponent(p.company_name)}`}
+                              href={`mailto:${p.email}?subject=${encodeURIComponent(currentBrandName)} Partnership - ${encodeURIComponent(p.company_name)}`}
                               className="py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center space-x-1"
                             >
                               <Mail className="w-3.5 h-3.5" />

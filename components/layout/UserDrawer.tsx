@@ -44,7 +44,7 @@ export default function UserDrawer() {
                     {user.role === 'admin' ? 'Administrator' : user.role === 'driver' ? 'Chauffeur' : 'Passenger'}
                   </span>
                 </div>
-                <h4 className="text-lg font-bold text-white">{user.name}</h4>
+                <h4 className="text-lg font-bold text-white truncate" title={user.name}>{user.name}</h4>
                 <p className="text-xs text-ots-mutedText">{user.email}</p>
               </div>
 

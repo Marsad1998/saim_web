@@ -71,14 +71,14 @@ export default function MobileDrawer() {
                 <img
                   src={siteSettings.logo_dark}
                   alt={siteSettings.brand_name || "OTS Taxi"}
-                  className="h-9 w-auto object-contain"
+                  className="h-9 w-auto max-w-[170px] object-contain flex-shrink-0"
                 />
               ) : (
-                <div className="flex items-center">
-                  <span className="text-2xl font-black text-ots-yellow tracking-wider">
+                <div className="flex items-center whitespace-nowrap overflow-hidden min-w-0">
+                  <span className="text-2xl font-black text-ots-yellow tracking-wider flex-shrink-0">
                     {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
                   </span>
-                  <span className="text-2xl font-bold text-white tracking-tight ml-1">
+                  <span className="text-2xl font-bold text-white tracking-tight ml-1.5 truncate max-w-[160px]">
                     {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
                   </span>
                 </div>
