@@ -18,6 +18,13 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
 
+  // Driver vehicle registration state
+  const [vehicleCategory, setVehicleCategory] = useState('saloon');
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [vehicleYear, setVehicleYear] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -43,10 +50,19 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      const payload: any = { name, email, phone, password, role };
+      if (role === 'driver') {
+        payload.vehicleCategory = vehicleCategory;
+        payload.vehicleModel = vehicleModel;
+        payload.vehiclePlate = vehiclePlate;
+        payload.vehicleYear = vehicleYear;
+        payload.licenseNumber = licenseNumber;
+      }
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password, role }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -263,11 +279,86 @@ export default function RegisterPage() {
           </div>
 
           {role === 'driver' && (
-            <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 flex items-start space-x-2">
-              <ShieldCheck className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3.5">
+              <div className="flex items-center space-x-2 text-xs font-bold text-gray-900 border-b border-gray-200 pb-2">
+                <Car className="w-4 h-4 text-ots-yellow" />
+                <span>Register Your Vehicle Specification</span>
+              </div>
+
               <div>
-                <span className="font-bold block">Chauffeur Next Step:</span>
-                After registering, log in to your dashboard to enter your PCO license and vehicle plate before accepting bookings.
+                <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                  Vehicle Service Category *
+                </label>
+                <select
+                  value={vehicleCategory}
+                  onChange={(e) => setVehicleCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 text-xs font-semibold focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                >
+                  <option value="saloon">Standard Saloon (Toyota Prius, Skoda Octavia)</option>
+                  <option value="estate">Estate / Station Wagon (Skoda Superb, Passat)</option>
+                  <option value="executive-saloon">Executive Class (Mercedes E-Class, BMW 5)</option>
+                  <option value="mpv">MPV 6-Seater (Ford Galaxy, VW Sharan)</option>
+                  <option value="minibus-8">8-Seater Minibus (Mercedes Vito, Tourneo)</option>
+                  <option value="executive-mpv">Executive MPV (Mercedes V-Class VIP)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                    Vehicle Make & Model *
+                  </label>
+                  <input
+                    type="text"
+                    required={role === 'driver'}
+                    placeholder="e.g. Mercedes E-Class"
+                    value={vehicleModel}
+                    onChange={(e) => setVehicleModel(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-900 text-xs focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                    Registration Plate (VRN) *
+                  </label>
+                  <input
+                    type="text"
+                    required={role === 'driver'}
+                    placeholder="e.g. LO71 ABC"
+                    value={vehiclePlate}
+                    onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-900 text-xs font-mono uppercase focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                    Year of Manufacture
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2023"
+                    value={vehicleYear}
+                    onChange={(e) => setVehicleYear(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-900 text-xs focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                    PCO / Chauffeur License
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PCO-987654"
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-900 text-xs focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
           )}

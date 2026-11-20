@@ -86,16 +86,25 @@ export async function POST(request: Request) {
       verification_code: verificationCode,
     });
 
-    // 4. If driver, initialize their driver profile as incomplete / pending approval
+    // 4. If driver, initialize their driver profile
     if (role === "driver") {
+      const vCat = body.vehicleCategory || "saloon";
+      const vModel = (body.vehicleModel || "").trim();
+      const vPlate = (body.vehiclePlate || "").trim().toUpperCase();
+      const vYear = (body.vehicleYear || "").trim();
+      const licNum = (body.licenseNumber || "").trim();
+
+      const hasVehicle = Boolean(vModel || vPlate);
+
       await DriverModel.create({
         userId: user.id,
-        licenseNumber: "",
-        vehicleModel: "",
-        vehiclePlate: "",
-        vehicleCategory: "saloon",
-        verificationStatus: "incomplete",
-        isActive: false,
+        licenseNumber: licNum,
+        vehicleModel: vModel,
+        vehiclePlate: vPlate,
+        vehicleYear: vYear,
+        vehicleCategory: vCat,
+        verificationStatus: hasVehicle ? "approved" : "incomplete",
+        isActive: hasVehicle,
       });
     }
 

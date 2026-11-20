@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { quoteStore } from "@/lib/quote-store";
 import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
 import { BookingModel } from "@/models/Booking";
+import { DriverModel } from "@/models/Driver";
 import { sendBookingConfirmationEmail, sendAdminBookingAlertEmail } from "@/lib/email";
 import { getStripeServer } from "@/lib/stripe";
 
@@ -69,6 +70,32 @@ export async function POST(request: Request) {
     const paymentStatus = isCash ? "unpaid" : "completed";
     const finalCurrency = (requestedCurrency || quote.currency || "GBP").toUpperCase();
 
+    // Auto-dispatch: assign random available driver matching selected vehicle category
+    let assignedDriver: any = null;
+    try {
+      const driver = await DriverModel.assignRandomAvailableDriver(
+        vehId,
+        quote.pickUpDate,
+        quote.pickUpTime
+      );
+      if (driver) {
+        await BookingModel.assignDriver(quoteRef, driver.id);
+        assignedDriver = {
+          id: driver.id,
+          name: driver.driver_name || "Assigned Chauffeur",
+          phone: driver.driver_phone || "+44 7911 123456",
+          email: driver.driver_email || "chauffeur@otstaxi.co.uk",
+          licenseNumber: driver.license_number || "PCO Licensed",
+          vehicleModel: driver.vehicle_model || "Executive Chauffeur Vehicle",
+          vehiclePlate: driver.vehicle_plate || "LO71 ABC",
+          vehicleYear: driver.vehicle_year || "2023",
+          vehicleCategory: driver.vehicle_category || vehId,
+        };
+      }
+    } catch (driverAssignErr: any) {
+      console.warn("Driver auto-assignment warning:", driverAssignErr.message);
+    }
+
     // Mark quote as completed in memory store
     await quoteStore.update(quoteRef, {
       selectedVehicleId: vehId,
@@ -78,6 +105,8 @@ export async function POST(request: Request) {
       paidAmount: finalPaidAmount,
       currency: finalCurrency,
       paymentMethod,
+      driver_id: assignedDriver?.id,
+      assignedDriver,
     });
 
     // Update MySQL booking record if connected
@@ -122,6 +151,7 @@ export async function POST(request: Request) {
       currency: finalCurrency,
       paymentMethod,
       paymentStatus,
+      assignedDriver,
       message: isCash
         ? "Booking confirmed! You can pay the driver directly upon arrival."
         : "Payment authorized and booking confirmed successfully via Stripe.",

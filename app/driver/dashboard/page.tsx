@@ -975,11 +975,12 @@ export default function DriverDashboardPage() {
                         onChange={(e) => setProfileForm({ ...profileForm, vehicleCategory: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold focus:border-ots-yellow focus:ring-2 focus:ring-ots-yellow/20 outline-none bg-white"
                       >
-                        <option value="saloon">Standard Saloon (Up to 4 Pax)</option>
+                        <option value="saloon">Standard Saloon (Toyota Prius, Skoda Octavia)</option>
                         <option value="estate">Estate / Station Wagon (Large Luggage)</option>
-                        <option value="executive">Executive Class (Mercedes E-Class / BMW 5)</option>
-                        <option value="mpv">MPV 6-Seater (Ford Galaxy / Sharan)</option>
-                        <option value="minibus">8-Seater Minibus (Mercedes Vito / V-Class)</option>
+                        <option value="executive-saloon">Executive Class (Mercedes E-Class, BMW 5)</option>
+                        <option value="mpv">MPV 6-Seater (Ford Galaxy, VW Sharan)</option>
+                        <option value="minibus-8">8-Seater Minibus (Mercedes Vito, Tourneo)</option>
+                        <option value="executive-mpv">Executive MPV (Mercedes V-Class VIP)</option>
                       </select>
                     </div>
 

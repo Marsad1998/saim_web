@@ -35,6 +35,18 @@ export interface StoredQuote {
   paidAmount?: number;
   currency: string;
   paymentMethod?: string;
+  driver_id?: string;
+  assignedDriver?: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    licenseNumber?: string;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    vehicleYear?: string;
+    vehicleCategory?: string;
+  };
 }
 
 function mapBookingToStoredQuote(b: IBooking): StoredQuote {
@@ -75,6 +87,8 @@ function mapBookingToStoredQuote(b: IBooking): StoredQuote {
     paidAmount: b.total_price,
     currency: b.currency,
     paymentMethod: b.payment_method || undefined,
+    driver_id: b.driver_id || undefined,
+    assignedDriver: (b as any).assignedDriver,
   };
 }
 
@@ -135,6 +149,11 @@ export const quoteStore = {
       }
     }
     return list;
+  },
+
+  async listAll(): Promise<StoredQuote[]> {
+    if (!globalQuotes.__quotesMap) return [];
+    return Array.from(globalQuotes.__quotesMap.values());
   },
 
   async update(quoteRef: string, updates: Partial<StoredQuote>): Promise<StoredQuote | undefined> {

@@ -1,6 +1,7 @@
 import { dbQuery } from "@/lib/db";
 import { calculateQuote } from "@/lib/pricing-engine";
 import { VehicleModel } from "./Vehicle";
+import { DriverModel, normalizeVehicleCategory } from "./Driver";
 
 export interface IBooking {
   quote_ref: string;
@@ -42,6 +43,17 @@ export interface IBooking {
   booking_status: "quoted" | "confirmed" | "assigned" | "in_progress" | "completed" | "cancelled";
   created_at?: string;
   updated_at?: string;
+  assignedDriver?: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    licenseNumber?: string;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    vehicleYear?: string;
+    vehicleCategory?: string;
+  };
 }
 
 export interface CreateBookingInput {
@@ -146,6 +158,16 @@ export class BookingModel {
 
     const fleet = await VehicleModel.getAll();
 
+    // Query active driver registered vehicle classes so customers only book classes with available drivers
+    const activeCategories = await DriverModel.getActiveVehicleCategories();
+    let fleetToUse = fleet;
+    if (activeCategories.size > 0) {
+      const matchingFleet = fleet.filter((v) => activeCategories.has(normalizeVehicleCategory(v.id)));
+      if (matchingFleet.length > 0) {
+        fleetToUse = matchingFleet;
+      }
+    }
+
     const pricing = calculateQuote({
       fromLocation: input.fromLocation,
       toLocation: input.toLocation,
@@ -158,10 +180,11 @@ export class BookingModel {
       bookReturn: input.bookReturn || false,
       distanceMiles: input.distanceMiles,
       estimatedTimeMins: input.estimatedTimeMins,
-    }, fleet);
+    }, fleetToUse);
 
     const selectedVeh = pricing.vehicles.find((v) => v.id === "saloon") || pricing.vehicles[0];
     const initialPrice = selectedVeh ? selectedVeh.totalPrice : 45.0;
+    const defaultVehicleId = selectedVeh ? selectedVeh.id : "saloon";
 
     const waypoints = input.waypoints || [];
     const selectedExtras: string[] = [];
@@ -201,7 +224,7 @@ export class BookingModel {
           pricing.distanceMiles,
           pricing.estimatedTimeMins,
           JSON.stringify(waypoints),
-          "saloon",
+          defaultVehicleId,
           JSON.stringify(selectedExtras),
           JSON.stringify(pricing),
           initialPrice,
@@ -235,7 +258,7 @@ export class BookingModel {
       distance_miles: pricing.distanceMiles,
       estimated_time_mins: pricing.estimatedTimeMins,
       waypoints,
-      selected_vehicle_id: "saloon",
+      selected_vehicle_id: defaultVehicleId,
       selected_extras: selectedExtras,
       pricing_details: pricing,
       total_price: initialPrice,
@@ -248,20 +271,74 @@ export class BookingModel {
 
   /**
    * Find booking by its unique Quote Reference (e.g. OTS-123456)
+   * Joined with assigned driver and vehicle details
    */
-  static async getByRef(quoteRef: string): Promise<IBooking | null> {
+  static async getByRef(quoteRef: string): Promise<(IBooking & { assignedDriver?: any }) | null> {
     try {
       const rows = await dbQuery<any[]>(
-        "SELECT * FROM bookings WHERE quote_ref = ? LIMIT 1",
+        `SELECT b.*,
+                d.vehicle_model as driver_vehicle_model,
+                d.vehicle_plate as driver_vehicle_plate,
+                d.vehicle_year as driver_vehicle_year,
+                d.vehicle_category as driver_vehicle_category,
+                d.license_number as driver_license_number,
+                u.name as driver_name,
+                u.phone as driver_phone,
+                u.email as driver_email
+         FROM bookings b
+         LEFT JOIN drivers d ON b.driver_id = d.id
+         LEFT JOIN users u ON d.user_id = u.id
+         WHERE b.quote_ref = ? LIMIT 1`,
         [quoteRef]
       );
       if (rows && rows.length > 0) {
-        return this.formatRow(rows[0]);
+        const row = rows[0];
+        const formatted = this.formatRow(row);
+        let assignedDriver: any = undefined;
+        if (row.driver_id) {
+          assignedDriver = {
+            id: row.driver_id,
+            name: row.driver_name || "Assigned Chauffeur",
+            phone: row.driver_phone || "+44 7911 123456",
+            email: row.driver_email || "chauffeur@otstaxi.co.uk",
+            licenseNumber: row.driver_license_number || "PCO Licensed",
+            vehicleModel: row.driver_vehicle_model || "Executive Chauffeur Vehicle",
+            vehiclePlate: row.driver_vehicle_plate || "LO71 ABC",
+            vehicleYear: row.driver_vehicle_year || "2023",
+            vehicleCategory: row.driver_vehicle_category || row.selected_vehicle_id,
+          };
+        }
+        return {
+          ...formatted,
+          assignedDriver,
+        };
       }
       return null;
     } catch (error: any) {
-      console.error("BookingModel.getByRef error:", error.message);
+      console.warn("BookingModel.getByRef join notice:", error.message);
+      try {
+        const simpleRows = await dbQuery<any[]>("SELECT * FROM bookings WHERE quote_ref = ? LIMIT 1", [quoteRef]);
+        if (simpleRows && simpleRows.length > 0) {
+          return this.formatRow(simpleRows[0]);
+        }
+      } catch {}
       return null;
+    }
+  }
+
+  /**
+   * Assign driver to booking in MySQL
+   */
+  static async assignDriver(quoteRef: string, driverId: string): Promise<boolean> {
+    try {
+      await dbQuery(
+        "UPDATE bookings SET driver_id = ?, booking_status = 'assigned' WHERE quote_ref = ?",
+        [driverId, quoteRef]
+      );
+      return true;
+    } catch (err: any) {
+      console.warn("BookingModel.assignDriver notice:", err.message);
+      return false;
     }
   }
 
@@ -510,10 +587,53 @@ export class BookingModel {
         "SELECT * FROM bookings WHERE driver_id = ? ORDER BY pickup_date ASC, pickup_time ASC",
         [driverId]
       );
-      return (rows || []).map((r) => this.formatRow(r));
+      if (rows && rows.length > 0) {
+        return rows.map((r) => this.formatRow(r));
+      }
     } catch (error: any) {
-      console.error("BookingModel.getByDriverId error:", error.message);
-      return [];
+      console.warn("BookingModel.getByDriverId notice:", error.message);
     }
+
+    const memQuotesMap = (globalThis as any).__quotesMap as Map<string, any> | undefined;
+    if (memQuotesMap) {
+      const list: IBooking[] = [];
+      for (const q of Array.from(memQuotesMap.values())) {
+        if (q.driver_id === driverId || q.assignedDriver?.id === driverId) {
+          list.push({
+            quote_ref: q.quoteRef,
+            from_location: q.fromLocation,
+            to_location: q.toLocation,
+            from_location_type: q.fromLocationType || 1,
+            to_location_type: q.toLocationType || 2,
+            pickup_date: q.pickUpDate,
+            pickup_time: q.pickUpTime,
+            book_return: q.bookReturn || false,
+            passengers: q.passengers,
+            suitcases: q.suitcases || 1,
+            distance_miles: q.distanceMiles || 15,
+            estimated_time_mins: q.estimatedTimeMins || 30,
+            waypoints: q.waypoints || [],
+            selected_vehicle_id: q.selectedVehicleId || "saloon",
+            selected_extras: q.selectedExtras || [],
+            passenger_name: q.passenger?.fullName || "Valued Passenger",
+            passenger_email: q.passenger?.email || "passenger@example.com",
+            passenger_phone: q.passenger?.phone || "+44 7911 123456",
+            flight_number: q.passenger?.flightNumber,
+            terminal: q.passenger?.terminal,
+            special_notes: q.passenger?.specialNotes,
+            total_price: q.paidAmount || q.pricing?.totalPrice || 45,
+            currency: q.currency || "GBP",
+            payment_status: q.paymentStatus === "completed" ? "completed" : "unpaid",
+            payment_method: q.paymentMethod || "stripe_card",
+            driver_id: driverId,
+            booking_status: "assigned",
+            assignedDriver: q.assignedDriver,
+          });
+        }
+      }
+      return list;
+    }
+
+    return [];
   }
 }

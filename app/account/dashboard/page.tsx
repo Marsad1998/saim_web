@@ -36,6 +36,14 @@ interface BookingItem {
   status: string;
   paymentStatus: string;
   createdAt?: string;
+  assignedDriver?: {
+    name: string;
+    phone?: string;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    vehicleYear?: string;
+    vehicleCategory?: string;
+  };
 }
 
 export default function DashboardPage() {
@@ -274,6 +282,18 @@ export default function DashboardPage() {
                             <span className="font-semibold">{b.to}</span>
                           </div>
                         </div>
+
+                        {/* Assigned Driver & Vehicle Details */}
+                        {b.assignedDriver && (
+                          <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-bold text-gray-900">{b.assignedDriver.name}</span>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-gray-600">{b.assignedDriver.vehicleModel}</span>
+                            <span className="font-mono text-[11px] font-black bg-[#ffdb00] text-black px-2 py-0.5 rounded shadow-sm border border-black/10">
+                              {b.assignedDriver.vehiclePlate}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Middle: Date, Time & Vehicle */}

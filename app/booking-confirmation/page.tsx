@@ -208,6 +208,72 @@ function BookingConfirmationContent() {
               </div>
             </div>
 
+            {/* Assigned Chauffeur & Vehicle Coming Card */}
+            <div className="border-t border-gray-100 pt-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Assigned Chauffeur &amp; Incoming Vehicle
+                </h3>
+                <span className="inline-flex items-center space-x-1 text-[11px] font-bold text-green-700 bg-green-50 px-2.5 py-0.5 rounded-full border border-green-200">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  <span>Driver Dispatched</span>
+                </span>
+              </div>
+
+              <div className="bg-gradient-to-r from-gray-900 via-neutral-900 to-black text-white rounded-2xl p-5 shadow-lg border border-neutral-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* Driver Profile */}
+                  <div className="flex items-center space-x-3.5">
+                    <div className="w-12 h-12 rounded-full bg-ots-yellow text-black font-extrabold flex items-center justify-center text-lg flex-shrink-0 shadow-md">
+                      {(quote?.assignedDriver?.name || 'C').charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-base font-bold text-white">
+                          {quote?.assignedDriver?.name || 'Private Chauffeur'}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider bg-white/10 text-ots-yellow px-2 py-0.5 rounded">
+                          {quote?.assignedDriver?.licenseNumber || 'PCO Licensed'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-xs text-gray-400 mt-1">
+                        {quote?.assignedDriver?.phone && (
+                          <a
+                            href={`tel:${quote.assignedDriver.phone}`}
+                            className="inline-flex items-center space-x-1 text-ots-yellow hover:underline"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>{quote.assignedDriver.phone}</span>
+                          </a>
+                        )}
+                        <span>•</span>
+                        <span>Professional Airport Chauffeur</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vehicle License Plate & Model Badge */}
+                  <div className="sm:text-right bg-white/5 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-white/10">
+                    <span className="text-[10px] text-gray-400 uppercase font-semibold block">
+                      Incoming Vehicle
+                    </span>
+                    <span className="text-sm font-bold text-white block mt-0.5">
+                      {quote?.assignedDriver?.vehicleModel || (quote as any)?.selectedVehicle?.name || 'Executive Vehicle'}
+                      {quote?.assignedDriver?.vehicleYear ? ` (${quote.assignedDriver.vehicleYear})` : ''}
+                    </span>
+                    <div className="mt-2 inline-flex items-center space-x-2">
+                      <span className="font-mono text-xs font-black bg-[#ffdb00] text-black px-2.5 py-1 rounded shadow-sm border border-black/20 tracking-wider">
+                        {quote?.assignedDriver?.vehiclePlate || 'LO71 ABC'}
+                      </span>
+                      <span className="text-[10px] text-gray-400 uppercase font-bold bg-neutral-800 px-2 py-1 rounded capitalize">
+                        {quote?.assignedDriver?.vehicleCategory || quote?.selectedVehicleId || 'Saloon'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Passenger & Dispatch Info */}
             <div className="border-t border-gray-100 pt-5 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">

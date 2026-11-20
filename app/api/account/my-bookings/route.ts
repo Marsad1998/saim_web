@@ -29,14 +29,22 @@ export async function GET(request: NextRequest) {
     let bookings: any[] = [];
 
     try {
-      // Query bookings by user_id or passenger_email
+      // Query bookings by user_id or passenger_email with assigned driver details
       const rows = await dbQuery<any[]>(
-        `SELECT quote_ref, from_location, to_location, pickup_date, pickup_time,
-                selected_vehicle_id, passengers, total_price, currency,
-                booking_status, payment_status, created_at
-         FROM bookings 
-         WHERE user_id = ? OR passenger_email = ?
-         ORDER BY created_at DESC`,
+        `SELECT b.quote_ref, b.from_location, b.to_location, b.pickup_date, b.pickup_time,
+                b.selected_vehicle_id, b.passengers, b.total_price, b.currency,
+                b.booking_status, b.payment_status, b.created_at, b.driver_id,
+                d.vehicle_model as driver_vehicle_model,
+                d.vehicle_plate as driver_vehicle_plate,
+                d.vehicle_year as driver_vehicle_year,
+                d.vehicle_category as driver_vehicle_category,
+                u.name as driver_name,
+                u.phone as driver_phone
+         FROM bookings b
+         LEFT JOIN drivers d ON b.driver_id = d.id
+         LEFT JOIN users u ON d.user_id = u.id
+         WHERE b.user_id = ? OR b.passenger_email = ?
+         ORDER BY b.created_at DESC`,
         [payload.userId, payload.email.toLowerCase()]
       );
 
@@ -54,6 +62,14 @@ export async function GET(request: NextRequest) {
           status: b.booking_status === "confirmed" ? "Confirmed" : b.booking_status === "completed" ? "Completed" : "Quoted",
           paymentStatus: b.payment_status,
           createdAt: b.created_at,
+          assignedDriver: b.driver_id ? {
+            name: b.driver_name || "Assigned Chauffeur",
+            phone: b.driver_phone,
+            vehicleModel: b.driver_vehicle_model,
+            vehiclePlate: b.driver_vehicle_plate,
+            vehicleYear: b.driver_vehicle_year,
+            vehicleCategory: b.driver_vehicle_category,
+          } : undefined,
         }));
       }
     } catch (dbErr: any) {
@@ -76,6 +92,7 @@ export async function GET(request: NextRequest) {
         status: q.paymentStatus === "completed" ? "Confirmed" : "Quoted",
         paymentStatus: q.paymentStatus,
         createdAt: q.createdAt,
+        assignedDriver: q.assignedDriver,
       }));
     }
 

@@ -89,6 +89,17 @@ export interface UpdateDriverInput {
   isActive?: boolean;
 }
 
+export function normalizeVehicleCategory(cat?: string | null): string {
+  if (!cat) return "saloon";
+  const c = cat.toLowerCase().trim();
+  if (c === "executive" || c === "executive-saloon" || c === "executivesaloon") return "executive-saloon";
+  if (c === "minibus" || c === "minibus-8" || c === "minibus8") return "minibus-8";
+  if (c === "executive-mpv" || c === "executive_mpv" || c === "executivempv") return "executive-mpv";
+  if (c === "mpv" || c === "people-carrier" || c === "people_carrier") return "mpv";
+  if (c === "estate") return "estate";
+  return c;
+}
+
 export function computeDriverProgress(driver: Partial<IDriver>) {
   // Step 1: Personal Details (25%)
   const step1 = Boolean(
@@ -540,6 +551,86 @@ export class DriverModel {
       delete inMemoryDrivers[id];
       return false;
     }
+  }
+
+  /**
+   * Get all distinct vehicle categories registered by active drivers with vehicles
+   */
+  static async getActiveVehicleCategories(): Promise<Set<string>> {
+    const allDrivers = await this.getAll();
+    const categories = new Set<string>();
+
+    for (const d of allDrivers) {
+      const hasVehicle = Boolean(d.vehicle_category);
+      const isEligible = d.verification_status !== 'rejected';
+      if (hasVehicle && isEligible) {
+        categories.add(normalizeVehicleCategory(d.vehicle_category));
+      }
+    }
+
+    return categories;
+  }
+
+  /**
+   * Assign an available driver matching the requested vehicle category.
+   * If multiple drivers are free at pickupDate and pickupTime, pick one at random.
+   */
+  static async assignRandomAvailableDriver(
+    vehicleCategory: string,
+    pickupDate?: string,
+    pickupTime?: string
+  ): Promise<IDriver | null> {
+    const normCategory = normalizeVehicleCategory(vehicleCategory);
+    
+    // Get all valid drivers matching this vehicle category
+    const allDrivers = await this.getAll();
+    const matchingDrivers = allDrivers.filter((d) => {
+      const isValid = d.verification_status !== 'rejected';
+      const catMatches = normalizeVehicleCategory(d.vehicle_category) === normCategory;
+      return isValid && catMatches;
+    });
+
+    if (matchingDrivers.length === 0) {
+      // Fallback: if no driver strictly matches this category, check any valid driver
+      const anyValid = allDrivers.filter((d) => d.verification_status !== 'rejected');
+      if (anyValid.length > 0) {
+        return anyValid[Math.floor(Math.random() * anyValid.length)];
+      }
+      return null;
+    }
+
+    if (matchingDrivers.length === 1) {
+      return matchingDrivers[0];
+    }
+
+    // Filter out drivers who already have an active overlapping booking
+    let busyDriverIds = new Set<string>();
+    if (pickupDate) {
+      try {
+        const busyRows = await dbQuery<any[]>(
+          `SELECT driver_id FROM bookings 
+           WHERE pickup_date = ? 
+             AND driver_id IS NOT NULL 
+             AND booking_status IN ('assigned', 'in_progress')
+             ${pickupTime ? 'AND pickup_time = ?' : ''}`,
+          pickupTime ? [pickupDate, pickupTime] : [pickupDate]
+        );
+        if (busyRows && busyRows.length > 0) {
+          busyRows.forEach((r) => {
+            if (r.driver_id) busyDriverIds.add(r.driver_id);
+          });
+        }
+      } catch (err: any) {
+        console.warn("assignRandomAvailableDriver busy check warning:", err.message);
+      }
+    }
+
+    const freeDrivers = matchingDrivers.filter((d) => !busyDriverIds.has(d.id));
+    const pool = freeDrivers.length > 0 ? freeDrivers : matchingDrivers;
+
+    // Random assignment among free drivers of the same vehicle type
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
   }
 
   /**
