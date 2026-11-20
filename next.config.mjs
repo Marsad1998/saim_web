@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['lucide-react'],
   typescript: {
     // Allows production builds to successfully complete even if type-checker quirks exist
     ignoreBuildErrors: true,
