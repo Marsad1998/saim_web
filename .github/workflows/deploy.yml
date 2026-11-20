@@ -24,7 +24,7 @@ jobs:
             export PATH=$PATH:/usr/local/bin:~/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin
 
             # Navigate to project folder
-            cd /home/ubuntu/saim_web
+            cd /var/www/saim_web
 
             # Pull latest changes from main branch
             git pull origin main
