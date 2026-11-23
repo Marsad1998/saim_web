@@ -11,6 +11,7 @@ export interface SystemSettings {
   require_driver_approval: boolean;
   google_client_id: string;
   google_client_secret: string;
+  google_maps_api_key: string;
 
   // Website Branding & Appearance
   primary_color: string;
@@ -43,6 +44,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   require_driver_approval: true,
   google_client_id: process.env.GOOGLE_CLIENT_ID || '',
   google_client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+  google_maps_api_key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
 
   primary_color: '#FFCC00',
   primary_hover_color: '#E6B800',
@@ -63,6 +65,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 let inMemorySettings: SystemSettings = { ...DEFAULT_SETTINGS };
+
+export function getCachedSystemSettings(): SystemSettings {
+  return inMemorySettings;
+}
 
 /**
  * Retrieve system settings from database with in-memory caching fallback

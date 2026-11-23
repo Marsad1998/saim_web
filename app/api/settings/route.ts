@@ -25,6 +25,7 @@ export async function GET() {
         company_number: s.company_number || "12345678",
         vat_number: s.vat_number || "GB 123 4567 89",
         copyright_text: s.copyright_text || "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
+        google_maps_api_key: s.google_maps_api_key || process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
       },
     });
   } catch (error: any) {
@@ -47,6 +48,7 @@ export async function GET() {
         company_number: "12345678",
         vat_number: "GB 123 4567 89",
         copyright_text: "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
+        google_maps_api_key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
       },
     });
   }

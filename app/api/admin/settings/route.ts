@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         require_driver_approval: Boolean(settings.require_driver_approval),
         google_client_id: settings.google_client_id || "",
         google_client_secret: settings.google_client_secret ? "••••••••" : "",
+        google_maps_api_key: settings.google_maps_api_key || "",
 
         // Branding & Customization
         primary_color: settings.primary_color || "#FFCC00",
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
     if (body.require_driver_approval !== undefined) updates.require_driver_approval = Boolean(body.require_driver_approval);
     if (body.google_client_id !== undefined) updates.google_client_id = String(body.google_client_id).trim();
     if (body.google_client_secret && body.google_client_secret !== "••••••••") updates.google_client_secret = String(body.google_client_secret).trim();
+    if (body.google_maps_api_key !== undefined) updates.google_maps_api_key = String(body.google_maps_api_key).trim();
 
     // Branding & Customization
     if (body.primary_color !== undefined) updates.primary_color = String(body.primary_color).trim();

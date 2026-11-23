@@ -33,6 +33,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Navigation,
   Sliders,
   Award,
   CreditCard,
@@ -133,6 +134,7 @@ export default function AdminPage() {
     require_driver_approval: true,
     google_client_id: '',
     google_client_secret: '',
+    google_maps_api_key: '',
     // Branding & Color Theme Fields
     primary_color: '#FFCC00',
     primary_hover_color: '#E6B800',
@@ -3076,6 +3078,203 @@ EXIT;`}
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* CARD 2: GOOGLE MAPS PLATFORM & CLOUD INTEGRATIONS */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                      <Navigation className="w-4 h-4" />
+                    </span>
+                    <h3 className="text-base font-extrabold text-slate-900">
+                      Google Maps Platform &amp; Routing APIs
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Powers live UK address autocomplete, road mileage calculation, and interactive route mapping.
+                  </p>
+                </div>
+
+                <div>
+                  {settings.google_maps_api_key && settings.google_maps_api_key.length > 10 ? (
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Google Maps Active</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                      <span>Internal UK Matrix Active (Fallback)</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* API Key Input */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-bold text-slate-800 text-xs mb-1">
+                    Google Maps API Key
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={settings.google_maps_api_key}
+                      onChange={(e) => setSettings({ ...settings, google_maps_api_key: e.target.value })}
+                      placeholder="AIzaSy..."
+                      className="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono"
+                    />
+                    {settings.google_maps_api_key && (
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, google_maps_api_key: '' })}
+                        className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-slate-100 transition"
+                        title="Clear API Key"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSettings()}
+                      disabled={isSavingSettings}
+                      className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl transition shadow flex items-center space-x-1"
+                    >
+                      <Check className="w-3.5 h-3.5 text-ots-yellow" />
+                      <span>Save Key</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    Saved securely in your database. Alternatively, set <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">NEXT_PUBLIC_GOOGLE_MAPS_KEY</code> in your environment.
+                  </p>
+                </div>
+
+                {/* 5 Required APIs Reference Grid */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                      Required Google Cloud APIs for Quick Car Midlands Ltd:
+                    </span>
+                    <a
+                      href="https://developers.google.com/maps/apis-by-platform"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-[11px] font-bold text-blue-600 hover:text-blue-700"
+                    >
+                      <span>Google APIs Directory</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <span>Places API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Live UK address, postcode &amp; airport autocomplete in booking inputs.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Distance Matrix API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Calculates exact driving mileage and travel duration for quotation pricing.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        <span>Maps JavaScript API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Renders the interactive route map container on quote &amp; funnel pages.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span>Directions API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Plots turn-by-turn driving polyline and waypoint markers on the map.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        <span>Geocoding API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Converts UK postal codes and address queries into GPS coordinates.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
+                      <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                        <span>Google Cloud Console</span>
+                      </div>
+                      <a
+                        href="https://console.cloud.google.com/google/maps-apis/overview"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-blue-600 hover:underline mt-1 flex items-center space-x-1"
+                      >
+                        <span>Manage Keys &amp; Quotas</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Google OAuth Login Credentials Section */}
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="p-1 bg-red-50 text-red-600 rounded">
+                      <Lock className="w-3.5 h-3.5" />
+                    </span>
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                      Google OAuth (Sign In with Google)
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 text-xs mb-1">
+                        Google Client ID
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.google_client_id}
+                        onChange={(e) => setSettings({ ...settings, google_client_id: e.target.value })}
+                        placeholder="apps.googleusercontent.com"
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 text-xs mb-1">
+                        Google Client Secret
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.google_client_secret}
+                        onChange={(e) => setSettings({ ...settings, google_client_secret: e.target.value })}
+                        placeholder="••••••••••••••••"
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

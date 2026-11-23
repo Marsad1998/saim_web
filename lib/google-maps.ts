@@ -4,8 +4,12 @@
  * with automatic fallback to local UK database when no API key is provided.
  */
 
+import { getCachedSystemSettings, getSystemSettings } from "@/lib/system-settings";
+
 export function getGoogleMapsApiKey(): string {
+  const cachedKey = getCachedSystemSettings?.()?.google_maps_api_key;
   return (
+    cachedKey ||
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ||
     process.env.GOOGLE_MAPS_API_KEY ||
     ""
@@ -38,8 +42,9 @@ export interface GooglePlacePrediction {
  * Server-side Google Places Autocomplete for UK addresses
  */
 export async function searchGooglePlaces(phrase: string): Promise<GooglePlacePrediction[]> {
-  const apiKey = getGoogleMapsApiKey();
-  if (!isGoogleMapsEnabled() || !phrase || phrase.trim().length < 2) {
+  const settings = await getSystemSettings().catch(() => null);
+  const apiKey = (settings?.google_maps_api_key || getGoogleMapsApiKey()).trim();
+  if (!apiKey || apiKey.length < 10 || !phrase || phrase.trim().length < 2) {
     return [];
   }
 
@@ -90,8 +95,9 @@ export async function calculateGoogleDistanceMatrix(
   origin: string,
   destination: string
 ): Promise<GoogleDistanceResult | null> {
-  const apiKey = getGoogleMapsApiKey();
-  if (!isGoogleMapsEnabled()) {
+  const settings = await getSystemSettings().catch(() => null);
+  const apiKey = (settings?.google_maps_api_key || getGoogleMapsApiKey()).trim();
+  if (!apiKey || apiKey.length < 10) {
     return null;
   }
 

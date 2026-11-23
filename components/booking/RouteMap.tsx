@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { MapPin, Navigation, Clock, ShieldCheck, ExternalLink } from "lucide-react";
+import { useApp } from "@/components/context/AppContext";
 
 interface RouteMapProps {
   origin: string;
@@ -24,12 +25,14 @@ export default function RouteMap({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+  const { siteSettings } = useApp();
+  const apiKey = (siteSettings?.google_maps_api_key || process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "").trim();
   const isKeyValid = Boolean(
     apiKey &&
     apiKey.length > 10 &&
     !apiKey.includes("sample") &&
-    !apiKey.includes("your_")
+    !apiKey.includes("your_") &&
+    apiKey !== "undefined"
   );
 
   useEffect(() => {

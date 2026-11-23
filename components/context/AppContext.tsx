@@ -19,6 +19,7 @@ export interface SiteSettings {
   company_number: string;
   vat_number: string;
   copyright_text: string;
+  google_maps_api_key?: string;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -37,6 +38,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   company_number: "12345678",
   vat_number: "GB 123 4567 89",
   copyright_text: "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
+  google_maps_api_key: "",
 };
 
 export function getContrastColor(hexColor: string): string {
