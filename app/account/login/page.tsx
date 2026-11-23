@@ -9,7 +9,7 @@ import { useApp } from '@/components/context/AppContext';
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setUser } = useApp();
+  const { setUser, siteSettings } = useApp();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,7 +95,7 @@ function LoginFormContent() {
         {/* Header */}
         <div className="text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-ots-yellow bg-black px-3 py-1 rounded">
-            OTS Taxi Portal
+            {siteSettings?.brand_name || 'OTS Taxi'} Portal
           </span>
           <h1 className="text-2xl font-extrabold text-gray-900 mt-3">
             Account Login

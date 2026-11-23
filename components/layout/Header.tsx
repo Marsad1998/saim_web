@@ -68,6 +68,11 @@ export default function Header() {
     { label: "PARTNERS", href: "/partners" },
   ];
 
+  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandWords = brandName.trim().split(/\s+/);
+  const brandFirstWord = brandWords[0] || "OTS";
+  const brandRestWords = brandWords.slice(1).join(" ");
+
   if (pathname?.startsWith("/admin")) {
     return null;
   }
@@ -89,11 +94,13 @@ export default function Header() {
               ) : (
                 <div className="flex items-center whitespace-nowrap overflow-hidden min-w-0">
                   <span className="text-xl sm:text-2xl font-black tracking-wider text-ots-yellow flex-shrink-0">
-                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                    {brandFirstWord}
                   </span>
-                  <span className="text-xl sm:text-2xl font-bold tracking-tight text-white ml-1.5 truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
-                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
-                  </span>
+                  {brandRestWords ? (
+                    <span className="text-xl sm:text-2xl font-bold tracking-tight text-white ml-1.5 truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
+                      {brandRestWords}
+                    </span>
+                  ) : null}
                 </div>
               )}
             </Link>

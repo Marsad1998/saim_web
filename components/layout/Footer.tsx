@@ -10,6 +10,11 @@ export default function Footer() {
   const pathname = usePathname();
   const { siteSettings } = useApp();
 
+  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandWords = brandName.trim().split(/\s+/);
+  const brandFirstWord = brandWords[0] || "OTS";
+  const brandRestWords = brandWords.slice(1).join(" ");
+
   if (pathname?.startsWith("/admin")) {
     return null;
   }
@@ -27,32 +32,34 @@ export default function Footer() {
               {siteSettings?.logo_dark ? (
                 <img
                   src={siteSettings.logo_dark}
-                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  alt={brandName}
                   className="h-10 w-auto object-contain"
                 />
               ) : (
                 <div className="flex items-center">
                   <span className="text-2xl font-black text-ots-yellow tracking-wider">
-                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                    {brandFirstWord}
                   </span>
-                  <span className="text-2xl font-bold text-white tracking-tight ml-1">
-                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
-                  </span>
+                  {brandRestWords ? (
+                    <span className="text-2xl font-bold text-white tracking-tight ml-1">
+                      {brandRestWords}
+                    </span>
+                  ) : null}
                 </div>
               )}
             </Link>
             
             <p className="text-xs text-ots-mutedText leading-relaxed">
-              &quot;{siteSettings?.brand_name || "OTS Taxi"}&quot; is a registered trademark of {siteSettings?.brand_name || "OTS Taxi"} Limited, trademark number UK00004079557.
+              &quot;{brandName}&quot; is a registered trademark of {brandName} Limited, trademark number UK00004079557.
             </p>
             <p className="text-xs text-ots-mutedText">
-              Online Travel Services <span className="block text-neutral-400 font-semibold mt-1">{siteSettings?.copyright_text || "© 2026 - OtsTaxi.com All Rights Reserved"}</span>
+              {brandName} <span className="block text-neutral-400 font-semibold mt-1">{siteSettings?.copyright_text || `© ${new Date().getFullYear()} ${brandName} Limited. All Rights Reserved.`}</span>
             </p>
 
             <ul className="space-y-2.5 text-xs text-neutral-300 pt-2">
               <li className="flex items-start gap-2">
                 <Briefcase className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
-                <span><strong className="text-neutral-400">Company Name:</strong> {siteSettings?.brand_name || "OTS Taxi"} Limited</span>
+                <span><strong className="text-neutral-400">Company Name:</strong> {brandName} Limited</span>
               </li>
               <li className="flex items-start gap-2">
                 <Hash className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />

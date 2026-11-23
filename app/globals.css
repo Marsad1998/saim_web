@@ -90,7 +90,7 @@ body {
   opacity: 1;
 }
 
-/* OTS Linear Button */
+/* Primary Accent Linear Button */
 .btn-ots-yellow {
   background: linear-gradient(180deg, #FFDD33 0%, #FFCC00 100%);
   color: #000000;

@@ -1,6 +1,14 @@
+'use client';
+
 import React from 'react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function GdprStatementPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const companyNumber = siteSettings?.company_number || '06783060';
+  const supportEmail = siteSettings?.support_email || 'support@otstaxi.co.uk';
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white p-6 sm:p-12 rounded-2xl border border-gray-200 shadow-sm space-y-8">
@@ -11,14 +19,14 @@ export default function GdprStatementPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-3">
             GDPR Compliance Statement
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; OTS Taxi Limited (Company No: 06783060)</p>
+          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; {brandName} Limited (Company No: {companyNumber})</p>
         </div>
 
         <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">Commitment to Data Privacy</h2>
             <p>
-              OTS Taxi Limited is fully committed to upholding the principles laid out in the General Data Protection Regulation (GDPR) and the UK Data Protection Act 2018. We recognize the importance of personal data security for both our individual passengers and our corporate partners.
+              {brandName} Limited is fully committed to upholding the principles laid out in the General Data Protection Regulation (GDPR) and the UK Data Protection Act 2018. We recognize the importance of personal data security for both our individual passengers and our corporate partners.
             </p>
           </section>
 
@@ -36,7 +44,7 @@ export default function GdprStatementPage() {
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">Data Subject Requests</h2>
             <p>
-              To submit a Subject Access Request (SAR) or request erasure of your data under the Right to be Forgotten, email our Data Protection Officer directly at <strong>dpo@otstaxi.com</strong>.
+              To submit a Subject Access Request (SAR) or request erasure of your data under the Right to be Forgotten, email our Data Protection Officer directly at <strong>{supportEmail}</strong>.
             </p>
           </section>
         </div>

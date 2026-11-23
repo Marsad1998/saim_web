@@ -7,16 +7,23 @@ import MobileDrawer from '@/components/layout/MobileDrawer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import UserDrawer from '@/components/layout/UserDrawer';
 import CountryModal from '@/components/layout/CountryModal';
+import { getSystemSettings } from '@/lib/system-settings';
 
-export const metadata: Metadata = {
-  title: 'OTS Taxi - UK Airport Transfer & Taxi Booking | Fixed Price Cabs',
-  description: 'Book reliable UK airport transfers and long-distance taxis with OTS Taxi. Fixed low fares, licensed drivers, meet & greet service, free flight monitoring.',
-  keywords: 'airport transfers, taxi booking, heathrow taxi, gatwick transfer, stansted taxi, luton taxi, manchester airport taxi, OTS taxi, fixed price taxi uk',
-  authors: [{ name: 'OTS Taxi Limited' }],
-  icons: {
-    icon: '/favicon.ico',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSystemSettings();
+  const brandName = settings.brand_name || 'OTS Taxi';
+  const tagline = settings.brand_tagline || 'UK Airport Transfer & Taxi Booking | Fixed Price Cabs';
+
+  return {
+    title: `${brandName} - ${tagline}`,
+    description: `Book reliable UK airport transfers and long-distance taxis with ${brandName}. Fixed low fares, licensed drivers, meet & greet service, free flight monitoring.`,
+    keywords: `airport transfers, taxi booking, heathrow taxi, gatwick transfer, stansted taxi, luton taxi, manchester airport taxi, ${brandName}, fixed price taxi uk`,
+    authors: [{ name: `${brandName} Limited` }],
+    icons: {
+      icon: settings.logo_icon || '/favicon.ico',
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',

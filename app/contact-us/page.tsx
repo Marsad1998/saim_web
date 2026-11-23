@@ -13,9 +13,15 @@ import {
   Headphones,
   CheckCircle2
 } from 'lucide-react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function ContactUsPage() {
   const router = useRouter();
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const officeAddress = siteSettings?.office_address || '83 Baker Street, Marylebone\nLondon, W1U 6AG, United Kingdom';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
+  const supportEmail = siteSettings?.support_email || 'support@otstaxi.com';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -76,7 +82,7 @@ export default function ContactUsPage() {
             24/7 Customer Support
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-3">
-            Contact OTS Taxi
+            Contact {brandName}
           </h1>
           <p className="text-gray-600 text-sm mt-2">
             Have a question regarding your airport transfer, need to amend a booking, or looking for corporate inquiries? Our support team is here 24 hours a day.
@@ -94,15 +100,9 @@ export default function ContactUsPage() {
               <p className="text-xs text-gray-500 mt-1">Available 24 hours / 7 days</p>
               <div className="mt-2 space-y-1 text-xs">
                 <div>
-                  <span className="text-gray-400">UK:</span>{' '}
-                  <a href="tel:+442080040000" className="font-bold text-gray-900 hover:text-amber-600">
-                    +44 (0) 208 004 0000
-                  </a>
-                </div>
-                <div>
-                  <span className="text-gray-400">USA:</span>{' '}
-                  <a href="tel:+18885040010" className="font-bold text-gray-900 hover:text-amber-600">
-                    +1 (888) 504-0010
+                  <span className="text-gray-400">UK Dispatch:</span>{' '}
+                  <a href={`tel:${supportPhone}`} className="font-bold text-gray-900 hover:text-amber-600">
+                    {supportPhone}
                   </a>
                 </div>
               </div>
@@ -118,15 +118,9 @@ export default function ContactUsPage() {
               <p className="text-xs text-gray-500 mt-1">Response time within 15 minutes</p>
               <div className="mt-2 space-y-1 text-xs">
                 <div>
-                  <span className="text-gray-400">Bookings:</span>{' '}
-                  <a href="mailto:bookings@otstaxi.com" className="font-bold text-gray-900 hover:text-amber-600">
-                    bookings@otstaxi.com
-                  </a>
-                </div>
-                <div>
-                  <span className="text-gray-400">Support:</span>{' '}
-                  <a href="mailto:support@otstaxi.com" className="font-bold text-gray-900 hover:text-amber-600">
-                    support@otstaxi.com
+                  <span className="text-gray-400">Support Desk:</span>{' '}
+                  <a href={`mailto:${supportEmail}`} className="font-bold text-gray-900 hover:text-amber-600">
+                    {supportEmail}
                   </a>
                 </div>
               </div>
@@ -140,10 +134,9 @@ export default function ContactUsPage() {
             <div>
               <h3 className="text-base font-bold text-gray-900">Head Office</h3>
               <p className="text-xs text-gray-500 mt-1">Registered in England &amp; Wales</p>
-              <p className="text-xs text-gray-900 font-medium mt-2 leading-relaxed">
-                OTS Taxi Limited<br />
-                83 Baker Street, Marylebone<br />
-                London, W1U 6AG, United Kingdom
+              <p className="text-xs text-gray-900 font-medium mt-2 leading-relaxed whitespace-pre-line">
+                {brandName} Limited<br />
+                {officeAddress}
               </p>
             </div>
           </div>

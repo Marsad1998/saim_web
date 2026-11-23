@@ -1,6 +1,14 @@
+'use client';
+
 import React from 'react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function TermsPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const companyNumber = siteSettings?.company_number || '06783060';
+  const officeAddress = siteSettings?.office_address || '83 Baker Street, London, W1U 6AG, United Kingdom';
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white p-6 sm:p-12 rounded-2xl border border-gray-200 shadow-sm space-y-8">
@@ -11,17 +19,17 @@ export default function TermsPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-3">
             Terms of Carriage &amp; Booking Conditions
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; OTS Taxi Limited (Company No: 06783060)</p>
+          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; {brandName} Limited (Company No: {companyNumber})</p>
         </div>
 
         <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">1. Definitions and Acceptance</h2>
             <p>
-              These Terms of Carriage govern all bookings and contracts made with <strong>OTS Taxi Limited</strong> (&ldquo;OTS Taxi&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo; or &ldquo;our&rdquo;), a private limited company registered in England and Wales under Company Registration Number 06783060, having its registered office at 83 Baker Street, London, W1U 6AG, United Kingdom.
+              These Terms of Carriage govern all bookings and contracts made with <strong>{brandName} Limited</strong> (&ldquo;{brandName}&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo; or &ldquo;our&rdquo;), a private limited company registered in England and Wales under Company Registration Number {companyNumber}, having its registered office at {officeAddress}.
             </p>
             <p>
-              By completing a booking on our website (otstaxi.com), by telephone, or via an authorized partner portal, you (&ldquo;the Client&rdquo;, &ldquo;Passenger&rdquo;) confirm your full acceptance of these terms and conditions.
+              By completing a booking on our website, by telephone, or via an authorized partner portal, you (&ldquo;the Client&rdquo;, &ldquo;Passenger&rdquo;) confirm your full acceptance of these terms and conditions.
             </p>
           </section>
 
@@ -41,10 +49,10 @@ export default function TermsPage() {
               <strong>Complimentary Waiting Time:</strong> For all airport collections, 45 minutes of complimentary waiting time is provided, calculated from the actual radar landing time of the incoming flight. For international long-haul arrivals, up to 60 minutes is granted.
             </p>
             <p>
-              <strong>Waiting Time Surcharges:</strong> Should waiting time exceed the complimentary allowance due to passenger delays (such as lost baggage disputes or prolonged border checks without notifying OTS Taxi), waiting time is charged at £20.00 per hour (or £5.00 per 15-minute increment) thereafter.
+              <strong>Waiting Time Surcharges:</strong> Should waiting time exceed the complimentary allowance due to passenger delays (such as lost baggage disputes or prolonged border checks without notifying {brandName}), waiting time is charged at £20.00 per hour (or £5.00 per 15-minute increment) thereafter.
             </p>
             <p>
-              <strong>Flight Radar Tracking:</strong> OTS Taxi monitors flight arrival times live. If your flight is delayed or rescheduled by the airline, your driver&apos;s arrival time will be updated automatically at zero extra surcharge.
+              <strong>Flight Radar Tracking:</strong> {brandName} monitors flight arrival times live. If your flight is delayed or rescheduled by the airline, your driver&apos;s arrival time will be updated automatically at zero extra surcharge.
             </p>
           </section>
 

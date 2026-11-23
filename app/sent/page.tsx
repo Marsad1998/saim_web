@@ -1,8 +1,14 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Home, ArrowLeft } from 'lucide-react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function SentPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+
   return (
     <div className="bg-[#f8f9fa] min-h-[70vh] flex items-center justify-center py-16 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl p-8 border border-gray-200 shadow-xl text-center space-y-5">
@@ -15,7 +21,7 @@ export default function SentPage() {
         </h1>
 
         <p className="text-gray-600 text-sm leading-relaxed">
-          Thank you for reaching out to OTS Taxi. A member of our 24/7 customer service operations team will review your message and respond within 15 minutes.
+          Thank you for reaching out to {brandName}. A member of our 24/7 customer service operations team will review your message and respond within 15 minutes.
         </p>
 
         <div className="pt-4 flex flex-col space-y-3">

@@ -1,6 +1,14 @@
+'use client';
+
 import React from 'react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function PrivacyPolicyPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const companyNumber = siteSettings?.company_number || '06783060';
+  const supportEmail = siteSettings?.support_email || 'support@otstaxi.co.uk';
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white p-6 sm:p-12 rounded-2xl border border-gray-200 shadow-sm space-y-8">
@@ -11,17 +19,17 @@ export default function PrivacyPolicyPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-3">
             Privacy Policy
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; OTS Taxi Limited (Company No: 06783060)</p>
+          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; {brandName} Limited (Company No: {companyNumber})</p>
         </div>
 
         <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">1. Introduction and Data Controller</h2>
             <p>
-              OTS Taxi Limited (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) respects your privacy and is committed to protecting your personal data in compliance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.
+              {brandName} Limited (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) respects your privacy and is committed to protecting your personal data in compliance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.
             </p>
             <p>
-              This policy explains how we collect, store, process, and safeguard personal information when you use our website (otstaxi.com) or book transportation services through us.
+              This policy explains how we collect, store, process, and safeguard personal information when you use our website or book transportation services through us.
             </p>
           </section>
 
@@ -53,7 +61,7 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">5. Your Data Protection Rights</h2>
             <p>
-              Under UK data protection laws, you possess the right to access, rectify, or request erasure of your personal data, as well as the right to data portability. To exercise these rights, please contact our Data Protection Officer at <strong>dpo@otstaxi.com</strong>.
+              Under UK data protection laws, you possess the right to access, rectify, or request erasure of your personal data, as well as the right to data portability. To exercise these rights, please contact our Data Protection Officer at <strong>{supportEmail}</strong>.
             </p>
           </section>
         </div>

@@ -37,13 +37,18 @@ export default function MobileDrawer() {
   } = useApp();
   const pathname = usePathname();
 
+  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandWords = brandName.trim().split(/\s+/);
+  const brandFirstWord = brandWords[0] || "OTS";
+  const brandRestWords = brandWords.slice(1).join(" ");
+
   if (!isMobileMenuOpen) return null;
 
   const mainLinks = [
     { label: "Book a Transfer", href: "/", icon: Home },
     { label: "UK Airports Guide", href: "/airports", icon: Plane },
     { label: "Corporate Partners", href: "/partners", icon: CheckCircle2 },
-    { label: "About OTS Taxi", href: "/about-us", icon: User },
+    { label: `About ${brandName}`, href: "/about-us", icon: User },
     { label: "Help & Support", href: "/contact-us", icon: Mail },
   ];
 
@@ -70,17 +75,19 @@ export default function MobileDrawer() {
               {siteSettings?.logo_dark ? (
                 <img
                   src={siteSettings.logo_dark}
-                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  alt={brandName}
                   className="h-9 w-auto max-w-[170px] object-contain flex-shrink-0"
                 />
               ) : (
                 <div className="flex items-center whitespace-nowrap overflow-hidden min-w-0">
                   <span className="text-2xl font-black text-ots-yellow tracking-wider flex-shrink-0">
-                    {siteSettings?.brand_name?.split(" ")[0] || "OTS"}
+                    {brandFirstWord}
                   </span>
-                  <span className="text-2xl font-bold text-white tracking-tight ml-1.5 truncate max-w-[160px]">
-                    {siteSettings?.brand_name?.split(" ").slice(1).join(" ") || "TAXI"}
-                  </span>
+                  {brandRestWords ? (
+                    <span className="text-2xl font-bold text-white tracking-tight ml-1.5 truncate max-w-[160px]">
+                      {brandRestWords}
+                    </span>
+                  ) : null}
                 </div>
               )}
             </Link>
@@ -139,7 +146,7 @@ export default function MobileDrawer() {
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="text-xs text-neutral-400">Welcome to OTS Taxi UK</div>
+                <div className="text-xs text-neutral-400">Welcome to {brandName}</div>
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <Link
                     href="/account/login"
@@ -238,11 +245,11 @@ export default function MobileDrawer() {
         {/* Footer Area with 24/7 Dispatch Hotline */}
         <div className="p-4 border-t border-neutral-800 bg-[#0d0f15] space-y-3">
           <a
-            href="tel:+443330047131"
+            href={`tel:${siteSettings?.support_phone || "+443330047131"}`}
             className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition shadow-md min-h-[44px]"
           >
             <Phone className="w-4 h-4" />
-            <span>Call 24/7 Dispatch (+44 333 004 7131)</span>
+            <span>Call 24/7 Dispatch ({siteSettings?.support_phone || "+44 333 004 7131"})</span>
           </a>
 
           {user && (
@@ -259,7 +266,7 @@ export default function MobileDrawer() {
           )}
 
           <div className="text-[10px] text-neutral-500 text-center">
-            OTS Taxi Limited • Lic. No. 06783060
+            {brandName} Limited • Lic. No. {siteSettings?.company_number || "06783060"}
           </div>
         </div>
       </aside>

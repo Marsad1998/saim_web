@@ -1,7 +1,16 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useApp } from '@/components/context/AppContext';
 
 export default function RefundPolicyPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const companyNumber = siteSettings?.company_number || '06783060';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
+  const supportEmail = siteSettings?.support_email || 'bookings@otstaxi.com';
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white p-6 sm:p-12 rounded-2xl border border-gray-200 shadow-sm space-y-8">
@@ -12,14 +21,14 @@ export default function RefundPolicyPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-3">
             Refund &amp; Cancellation Policy
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; OTS Taxi Limited (Company No: 06783060)</p>
+          <p className="text-xs text-gray-400 mt-1">Last Updated: October 2026 &bull; {brandName} Limited (Company No: {companyNumber})</p>
         </div>
 
         <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-gray-900">1. Our 100% Refund Policy Guarantee</h2>
             <p>
-              At OTS Taxi, customer satisfaction and peace of mind are our highest priorities. We understand that travel plans and flight itineraries can shift unexpectedly.
+              At {brandName}, customer satisfaction and peace of mind are our highest priorities. We understand that travel plans and flight itineraries can shift unexpectedly.
             </p>
             <p>
               Any booking cancelled at least <strong>12 hours prior</strong> to the scheduled pick-up time is entitled to a <strong>100% full refund</strong> back to the original payment method without any administrative deductions or processing penalties.
@@ -67,8 +76,8 @@ export default function RefundPolicyPage() {
               To cancel or amend your booking, you can:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-xs">
-              <li>Call our 24/7 Operations Desk at <strong>+44 (0) 208 004 0000</strong></li>
-              <li>Email us at <strong>bookings@otstaxi.com</strong> quoting your booking reference (e.g. OTS-XXXXXX)</li>
+              <li>Call our 24/7 Operations Desk at <strong>{supportPhone}</strong></li>
+              <li>Email us at <strong>{supportEmail}</strong> quoting your booking reference</li>
               <li>Access your account dashboard and select &ldquo;Cancel Booking&rdquo;</li>
             </ul>
             <p className="pt-1">

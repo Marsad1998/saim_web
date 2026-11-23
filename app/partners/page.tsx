@@ -11,8 +11,11 @@ import {
   Loader2, 
   ShieldCheck 
 } from 'lucide-react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function PartnersPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
   const [partnerType, setPartnerType] = useState('Travel Agent');
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
@@ -69,7 +72,7 @@ export default function PartnersPage() {
             B2B &amp; Corporate Partnerships
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-3">
-            Partner With OTS Taxi
+            Partner With {brandName}
           </h1>
           <p className="text-gray-600 text-sm sm:text-base mt-3 leading-relaxed">
             Expand your transportation offerings with the UK&apos;s most reliable airport transfer network. We work with travel agents, corporate entities, airlines, and licensed private hire fleets.
@@ -148,7 +151,7 @@ export default function PartnersPage() {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Application Submitted</h2>
               <p className="text-sm text-gray-600 max-w-md mx-auto">
-                Thank you for your interest in partnering with OTS Taxi. Our corporate relations team will review your details and contact you within 1 business day.
+                Thank you for your interest in partnering with {brandName}. Our corporate relations team will review your details and contact you within 1 business day.
               </p>
             </div>
           ) : (
@@ -158,7 +161,7 @@ export default function PartnersPage() {
                   Register Your Partnership Interest
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                  Complete the inquiry form to start working with OTS Taxi.
+                  Complete the inquiry form to start working with {brandName}.
                 </p>
                 {errorMessage && (
                   <div className="mt-3 p-3 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs font-semibold">

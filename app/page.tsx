@@ -21,7 +21,8 @@ import { UK_AIRPORTS } from '@/lib/airports-data';
 import { useApp } from '@/components/context/AppContext';
 
 export default function HomePage() {
-  const { formatPrice } = useApp();
+  const { formatPrice, siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
   const popularAirports = UK_AIRPORTS.slice(0, 8);
 
   const testimonials = [
@@ -44,7 +45,7 @@ export default function HomePage() {
       location: 'Stansted Airport to Central London',
       rating: 5,
       date: '2 weeks ago',
-      comment: 'Fixed price gave me peace of mind with no hidden surge costs. Highly recommend OTS Taxi for business and personal travel.',
+      comment: `Fixed price gave me peace of mind with no hidden surge costs. Highly recommend ${brandName} for business and personal travel.`,
     },
   ];
 
@@ -193,7 +194,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why Choose OTS Taxi Features */}
+      {/* Why Choose Features */}
       <section className="py-16 bg-[#141720] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -201,7 +202,7 @@ export default function HomePage() {
               Our Guarantees
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold mt-3">
-              Why Travel With OTS Taxi?
+              Why Travel With {brandName}?
             </h2>
             <p className="text-gray-400 text-sm mt-2">
               Over 15 years providing reliable airport transfers across the United Kingdom.
@@ -347,7 +348,7 @@ export default function HomePage() {
               Trusted by Thousands of Travelers
             </h2>
             <p className="text-gray-600 text-sm mt-2">
-              Read real feedback from passengers who booked their UK transfers with OTS Taxi.
+              Read real feedback from passengers who booked their UK transfers with {brandName}.
             </p>
           </div>
 
@@ -383,7 +384,7 @@ export default function HomePage() {
               Frequently Asked Questions
             </h2>
             <p className="text-gray-600 text-sm mt-2">
-              Everything you need to know about booking your airport taxi with OTS Taxi.
+              Everything you need to know about booking your airport taxi with {brandName}.
             </p>
           </div>
 
@@ -414,7 +415,7 @@ export default function HomePage() {
               Are you a Travel Agent, Hotel, or Corporate Client?
             </h3>
             <p className="text-black/80 text-sm mt-1">
-              Join our OTS Taxi Partner Portal for monthly invoicing, priority dispatch, and volume commissions.
+              Join our {brandName} Partner Portal for monthly invoicing, priority dispatch, and volume commissions.
             </p>
           </div>
           <Link

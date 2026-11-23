@@ -121,6 +121,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
+  // Synchronize document title and favicon with current brand settings on client
+  useEffect(() => {
+    if (typeof document !== "undefined" && siteSettings?.brand_name) {
+      const brand = siteSettings.brand_name.trim();
+      const tagline = siteSettings.brand_tagline ? siteSettings.brand_tagline.trim() : "";
+      
+      // Update document title if it still reflects defaults or home pattern
+      if (!document.title || document.title.includes("OTS Taxi") || document.title.includes(" - ")) {
+        document.title = tagline ? `${brand} - ${tagline}` : brand;
+      }
+
+      // Update favicon if custom icon is uploaded
+      if (siteSettings.logo_icon) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+        if (!link) {
+          link = document.createElement("link");
+          link.type = "image/x-icon";
+          link.rel = "shortcut icon";
+          document.getElementsByTagName("head")[0].appendChild(link);
+        }
+        link.href = siteSettings.logo_icon;
+      }
+    }
+  }, [siteSettings?.brand_name, siteSettings?.brand_tagline, siteSettings?.logo_icon]);
+
   const updateSiteSettingsState = useCallback((newSettings: Partial<SiteSettings>) => {
     setSiteSettings((prev) => {
       const merged = { ...prev, ...newSettings };

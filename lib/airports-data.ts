@@ -63,7 +63,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     lat: 51.1537,
     lng: -0.1821,
     image: "https://cdn.otstaxi.com/airports/london-gatwick-airport-1722614940.png",
-    description: "London Gatwick Airport is the UK's second busiest airport, situated 29.5 miles south of Central London near Crawley, West Sussex. OTS Taxi provides reliable, comfortable transfers connecting Gatwick North and South terminals to all London boroughs and UK destinations.",
+    description: "London Gatwick Airport is the UK's second busiest airport, situated 29.5 miles south of Central London near Crawley, West Sussex. Our private hire network provides reliable, comfortable transfers connecting Gatwick North and South terminals to all London boroughs and UK destinations.",
     highlights: [
       "Direct terminal pick-up and drop-off for North and South Terminals.",
       "Flight tracking included with 45 minutes free waiting time after landing.",
@@ -183,7 +183,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     lat: 52.4539,
     lng: -1.7480,
     image: "https://cdn.otstaxi.com/airports/birmingham-airport-1722615754.png",
-    description: "Birmingham Airport serves the West Midlands, located 8 miles east of Birmingham city centre near the NEC and Solihull. OTS Taxi delivers seamless airport journeys across the Midlands.",
+    description: "Birmingham Airport serves the West Midlands, located 8 miles east of Birmingham city centre near the NEC and Solihull. Our private hire network delivers seamless airport journeys across the Midlands.",
     highlights: [
       "Fixed rates for transfers to Birmingham City, Coventry, Leicester, and Warwick.",
       "24/7 availability for domestic and international flights."

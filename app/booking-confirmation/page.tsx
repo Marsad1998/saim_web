@@ -73,7 +73,7 @@ function BookingConfirmationContent() {
             Booking Confirmed!
           </h1>
           <p className="text-gray-600 text-sm mt-2 max-w-md mx-auto">
-            Thank you for booking with OTS Taxi. A confirmation email with your journey voucher and receipt has been sent to your email address.
+            Thank you for booking with {siteSettings?.brand_name || 'OTS Taxi'}. A confirmation email with your journey voucher and receipt has been sent to your email address.
           </p>
 
           {/* Reference pill */}

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { 
@@ -12,8 +14,16 @@ import {
   Car,
   ChevronRight
 } from 'lucide-react';
+import { useApp } from '@/components/context/AppContext';
 
 export default function AboutUsPage() {
+  const { siteSettings } = useApp();
+  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const companyNumber = siteSettings?.company_number || '06783060';
+  const officeAddress = siteSettings?.office_address || '83 Baker Street, Marylebone, London, W1U 6AG, United Kingdom';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
+  const supportEmail = siteSettings?.support_email || 'bookings@otstaxi.com';
+
   const stats = [
     { label: 'Years in Operation', val: '15+' },
     { label: 'Journeys Completed', val: '500,000+' },
@@ -28,13 +38,13 @@ export default function AboutUsPage() {
         {/* Page Header */}
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-bold uppercase tracking-wider text-ots-yellow bg-black px-3.5 py-1 rounded-full">
-            About OTS Taxi
+            About {brandName}
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-3">
             Your Trusted UK Airport Transfer &amp; Long-Distance Cab Partner
           </h1>
           <p className="text-gray-600 text-sm sm:text-base mt-3 leading-relaxed">
-            OTS Taxi Limited is one of the United Kingdom&apos;s leading airport transfer specialists, delivering reliable, fixed-rate, private hire transport for business and leisure travelers worldwide.
+            {brandName} Limited is one of the United Kingdom&apos;s leading airport transfer specialists, delivering reliable, fixed-rate, private hire transport for business and leisure travelers worldwide.
           </p>
         </div>
 
@@ -60,10 +70,10 @@ export default function AboutUsPage() {
                 Who We Are
               </h2>
               <p className="text-gray-600 text-sm leading-relaxed mt-3">
-                Established under Companies House registration <strong>06783060</strong>, <strong>OTS Taxi Limited</strong> was founded with a single mission: to eliminate the stress, uncertainty, and hidden surcharges commonly associated with UK airport travel.
+                Established under Companies House registration <strong>{companyNumber}</strong>, <strong>{brandName} Limited</strong> was founded with a single mission: to eliminate the stress, uncertainty, and hidden surcharges commonly associated with UK airport travel.
               </p>
               <p className="text-gray-600 text-sm leading-relaxed mt-3">
-                Whether you are arriving at London Heathrow for an international summit, traveling with family to London Gatwick for a summer holiday, or organizing corporate transfers across Manchester and Birmingham, OTS Taxi provides fully licensed private hire solutions with transparent upfront pricing.
+                Whether you are arriving at London Heathrow for an international summit, traveling with family to London Gatwick for a summer holiday, or organizing corporate transfers across Manchester and Birmingham, {brandName} provides fully licensed private hire solutions with transparent upfront pricing.
               </p>
             </div>
 
@@ -152,17 +162,16 @@ export default function AboutUsPage() {
               <div className="space-y-3 text-xs text-gray-300">
                 <div>
                   <span className="text-gray-400 block">Registered Company Name</span>
-                  <span className="font-bold text-white text-sm">OTS Taxi Limited</span>
+                  <span className="font-bold text-white text-sm">{brandName} Limited</span>
                 </div>
                 <div>
                   <span className="text-gray-400 block">Company Registration Number</span>
-                  <span className="font-mono text-white text-sm">06783060</span>
+                  <span className="font-mono text-white text-sm">{companyNumber}</span>
                 </div>
                 <div>
                   <span className="text-gray-400 block">Registered Head Office</span>
-                  <span className="text-white block mt-0.5">
-                    83 Baker Street, Marylebone,<br />
-                    London, W1U 6AG, United Kingdom
+                  <span className="text-white block mt-0.5 whitespace-pre-line">
+                    {officeAddress}
                   </span>
                 </div>
                 <div>
@@ -175,18 +184,18 @@ export default function AboutUsPage() {
 
               <div className="pt-4 border-t border-white/10 space-y-2">
                 <a
-                  href="tel:+442080040000"
+                  href={`tel:${supportPhone}`}
                   className="flex items-center space-x-2 text-sm text-ots-yellow hover:underline"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>+44 (0) 208 004 0000</span>
+                  <span>{supportPhone}</span>
                 </a>
                 <a
-                  href="mailto:bookings@otstaxi.com"
+                  href={`mailto:${supportEmail}`}
                   className="flex items-center space-x-2 text-sm text-gray-300 hover:text-white"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>bookings@otstaxi.com</span>
+                  <span>{supportEmail}</span>
                 </a>
               </div>
             </div>

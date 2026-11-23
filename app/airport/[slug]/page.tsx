@@ -14,6 +14,7 @@ import {
 import BookingForm from '@/components/booking/BookingForm';
 import { UK_AIRPORTS } from '@/lib/airports-data';
 import AirportPopularRoutes from '@/components/airport/AirportPopularRoutes';
+import { getSystemSettings } from '@/lib/system-settings';
 
 export function generateStaticParams() {
   return UK_AIRPORTS.map((airport) => ({
@@ -21,11 +22,13 @@ export function generateStaticParams() {
   }));
 }
 
-export default function AirportDetailPage({
+export default async function AirportDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
+  const settings = await getSystemSettings();
+  const brandName = settings.brand_name || 'OTS Taxi';
   const airport = UK_AIRPORTS.find(
     (a) => a.slug.toLowerCase() === params.slug.toLowerCase()
   ) || UK_AIRPORTS[0];
@@ -105,7 +108,7 @@ export default function AirportDetailPage({
               Where Will My Driver Meet Me at {airport.iata}?
             </h2>
             <p className="text-gray-600 text-sm mt-2">
-              All OTS Taxi drivers wait inside the arrivals hall inside the passenger terminal.
+              All {brandName} drivers wait inside the arrivals hall inside the passenger terminal.
             </p>
           </div>
 

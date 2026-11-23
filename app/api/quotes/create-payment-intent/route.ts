@@ -3,6 +3,7 @@ import { quoteStore } from "@/lib/quote-store";
 import { EXTRA_OPTIONS } from "@/lib/pricing-engine";
 import { getStripeServer, getStripePublishableKey } from "@/lib/stripe";
 import { CurrencyCode, convertFromGbp } from "@/lib/currency";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +44,16 @@ export async function POST(request: Request) {
 
     if (stripe && pubKey) {
       try {
+        const settings = await getSystemSettings();
+        const brandName = settings.brand_name || "OTS Taxi";
+
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(finalAmount * 100), // in smallest currency unit (pence/cents)
           currency: stripeCurrency,
           automatic_payment_methods: {
             enabled: true,
           },
-          description: `OTS Taxi Booking Transfer - Ref: ${quote.quoteRef}`,
+          description: `${brandName} Booking Transfer - Ref: ${quote.quoteRef}`,
           metadata: {
             quoteRef: quote.quoteRef,
             from: quote.fromLocation,

@@ -30,7 +30,7 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function DriverDashboardPage() {
   const router = useRouter();
-  const { user, logout, formatPrice } = useApp();
+  const { user, logout, formatPrice, siteSettings } = useApp();
 
   const [driver, setDriver] = useState<any>(null);
   const [stats, setStats] = useState<any>({
@@ -182,7 +182,7 @@ export default function DriverDashboardPage() {
       setActiveTab('onboarding');
       setFeedback({
         type: 'error',
-        text: `Compliance Required: You cannot go On-Duty until all 4 profile steps are completed and approved by OTS Taxi Admin (Current Score: ${completionScore}%).`,
+        text: `Compliance Required: You cannot go On-Duty until all 4 profile steps are completed and approved by ${siteSettings?.brand_name || 'OTS Taxi'} Admin (Current Score: ${completionScore}%).`,
       });
       return;
     }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { SearchLocationItem, searchLocations } from "@/lib/locations-data";
 import { X, Search, Plane, MapPin, Check, Sparkles } from "lucide-react";
+import { useApp } from "@/components/context/AppContext";
 
 export interface SelectedLocationItem {
   name: string;
@@ -28,6 +29,7 @@ export default function LocationModal({
   title,
   onSelect,
 }: LocationModalProps) {
+  const { siteSettings } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -254,7 +256,7 @@ export default function LocationModal({
         {/* Footer info */}
         <div className="bg-neutral-50 px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
           <span>Search any UK airport, train station, address or postcode</span>
-          <span className="font-semibold text-neutral-700">OTS Taxi System</span>
+          <span className="font-semibold text-neutral-700">{siteSettings?.brand_name || 'OTS Taxi'} System</span>
         </div>
 
       </div>

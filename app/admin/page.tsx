@@ -1393,19 +1393,21 @@ export default function AdminPage() {
                     style={{ backgroundColor: currentPrimaryColor }}
                     className="w-10 h-10 rounded-xl text-gray-950 font-black flex items-center justify-center text-lg shadow-md group-hover:scale-105 transition-transform flex-shrink-0"
                   >
-                    {currentBrandName.split(' ')[0]?.charAt(0)?.toUpperCase() || 'O'}
+                    {currentBrandName.trim().split(/\s+/)[0]?.charAt(0)?.toUpperCase() || 'O'}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center space-x-1 whitespace-nowrap overflow-hidden">
                       <span className="font-extrabold text-white text-base tracking-wider flex-shrink-0">
-                        {currentBrandName.split(' ')[0] || 'OTS'}
+                        {currentBrandName.trim().split(/\s+/)[0] || 'OTS'}
                       </span>
-                      <span
-                        style={{ color: currentPrimaryColor }}
-                        className="font-light text-base tracking-wider truncate max-w-[110px]"
-                      >
-                        {currentBrandName.split(' ').slice(1).join(' ') || 'TAXI'}
-                      </span>
+                      {currentBrandName.trim().split(/\s+/).slice(1).join(' ') ? (
+                        <span
+                          style={{ color: currentPrimaryColor }}
+                          className="font-light text-base tracking-wider truncate max-w-[110px]"
+                        >
+                          {currentBrandName.trim().split(/\s+/).slice(1).join(' ')}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="flex items-center space-x-1.5 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
@@ -3304,7 +3306,7 @@ EXIT;`}
                             className="max-h-16 max-w-full object-contain" 
                           />
                         ) : (
-                          <span className="text-xs text-slate-500 italic">No image (falls back to OTS TAXI text)</span>
+                          <span className="text-xs text-slate-500 italic">No image (falls back to brand name text)</span>
                         )}
                       </div>
                     </div>
@@ -3557,7 +3559,7 @@ EXIT;`}
                       type="text"
                       value={settings.brand_name}
                       onChange={(e) => setSettings({ ...settings, brand_name: e.target.value })}
-                      placeholder="e.g. OTS TAXI"
+                      placeholder="e.g. OTS TAXI or City Transfers"
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-bold text-slate-900"
                     />
                   </div>
@@ -3645,7 +3647,7 @@ EXIT;`}
                       type="text"
                       value={settings.copyright_text}
                       onChange={(e) => setSettings({ ...settings, copyright_text: e.target.value })}
-                      placeholder="e.g. © 2026 OTS Taxi UK Ltd. All rights reserved."
+                      placeholder="e.g. © 2026 Your Brand Ltd. All rights reserved."
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-800"
                     />
                   </div>
