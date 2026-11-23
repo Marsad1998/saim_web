@@ -54,11 +54,11 @@ function LoginFormContent() {
       if (data.status === 200 && data.user) {
         setUser(data.user);
         if (data.user.role === 'admin') {
-          router.push('/admin');
+          window.location.href = '/admin';
         } else if (data.user.role === 'driver') {
-          router.push('/driver/dashboard');
+          window.location.href = '/driver/dashboard';
         } else {
-          router.push('/account/dashboard');
+          window.location.href = '/account/dashboard';
         }
       } else {
         setErrorMessage(data.message || 'Invalid email or password. Please try again.');
@@ -79,11 +79,11 @@ function LoginFormContent() {
       });
 
       if (isAdmin) {
-        router.push('/admin');
+        window.location.href = '/admin';
       } else if (isDriver) {
-        router.push('/driver/dashboard');
+        window.location.href = '/driver/dashboard';
       } else {
-        router.push('/account/dashboard');
+        window.location.href = '/account/dashboard';
       }
     }
   };

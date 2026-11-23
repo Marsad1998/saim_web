@@ -62,10 +62,11 @@ export default function Header() {
 
   const navLinks = [
     { label: "HOME", href: "/" },
-    { label: "CONTACT US", href: "/contact-us" },
-    { label: "ABOUT US", href: "/about-us" },
+    { label: "RATE CARD", href: "/rates" },
     { label: "AIRPORTS", href: "/airports" },
+    { label: "ABOUT US", href: "/about-us" },
     { label: "PARTNERS", href: "/partners" },
+    { label: "CONTACT US", href: "/contact-us" },
   ];
 
   const brandName = siteSettings?.brand_name || "OTS Taxi";

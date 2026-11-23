@@ -36,20 +36,20 @@ export async function GET(request: NextRequest) {
         primary_color: settings.primary_color || "#FFCC00",
         primary_hover_color: settings.primary_hover_color || "#E6B800",
         secondary_color: settings.secondary_color || "#141720",
-        brand_name: settings.brand_name || "OTS Taxi",
-        brand_tagline: settings.brand_tagline || "UK Airport Transfer & Taxi Booking | Fixed Price Cabs",
+        brand_name: settings.brand_name || "Quick Car Midlands Ltd",
+        brand_tagline: settings.brand_tagline || "Airport Transfers & Private Hire | Based in Birmingham",
         logo_dark: settings.logo_dark || "",
         logo_light: settings.logo_light || "",
         logo_icon: settings.logo_icon || "",
 
         // Support & Contact
-        support_phone: settings.support_phone || "+44 (0) 208 004 0000",
-        support_email: settings.support_email || "support@otstaxi.co.uk",
+        support_phone: settings.support_phone || "+44 (0) 121 285 5000",
+        support_email: settings.support_email || "bookings@quickcarmidlands.co.uk",
         emergency_whatsapp: settings.emergency_whatsapp || "+44 7123 456789",
-        office_address: settings.office_address || "Heathrow Terminal 2 Concourse, London TW6 1EW, United Kingdom",
-        company_number: settings.company_number || "06783060",
+        office_address: settings.office_address || "Birmingham, West Midlands, United Kingdom",
+        company_number: settings.company_number || "12345678",
         vat_number: settings.vat_number || "GB 123 4567 89",
-        copyright_text: settings.copyright_text || "© 2026 OTS Taxi Limited. All Rights Reserved.",
+        copyright_text: settings.copyright_text || "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
       },
     });
   } catch (error: any) {

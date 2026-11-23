@@ -149,6 +149,11 @@ export default function Footer() {
                   <span className="w-1.5 h-1.5 rounded-full bg-neutral-600"></span> All Airports
                 </Link>
               </li>
+              <li>
+                <Link href="/rates" className="hover:text-ots-yellow transition flex items-center gap-1.5 font-bold text-white">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ots-yellow"></span> 2026 Rate Card
+                </Link>
+              </li>
             </ul>
           </div>
 

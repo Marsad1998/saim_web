@@ -78,9 +78,9 @@ export default function RegisterPage() {
         if (data.user) {
           setUser(data.user);
           if (role === 'driver') {
-            router.push('/driver/dashboard');
+            window.location.href = '/driver/dashboard';
           } else {
-            router.push('/account/dashboard');
+            window.location.href = '/account/dashboard';
           }
         }
       } else {
@@ -98,9 +98,9 @@ export default function RegisterPage() {
         role,
       });
       if (role === 'driver') {
-        router.push('/driver/dashboard');
+        window.location.href = '/driver/dashboard';
       } else {
-        router.push('/account/dashboard');
+        window.location.href = '/account/dashboard';
       }
     }
   };

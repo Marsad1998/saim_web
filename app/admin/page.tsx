@@ -127,8 +127,8 @@ export default function AdminPage() {
     smtp_port: 587,
     smtp_user: '',
     smtp_pass: '',
-    smtp_from: '"OTS Taxi UK" <no-reply@otstaxi.co.uk>',
-    admin_email: 'admin@otstaxi.co.uk',
+    smtp_from: '"Quick Car Midlands Ltd" <no-reply@quickcarmidlands.co.uk>',
+    admin_email: 'admin@quickcarmidlands.co.uk',
     require_email_verification: false,
     require_driver_approval: true,
     google_client_id: '',
@@ -137,18 +137,18 @@ export default function AdminPage() {
     primary_color: '#FFCC00',
     primary_hover_color: '#E6B800',
     secondary_color: '#141720',
-    brand_name: 'OTS TAXI',
-    brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
-    logo_dark: '/images/ots-taxi-logo.png',
+    brand_name: 'Quick Car Midlands Ltd',
+    brand_tagline: 'Airport Transfers & Private Hire | Based in Birmingham',
+    logo_dark: '',
     logo_light: '',
     logo_icon: '',
-    support_phone: '+44 20 8123 4567',
-    support_email: 'support@otstaxi.co.uk',
+    support_phone: '+44 (0) 121 285 5000',
+    support_email: 'bookings@quickcarmidlands.co.uk',
     emergency_whatsapp: '+44 7123 456789',
-    office_address: 'Heathrow Airport Terminal 2, Hounslow TW6 1EW, United Kingdom',
+    office_address: 'Birmingham, West Midlands, United Kingdom',
     company_number: '12345678',
     vat_number: 'GB 123 4567 89',
-    copyright_text: '© 2026 OTS Taxi UK Ltd. All rights reserved.',
+    copyright_text: '© 2026 Quick Car Midlands Ltd. All rights reserved.',
   });
 
   // Database Connection & Diagnostics State
@@ -173,7 +173,7 @@ export default function AdminPage() {
     if (siteSettings?.brand_name) {
       setSettings((prev) => ({
         ...prev,
-        brand_name: prev.brand_name === 'OTS TAXI' ? siteSettings.brand_name : prev.brand_name,
+        brand_name: (prev.brand_name === 'OTS TAXI' || prev.brand_name === 'Quick Car Midlands Ltd') ? siteSettings.brand_name : prev.brand_name,
         primary_color: prev.primary_color === '#FFCC00' ? siteSettings.primary_color : prev.primary_color,
         logo_dark: prev.logo_dark === '/images/ots-taxi-logo.png' ? siteSettings.logo_dark : prev.logo_dark,
       }));
@@ -241,17 +241,17 @@ export default function AdminPage() {
     }
   };
 
-  // Reset to OTS Taxi default theme
+  // Reset to default theme
   const handleResetThemeDefaults = () => {
-    if (confirm('Reset primary color and logos to OTS Taxi default theme?')) {
+    if (confirm('Reset primary color and branding to Quick Car Midlands Ltd defaults?')) {
       handlePrimaryColorChange('#FFCC00', '#E6B800');
       setSettings((prev) => ({
         ...prev,
         primary_color: '#FFCC00',
         primary_hover_color: '#E6B800',
-        brand_name: 'OTS TAXI',
-        brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
-        logo_dark: '/images/ots-taxi-logo.png',
+        brand_name: 'Quick Car Midlands Ltd',
+        brand_tagline: 'Airport Transfers & Private Hire | Based in Birmingham',
+        logo_dark: '',
         logo_light: '',
         logo_icon: '',
       }));
@@ -259,9 +259,9 @@ export default function AdminPage() {
         updateSiteSettingsState({
           primary_color: '#FFCC00',
           primary_hover_color: '#E6B800',
-          brand_name: 'OTS TAXI',
-          brand_tagline: 'London Airport Transfers & Executive Chauffeur Services',
-          logo_dark: '/images/ots-taxi-logo.png',
+          brand_name: 'Quick Car Midlands Ltd',
+          brand_tagline: 'Airport Transfers & Private Hire | Based in Birmingham',
+          logo_dark: '',
           logo_light: '',
           logo_icon: '',
         });
@@ -2594,6 +2594,104 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Official Customer Rate Card & Birmingham Fixed Airport Fares Reference */}
+              <div className="mt-8 pt-8 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        2026 Pricing Matrix
+                      </span>
+                      <h3 className="text-sm font-extrabold text-slate-900">
+                        Official Birmingham Rate Card & Fixed Airport Transfer Rates
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Integrated directly into the live quotation engine for instant fixed pricing & mileage calculations.
+                    </p>
+                  </div>
+                  <Link
+                    href="/rates"
+                    target="_blank"
+                    className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition"
+                  >
+                    <span>View Public Rate Card Page</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase">Standard Saloon</div>
+                    <div className="text-lg font-black text-slate-900 mt-0.5">£1.50 <span className="text-xs font-semibold text-slate-500">/ mile</span></div>
+                    <div className="text-[11px] text-slate-500 mt-1">Min Fare: <strong className="text-slate-800">£38.00</strong></div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase">Estate Car</div>
+                    <div className="text-lg font-black text-slate-900 mt-0.5">£1.70 <span className="text-xs font-semibold text-slate-500">/ mile</span></div>
+                    <div className="text-[11px] text-slate-500 mt-1">Min Fare: <strong className="text-slate-800">£42.00</strong></div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase">Executive Saloon</div>
+                    <div className="text-lg font-black text-slate-900 mt-0.5">£1.90 <span className="text-xs font-semibold text-slate-500">/ mile</span></div>
+                    <div className="text-[11px] text-slate-500 mt-1">Min Fare: <strong className="text-slate-800">£48.00</strong></div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase">MPV (5-6 Pax)</div>
+                    <div className="text-lg font-black text-slate-900 mt-0.5">£2.05 <span className="text-xs font-semibold text-slate-500">/ mile</span></div>
+                    <div className="text-[11px] text-slate-500 mt-1">Min Fare: <strong className="text-slate-800">£52.00</strong></div>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase">Minibus (8-9 Pax)</div>
+                    <div className="text-lg font-black text-slate-900 mt-0.5">£2.55 <span className="text-xs font-semibold text-slate-500">/ mile</span></div>
+                    <div className="text-[11px] text-slate-500 mt-1">Min Fare: <strong className="text-slate-800">£65.00</strong></div>
+                  </div>
+                </div>
+
+                {/* Fixed Airport Transfers Quick Table */}
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                        <th className="py-2.5 px-3">UK Airport Destination</th>
+                        <th className="py-2.5 px-3">Miles</th>
+                        <th className="py-2.5 px-3">Saloon</th>
+                        <th className="py-2.5 px-3">Estate</th>
+                        <th className="py-2.5 px-3">Executive</th>
+                        <th className="py-2.5 px-3">MPV</th>
+                        <th className="py-2.5 px-3">Minibus</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
+                      {[
+                        { name: 'Birmingham (BHX)', miles: 'Local', s: '£38', e: '£42', ex: '£48', mpv: '£52', mb: '£65' },
+                        { name: 'East Midlands (EMA)', miles: '37 mi', s: '£86', e: '£96', ex: '£108', mpv: '£108', mb: '£133' },
+                        { name: 'Manchester (MAN)', miles: '91 mi', s: '£148', e: '£166', ex: '£186', mpv: '£186', mb: '£229' },
+                        { name: 'London Luton (LTN)', miles: '82 mi', s: '£153', e: '£171', ex: '£193', mpv: '£193', mb: '£237' },
+                        { name: 'Liverpool (LPL)', miles: '103 mi', s: '£168', e: '£188', ex: '£212', mpv: '£212', mb: '£260' },
+                        { name: 'London Heathrow (LHR)', miles: '104 mi', s: '£174', e: '£195', ex: '£219', mpv: '£219', mb: '£270' },
+                        { name: 'Bristol (BRS)', miles: '105 mi', s: '£175', e: '£196', ex: '£220', mpv: '£220', mb: '£271' },
+                        { name: 'London Stansted (STN)', miles: '117 mi', s: '£188', e: '£211', ex: '£237', mpv: '£237', mb: '£291' },
+                        { name: 'Cardiff (CWL)', miles: '127 mi', s: '£201', e: '£225', ex: '£253', mpv: '£253', mb: '£312' },
+                        { name: 'Leeds Bradford (LBA)', miles: '124 mi', s: '£210', e: '£235', ex: '£265', mpv: '£265', mb: '£326' },
+                        { name: 'London Gatwick (LGW)', miles: '141 mi', s: '£219', e: '£245', ex: '£276', mpv: '£276', mb: '£339' },
+                        { name: 'Newcastle (NCL)', miles: '210 mi', s: '£314', e: '£352', ex: '£396', mpv: '£396', mb: '£487' },
+                      ].map((r, i) => (
+                        <tr key={i} className="hover:bg-slate-50/60 transition">
+                          <td className="py-2 px-3 font-sans font-bold text-slate-900">{r.name}</td>
+                          <td className="py-2 px-3 text-slate-500">{r.miles}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{r.s}</td>
+                          <td className="py-2 px-3">{r.e}</td>
+                          <td className="py-2 px-3 text-amber-700 font-bold">{r.ex}</td>
+                          <td className="py-2 px-3">{r.mpv}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{r.mb}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

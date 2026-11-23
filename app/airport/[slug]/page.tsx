@@ -33,7 +33,17 @@ export default async function AirportDetailPage({
     (a) => a.slug.toLowerCase() === params.slug.toLowerCase()
   ) || UK_AIRPORTS[0];
 
-  const popularRoutes = [
+  const popularRoutes = airport.iata === 'BHX' ? [
+    { destination: 'London Heathrow Airport (LHR)', distance: '104 miles', priceGbp: 174 },
+    { destination: 'Manchester Airport (MAN)', distance: '91 miles', priceGbp: 148 },
+    { destination: 'London Gatwick Airport (LGW)', distance: '141 miles', priceGbp: 219 },
+    { destination: 'London Luton Airport (LTN)', distance: '82 miles', priceGbp: 153 },
+    { destination: 'East Midlands Airport (EMA)', distance: '37 miles', priceGbp: 86 },
+    { destination: 'Liverpool John Lennon Airport (LPL)', distance: '103 miles', priceGbp: 168 },
+    { destination: 'London Stansted Airport (STN)', distance: '117 miles', priceGbp: 188 },
+    { destination: 'Bristol Airport (BRS)', distance: '105 miles', priceGbp: 175 },
+    { destination: 'Cardiff Airport (CWL)', distance: '127 miles', priceGbp: 201 },
+  ] : [
     { destination: 'Central London (Westminster / Soho)', distance: '16 miles', priceGbp: 55 },
     { destination: 'Canary Wharf / Docklands', distance: '22 miles', priceGbp: 68 },
     { destination: 'London Heathrow Airport (Airport Transfer)', distance: '28 miles', priceGbp: 75 },

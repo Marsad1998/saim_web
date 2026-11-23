@@ -20,7 +20,8 @@ import {
   Globe, 
   Coins,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from "lucide-react";
 
 export default function MobileDrawer() {
@@ -46,6 +47,7 @@ export default function MobileDrawer() {
 
   const mainLinks = [
     { label: "Book a Transfer", href: "/", icon: Home },
+    { label: "Official Rate Card", href: "/rates", icon: FileText },
     { label: "UK Airports Guide", href: "/airports", icon: Plane },
     { label: "Corporate Partners", href: "/partners", icon: CheckCircle2 },
     { label: `About ${brandName}`, href: "/about-us", icon: User },

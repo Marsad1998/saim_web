@@ -25,18 +25,18 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   primary_color: "#FFCC00",
   primary_hover_color: "#E6B800",
   secondary_color: "#141720",
-  brand_name: "OTS Taxi",
-  brand_tagline: "UK Airport Transfer & Taxi Booking | Fixed Price Cabs",
+  brand_name: "Quick Car Midlands Ltd",
+  brand_tagline: "Airport Transfers & Private Hire | Based in Birmingham",
   logo_dark: "",
   logo_light: "",
   logo_icon: "",
-  support_phone: "+44 (0) 208 004 0000",
-  support_email: "support@otstaxi.co.uk",
+  support_phone: "+44 (0) 121 285 5000",
+  support_email: "bookings@quickcarmidlands.co.uk",
   emergency_whatsapp: "+44 7123 456789",
-  office_address: "Heathrow Terminal 2 Concourse, London TW6 1EW, United Kingdom",
-  company_number: "06783060",
+  office_address: "Birmingham, West Midlands, United Kingdom",
+  company_number: "12345678",
   vat_number: "GB 123 4567 89",
-  copyright_text: "© 2026 OTS Taxi Limited. All Rights Reserved.",
+  copyright_text: "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
 };
 
 export function getContrastColor(hexColor: string): string {
@@ -223,6 +223,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Automatic recovery from ChunkLoadError when dev server recompiles or new bundle is deployed
+    const handleChunkError = (event: ErrorEvent | PromiseRejectionEvent) => {
+      const errorMsg = 'message' in event ? event.message : (event.reason?.message || String(event.reason || ''));
+      if (errorMsg && (/Loading chunk .* failed/i.test(errorMsg) || /ChunkLoadError/i.test(errorMsg))) {
+        const retryKey = 'ots_chunk_reload';
+        const lastRetry = sessionStorage.getItem(retryKey);
+        const now = Date.now();
+        if (!lastRetry || now - parseInt(lastRetry, 10) > 10000) {
+          sessionStorage.setItem(retryKey, now.toString());
+          window.location.reload();
+        }
+      }
+    };
+
+    window.addEventListener("error", handleChunkError);
+    window.addEventListener("unhandledrejection", handleChunkError);
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("ots_currency_change", handleCustomChange);
     window.addEventListener("ots_settings_change", handleSettingsCustomChange);
@@ -242,6 +258,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
 
     return () => {
+      window.removeEventListener("error", handleChunkError);
+      window.removeEventListener("unhandledrejection", handleChunkError);
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("ots_currency_change", handleCustomChange);
       window.removeEventListener("ots_settings_change", handleSettingsCustomChange);
