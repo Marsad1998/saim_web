@@ -155,24 +155,26 @@ async function initDatabase() {
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_admin_1', 'System Administrator', 'admin@quickcarmidlands.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
-        ('usr_admin_2', 'System Administrator', 'admin@admin.com', '+44 20 8123 4568', '${defaultHash}', 'admin'),
-        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
-        ('usr_passenger_1', 'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '+44 7700 900123', '${defaultHash}', 'customer')
+        ('usr_admin_1', 'QUICK CAR MIDLANDS LTD', 'qcm023@gmail.com', '00447892609314', '${defaultHash}', 'admin'),
+        ('usr_admin_2', 'System Administrator', 'admin@admin.com', '01212433112', '${defaultHash}', 'admin'),
+        ('usr_admin_3', 'System Administrator', 'admin@quickcarmidlands.co.uk', '01212433112', '${defaultHash}', 'admin'),
+        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '00447892609314', '${defaultHash}', 'driver'),
+        ('usr_passenger_1', 'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '00447892609314', '${defaultHash}', 'customer')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
+        phone = VALUES(phone),
         password_hash = VALUES(password_hash),
         role = VALUES(role)
     `);
 
     // Seed Driver profile
     await connection.query(`
-      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, is_active)
-      VALUES ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 1)
-      ON DUPLICATE KEY UPDATE vehicle_plate = VALUES(vehicle_plate), is_active = 1
+      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, bank_name, sort_code, account_number, is_active)
+      VALUES ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 'QUICK CAR MIDLANDS LTD', '82-19-74', '50470328', 1)
+      ON DUPLICATE KEY UPDATE vehicle_plate = VALUES(vehicle_plate), bank_name = VALUES(bank_name), sort_code = VALUES(sort_code), account_number = VALUES(account_number), is_active = 1
     `);
 
-    console.log('✅ Admin: admin@quickcarmidlands.co.uk (Pass: 12345678)');
+    console.log('✅ Admin: qcm023@gmail.com (Pass: 12345678)');
     console.log('✅ Driver: driver@quickcarmidlands.co.uk (Pass: 12345678, Mercedes LO71 ABC)');
     console.log('✅ Passenger: passenger@quickcarmidlands.co.uk (Pass: 12345678)\n');
 

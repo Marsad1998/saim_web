@@ -31,6 +31,13 @@ export interface SystemSettings {
   company_number: string;
   vat_number: string;
   copyright_text: string;
+
+  // Bank Account & Payment Details
+  bank_name: string;
+  account_name: string;
+  account_type: string;
+  account_number: string;
+  sort_code: string;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -38,8 +45,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
   smtp_port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
   smtp_user: process.env.SMTP_USER || '',
   smtp_pass: process.env.SMTP_PASS || '',
-  smtp_from: process.env.SMTP_FROM || '"Quick Car Midlands Ltd" <no-reply@quickcarmidlands.co.uk>',
-  admin_email: process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@quickcarmidlands.co.uk',
+  smtp_from: process.env.SMTP_FROM || '"QUICK CAR MIDLANDS LTD" <qcm023@gmail.com>',
+  admin_email: process.env.ADMIN_NOTIFICATION_EMAIL || 'qcm023@gmail.com',
   require_email_verification: false,
   require_driver_approval: true,
   google_client_id: process.env.GOOGLE_CLIENT_ID || '',
@@ -49,19 +56,25 @@ const DEFAULT_SETTINGS: SystemSettings = {
   primary_color: '#FFCC00',
   primary_hover_color: '#E6B800',
   secondary_color: '#141720',
-  brand_name: 'Quick Car Midlands Ltd',
+  brand_name: 'QUICK CAR MIDLANDS LTD',
   brand_tagline: 'Airport Transfers & Private Hire | Based in Birmingham',
   logo_dark: '',
   logo_light: '',
   logo_icon: '',
 
-  support_phone: '+44 (0) 121 285 5000',
-  support_email: 'bookings@quickcarmidlands.co.uk',
-  emergency_whatsapp: '+44 7123 456789',
+  support_phone: '01212433112',
+  support_email: 'qcm023@gmail.com',
+  emergency_whatsapp: '00447892609314',
   office_address: 'Birmingham, West Midlands, United Kingdom',
   company_number: '12345678',
   vat_number: 'GB 123 4567 89',
-  copyright_text: '© 2026 Quick Car Midlands Ltd. All Rights Reserved.',
+  copyright_text: '© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.',
+
+  bank_name: 'QUICK CAR MIDLANDS LTD',
+  account_name: 'QUICK CAR MIDLANDS LTD',
+  account_type: 'Business',
+  account_number: '50470328',
+  sort_code: '82-19-74',
 };
 
 let inMemorySettings: SystemSettings = { ...DEFAULT_SETTINGS };

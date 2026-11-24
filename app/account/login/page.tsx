@@ -229,6 +229,36 @@ function LoginFormContent() {
           </Link>
         </div>
 
+        {/* Quick 1-Click Logins */}
+        <div className="pt-3 border-t border-gray-100">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">
+            Quick 1-Click Role Logins (Password: 12345678)
+          </p>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => { setEmail('qcm023@gmail.com'); setPassword('12345678'); }}
+              className="py-2 px-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 rounded-xl font-bold text-center transition shadow-xs"
+            >
+              👑 Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('driver@quickcarmidlands.co.uk'); setPassword('12345678'); }}
+              className="py-2 px-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 rounded-xl font-bold text-center transition shadow-xs"
+            >
+              🚖 Chauffeur
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('passenger@quickcarmidlands.co.uk'); setPassword('12345678'); }}
+              className="py-2 px-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 rounded-xl font-bold text-center transition shadow-xs"
+            >
+              👤 Passenger
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

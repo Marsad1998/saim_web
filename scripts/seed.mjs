@@ -102,23 +102,24 @@ async function seedDatabase() {
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_admin_1', 'System Administrator', 'admin@quickcarmidlands.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
-        ('usr_admin_2', 'System Administrator', 'admin@admin.com', '+44 20 8123 4568', '${defaultHash}', 'admin')
+        ('usr_admin_1', 'QUICK CAR MIDLANDS LTD', 'qcm023@gmail.com', '00447892609314', '${defaultHash}', 'admin'),
+        ('usr_admin_2', 'System Administrator', 'admin@admin.com', '01212433112', '${defaultHash}', 'admin'),
+        ('usr_admin_3', 'System Administrator', 'admin@quickcarmidlands.co.uk', '01212433112', '${defaultHash}', 'admin')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
         phone = VALUES(phone),
         password_hash = VALUES(password_hash),
         role = 'admin'
     `);
-    console.log('   ✓ admin@quickcarmidlands.co.uk & admin@admin.com ready');
+    console.log('   ✓ qcm023@gmail.com & admin@admin.com ready');
 
     // 2. Seed Driver Account & Vehicle Profile
     console.log('🚖 Seeding Driver (Chauffeur) Account & Vehicle...');
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
-        ('usr_driver_2', 'Alex Chauffeur', 'driver@driver.com', '+44 7911 654321', '${defaultHash}', 'driver')
+        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '00447892609314', '${defaultHash}', 'driver'),
+        ('usr_driver_2', 'Alex Chauffeur', 'driver@driver.com', '00447892609314', '${defaultHash}', 'driver')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
         phone = VALUES(phone),
@@ -127,13 +128,16 @@ async function seedDatabase() {
     `);
 
     await connection.query(`
-      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, is_active)
+      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, bank_name, sort_code, account_number, is_active)
       VALUES 
-        ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 1)
+        ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 'QUICK CAR MIDLANDS LTD', '82-19-74', '50470328', 1)
       ON DUPLICATE KEY UPDATE
         license_number = VALUES(license_number),
         vehicle_model = VALUES(vehicle_model),
         vehicle_plate = VALUES(vehicle_plate),
+        bank_name = VALUES(bank_name),
+        sort_code = VALUES(sort_code),
+        account_number = VALUES(account_number),
         is_active = 1
     `);
     console.log('   ✓ driver@quickcarmidlands.co.uk & driver@driver.com (LO71 ABC) ready');
@@ -184,7 +188,7 @@ async function seedDatabase() {
     console.log('🎉 3 ROLE SEEDER COMPLETED SUCCESSFULLY!');
     console.log('================================================================');
     console.log('👑 ADMIN ACCOUNT:');
-    console.log('   Email:    admin@quickcarmidlands.co.uk   (or admin@admin.com)');
+    console.log('   Email:    qcm023@gmail.com   (or admin@admin.com / admin@quickcarmidlands.co.uk)');
     console.log('   Password: 12345678              (or Admin@123)');
     console.log('   Redirect: /admin');
     console.log('----------------------------------------------------------------');

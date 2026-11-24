@@ -46,8 +46,8 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
   const firstWord = brandWords[0] || "Quick";
   const restWords = brandWords.slice(1).join(" ");
   const primaryColor = settings.primary_color || "#FFCC00";
-  const supportPhone = settings.support_phone || "+44 (0) 121 285 5000";
-  const supportEmail = settings.support_email || "bookings@quickcarmidlands.co.uk";
+  const supportPhone = settings.support_phone || "01212433112";
+  const supportEmail = settings.support_email || "qcm023@gmail.com";
 
   const passengerName = booking.passenger_name || "Valued Customer";
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";

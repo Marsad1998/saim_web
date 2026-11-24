@@ -20,8 +20,9 @@ export default function ContactUsPage() {
   const { siteSettings } = useApp();
   const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
   const officeAddress = siteSettings?.office_address || 'Birmingham, West Midlands, United Kingdom';
-  const supportPhone = siteSettings?.support_phone || '+44 (0) 121 285 5000';
-  const supportEmail = siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk';
+  const supportPhone = siteSettings?.support_phone || '01212433112';
+  const emergencyPhone = siteSettings?.emergency_whatsapp || '00447892609314';
+  const supportEmail = siteSettings?.support_email || 'qcm023@gmail.com';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -100,9 +101,15 @@ export default function ContactUsPage() {
               <p className="text-xs text-gray-500 mt-1">Available 24 hours / 7 days</p>
               <div className="mt-2 space-y-1 text-xs">
                 <div>
-                  <span className="text-gray-400">UK Dispatch:</span>{' '}
+                  <span className="text-gray-400">Office:</span>{' '}
                   <a href={`tel:${supportPhone}`} className="font-bold text-gray-900 hover:text-amber-600">
                     {supportPhone}
+                  </a>
+                </div>
+                <div>
+                  <span className="text-gray-400">Tel / Mobile:</span>{' '}
+                  <a href={`tel:${emergencyPhone}`} className="font-bold text-gray-900 hover:text-amber-600">
+                    {emergencyPhone}
                   </a>
                 </div>
               </div>

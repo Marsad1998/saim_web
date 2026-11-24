@@ -320,9 +320,11 @@ function BookingConfirmationContent() {
             {/* Official Travel Voucher Footer */}
             <div className="border-t border-gray-200 pt-4 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-2 print:text-gray-600">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span><strong>24/7 Helpline:</strong> {siteSettings?.support_phone || '+44 (0) 121 285 5000'}</span>
+                <span><strong>Office:</strong> {siteSettings?.support_phone || '0121 243 3112'}</span>
                 <span className="hidden sm:inline">•</span>
-                <span><strong>Email:</strong> {siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk'}</span>
+                <span><strong>Tel / Mobile:</strong> {siteSettings?.emergency_whatsapp || '00447892609314'}</span>
+                <span className="hidden sm:inline">•</span>
+                <span><strong>Email:</strong> {siteSettings?.support_email || 'qcm023@gmail.com'}</span>
               </div>
               <div className="text-gray-400 print:text-gray-500 text-[10px]">
                 {siteSettings?.brand_name || 'Quick Car Midlands Ltd'} • Licensed UK Private Hire Operator

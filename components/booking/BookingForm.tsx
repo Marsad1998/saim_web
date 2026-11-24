@@ -55,6 +55,22 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
   const today = new Date().toISOString().split('T')[0];
   const [pickupDate, setPickupDate] = useState<string>(today);
   const [pickupTime, setPickupTime] = useState<string>('12:00');
+  const [isNow, setIsNow] = useState<boolean>(false);
+
+  // Toggle "Now" (ASAP) booking handler
+  const handleToggleNow = (checked: boolean) => {
+    setIsNow(checked);
+    if (checked) {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      setPickupDate(`${yyyy}-${mm}-${dd}`);
+      setPickupTime(`${hours}:${mins}`);
+    }
+  };
 
   // Passengers
   const [passengers, setPassengers] = useState<number>(1);
@@ -126,6 +142,10 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
     setIsLoading(true);
 
     try {
+      const now = new Date();
+      const currentYmd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const currentHm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
       const payload = {
         pickup: pickupName,
         dropoff: dropoffName,
@@ -135,8 +155,9 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
         toCoords: dropoff?.lat && dropoff?.lng ? { lat: dropoff.lat, lng: dropoff.lng } : undefined,
         fromLocationType: pickup?.locationType || (pickupName.toLowerCase().includes('airport') ? 1 : 2),
         toLocationType: dropoff?.locationType || (dropoffName.toLowerCase().includes('airport') ? 1 : 2),
-        pickupDate,
-        pickupTime,
+        pickupDate: isNow ? currentYmd : pickupDate,
+        pickupTime: isNow ? currentHm : pickupTime,
+        isNow,
         waypoints,
         isReturn,
         bookReturn: isReturn,
@@ -286,39 +307,82 @@ export default function BookingForm({ initialValues }: { initialValues?: any }) 
           </button>
         </div>
 
+        {/* Row 2 Schedule Header & "Now" Immediate Booking Toggle */}
+        <div className="flex items-center justify-between pt-2 pb-0.5 flex-wrap gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Journey Date &amp; Time
+          </span>
+          <label className="inline-flex items-center space-x-2 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl transition shadow-xs group">
+            <input
+              type="checkbox"
+              checked={isNow}
+              onChange={(e) => handleToggleNow(e.target.checked)}
+              className="w-4 h-4 rounded text-black focus:ring-ots-yellow border-gray-400 cursor-pointer"
+            />
+            <span className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isNow ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+              <span>Now (Book for Right Now)</span>
+            </span>
+          </label>
+        </div>
+
         {/* Row 2: Date, Time, Passengers */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 pt-1">
           {/* Pickup Date */}
           <div>
-            <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
-              Pick-up Date
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold uppercase text-gray-500">
+                Pick-up Date
+              </label>
+              {isNow && (
+                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  Today
+                </span>
+              )}
+            </div>
             <div className="relative">
               <input
                 type="date"
                 min={today}
                 value={pickupDate}
+                disabled={isNow}
                 onChange={(e) => setPickupDate(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium text-sm focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+                className={`w-full px-4 py-3 border rounded-xl font-medium text-sm focus:ring-2 focus:ring-ots-yellow focus:outline-none ${
+                  isNow 
+                    ? 'bg-amber-50/70 border-amber-300 text-gray-900 cursor-not-allowed font-bold' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                }`}
               />
             </div>
           </div>
 
           {/* Pickup Time */}
           <div>
-            <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
-              Pick-up Time
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold uppercase text-gray-500">
+                Pick-up Time
+              </label>
+              {isNow && (
+                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  Right Now
+                </span>
+              )}
+            </div>
             <button
               type="button"
+              disabled={isNow}
               onClick={() => setTimePickerTarget('pickup')}
-              className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-left flex items-center justify-between text-gray-900 font-medium text-sm transition-colors focus:ring-2 focus:ring-ots-yellow focus:outline-none"
+              className={`w-full px-4 py-3 border rounded-xl text-left flex items-center justify-between font-medium text-sm transition-colors focus:ring-2 focus:ring-ots-yellow focus:outline-none ${
+                isNow 
+                  ? 'bg-amber-50/70 border-amber-300 text-gray-900 cursor-not-allowed font-bold' 
+                  : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-900'
+              }`}
             >
               <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span>{pickupTime}</span>
+                <Clock className={`w-4 h-4 ${isNow ? 'text-emerald-600' : 'text-gray-500'}`} />
+                <span>{isNow ? `ASAP (~${pickupTime})` : pickupTime}</span>
               </div>
-              <span className="text-xs text-gray-400">24-hr</span>
+              <span className="text-xs text-gray-400">{isNow ? 'Immediate' : '24-hr'}</span>
             </button>
           </div>
 

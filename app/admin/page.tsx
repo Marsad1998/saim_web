@@ -141,18 +141,23 @@ export default function AdminPage() {
     primary_color: '#FFCC00',
     primary_hover_color: '#E6B800',
     secondary_color: '#141720',
-    brand_name: 'Quick Car Midlands Ltd',
+    brand_name: 'QUICK CAR MIDLANDS LTD',
     brand_tagline: 'Airport Transfers & Private Hire | Based in Birmingham',
     logo_dark: '',
     logo_light: '',
     logo_icon: '',
-    support_phone: '+44 (0) 121 285 5000',
-    support_email: 'bookings@quickcarmidlands.co.uk',
-    emergency_whatsapp: '+44 7123 456789',
+    support_phone: '01212433112',
+    support_email: 'qcm023@gmail.com',
+    emergency_whatsapp: '00447892609314',
     office_address: 'Birmingham, West Midlands, United Kingdom',
     company_number: '12345678',
     vat_number: 'GB 123 4567 89',
-    copyright_text: '© 2026 Quick Car Midlands Ltd. All rights reserved.',
+    copyright_text: '© 2026 QUICK CAR MIDLANDS LTD. All rights reserved.',
+    bank_name: 'QUICK CAR MIDLANDS LTD',
+    account_name: 'QUICK CAR MIDLANDS LTD',
+    account_type: 'Business',
+    account_number: '50470328',
+    sort_code: '82-19-74',
   });
 
   // Database Connection & Diagnostics State
@@ -4410,6 +4415,56 @@ EXIT;`}
                       placeholder="e.g. © 2026 Your Brand Ltd. All rights reserved."
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-800"
                     />
+                  </div>
+
+                  {/* Official Business & Bank Account Details */}
+                  <div className="md:col-span-2 pt-4 border-t border-slate-200">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2 flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Official Business Bank Account Details (Invoices &amp; BACS Wire Transfers)</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-amber-50/60 p-4 rounded-xl border border-amber-200/80">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Account Name</label>
+                        <input
+                          type="text"
+                          value={settings.account_name || 'QUICK CAR MIDLANDS LTD'}
+                          onChange={(e) => setSettings({ ...settings, account_name: e.target.value })}
+                          placeholder="QUICK CAR MIDLANDS LTD"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Account Type</label>
+                        <input
+                          type="text"
+                          value={settings.account_type || 'Business'}
+                          onChange={(e) => setSettings({ ...settings, account_type: e.target.value })}
+                          placeholder="Business"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Account Number</label>
+                        <input
+                          type="text"
+                          value={settings.account_number || '50470328'}
+                          onChange={(e) => setSettings({ ...settings, account_number: e.target.value })}
+                          placeholder="50470328"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Sort Code</label>
+                        <input
+                          type="text"
+                          value={settings.sort_code || '82-19-74'}
+                          onChange={(e) => setSettings({ ...settings, sort_code: e.target.value })}
+                          placeholder="82-19-74"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -20,25 +20,35 @@ export interface SiteSettings {
   vat_number: string;
   copyright_text: string;
   google_maps_api_key?: string;
+  bank_name?: string;
+  account_name?: string;
+  account_type?: string;
+  account_number?: string;
+  sort_code?: string;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   primary_color: "#FFCC00",
   primary_hover_color: "#E6B800",
   secondary_color: "#141720",
-  brand_name: "Quick Car Midlands Ltd",
+  brand_name: "QUICK CAR MIDLANDS LTD",
   brand_tagline: "Airport Transfers & Private Hire | Based in Birmingham",
   logo_dark: "",
   logo_light: "",
   logo_icon: "",
-  support_phone: "+44 (0) 121 285 5000",
-  support_email: "bookings@quickcarmidlands.co.uk",
-  emergency_whatsapp: "+44 7123 456789",
+  support_phone: "01212433112",
+  support_email: "qcm023@gmail.com",
+  emergency_whatsapp: "00447892609314",
   office_address: "Birmingham, West Midlands, United Kingdom",
   company_number: "12345678",
   vat_number: "GB 123 4567 89",
-  copyright_text: "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
+  copyright_text: "© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.",
   google_maps_api_key: "",
+  bank_name: "QUICK CAR MIDLANDS LTD",
+  account_name: "QUICK CAR MIDLANDS LTD",
+  account_type: "Business",
+  account_number: "50470328",
+  sort_code: "82-19-74",
 };
 
 export function getContrastColor(hexColor: string): string {

@@ -220,14 +220,14 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
         `INSERT IGNORE INTO users (id, name, email, phone, password_hash, role, is_verified)
          VALUES (?, ?, ?, ?, ?, 'admin', 1)`,
         [
-          'usr_admin_default',
-          'System Administrator',
-          'admin@quickcarmidlands.co.uk',
-          '+44 (0) 121 285 5000',
-          '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK', // 'admin'
+          'usr_admin_1',
+          'QUICK CAR MIDLANDS LTD',
+          'qcm023@gmail.com',
+          '00447892609314',
+          '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK',
         ]
       );
-      seededItems.push('Default Admin User (admin@quickcarmidlands.co.uk / admin)');
+      seededItems.push('Default Admin User (qcm023@gmail.com / admin)');
     }
 
     // Seed default chauffeur if drivers table is empty

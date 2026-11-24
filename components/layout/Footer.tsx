@@ -68,9 +68,14 @@ export default function Footer() {
               <li className="flex items-start gap-2">
                 <Phone className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
-                  <strong className="text-neutral-400">Phone Number:</strong>{" "}
-                  <a href={`tel:${siteSettings?.support_phone || "+443330047131"}`} className="hover:text-ots-yellow transition">
-                    {siteSettings?.support_phone || "+443330047131"}
+                  <strong className="text-neutral-400">Office Phone:</strong>{" "}
+                  <a href={`tel:${siteSettings?.support_phone || "01212433112"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.support_phone || "0121 243 3112"}
+                  </a>
+                  <span className="mx-1 text-neutral-500">&bull;</span>
+                  <strong className="text-neutral-400">Tel / Mobile:</strong>{" "}
+                  <a href={`tel:${siteSettings?.emergency_whatsapp || "00447892609314"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.emergency_whatsapp || "+44 7892 609314"}
                   </a>
                 </span>
               </li>
@@ -78,8 +83,8 @@ export default function Footer() {
                 <Mail className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
                   <strong className="text-neutral-400">Email:</strong>{" "}
-                  <a href={`mailto:${siteSettings?.support_email || "bookings@quickcarmidlands.co.uk"}`} className="hover:text-ots-yellow transition">
-                    {siteSettings?.support_email || "bookings@quickcarmidlands.co.uk"}
+                  <a href={`mailto:${siteSettings?.support_email || "qcm023@gmail.com"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.support_email || "qcm023@gmail.com"}
                   </a>
                 </span>
               </li>
