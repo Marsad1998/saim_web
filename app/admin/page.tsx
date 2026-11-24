@@ -361,6 +361,8 @@ export default function AdminPage() {
     handLuggage: 2,
     description: '',
     multiplier: 1.0,
+    ratePerMile: 1.50,
+    minimumFare: 38.00,
     sampleVehicles: '',
     isActive: true,
   });
@@ -943,23 +945,9 @@ export default function AdminPage() {
     }
   };
 
-  // Vehicle CRUD Handlers
+  // Vehicle CRUD Handlers (Fleet classes are fixed to the 5 official categories)
   const openCreateVehicleModal = () => {
-    setVehicleModalMode('create');
-    setVehicleFormData({
-      id: '',
-      name: '',
-      categoryName: 'Standard',
-      image: 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png',
-      passengers: 4,
-      suitcases: 2,
-      handLuggage: 2,
-      description: 'Comfortable and reliable transfer vehicle.',
-      multiplier: 1.0,
-      sampleVehicles: '',
-      isActive: true,
-    });
-    setIsVehicleModalOpen(true);
+    alert('Vehicle classes are fixed to the 5 official rate card categories. You can adjust rates, capacities, and settings for each class by clicking "Edit Rates & Details".');
   };
 
   const openEditVehicleModal = (v: any) => {
@@ -974,6 +962,8 @@ export default function AdminPage() {
       handLuggage: Number(v.handLuggage || 2),
       description: v.description || '',
       multiplier: Number(v.multiplier || 1.0),
+      ratePerMile: Number(v.ratePerMile !== undefined ? v.ratePerMile : (v.id === 'saloon' ? 1.50 : v.id === 'estate' ? 1.70 : v.id === 'executive-saloon' ? 1.90 : v.id === 'mpv' ? 2.05 : 2.55)),
+      minimumFare: Number(v.minimumFare !== undefined ? v.minimumFare : (v.id === 'saloon' ? 38.00 : v.id === 'estate' ? 42.00 : v.id === 'executive-saloon' ? 48.00 : v.id === 'mpv' ? 52.00 : 65.00)),
       sampleVehicles: v.sampleVehicles || '',
       isActive: v.isActive !== false,
     });
@@ -2511,16 +2501,20 @@ export default function AdminPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Vehicle Classes &amp; Multipliers</h2>
-                  <p className="text-xs text-slate-500">Configure vehicle models, passenger/luggage capacities, and dynamic pricing multipliers</p>
+                  <div className="flex items-center space-x-2.5">
+                    <h2 className="text-base font-extrabold text-slate-900">Official Vehicle Fleet &amp; Adjustable Rates</h2>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      5 Protected Categories
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Fleet classes are fixed to your official rate card. Click &quot;Edit Rates &amp; Details&quot; on any category below to adjust its Rate per Mile, Minimum Fare, or vehicle capacity.
+                  </p>
                 </div>
-                <button
-                  onClick={openCreateVehicleModal}
-                  className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 min-h-[36px] self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4 text-ots-yellow" />
-                  <span>Add Vehicle Class</span>
-                </button>
+                <div className="flex items-center space-x-2 px-3.5 py-2 bg-slate-100 text-slate-700 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+                  <Lock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <span>Fixed Fleet (5 Official Categories)</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -2537,7 +2531,20 @@ export default function AdminPage() {
                         </span>
                       </div>
 
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5">
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-2">
+                        {/* Live Adjustable Rates */}
+                        <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
+                          <span className="text-slate-500 font-medium">Rate per Mile:</span>
+                          <strong className="text-emerald-700 font-black text-xs">
+                            £{Number(v.ratePerMile !== undefined ? v.ratePerMile : (v.id === 'saloon' ? 1.50 : v.id === 'estate' ? 1.70 : v.id === 'executive-saloon' ? 1.90 : v.id === 'mpv' ? 2.05 : 2.55)).toFixed(2)} / mi
+                          </strong>
+                        </div>
+                        <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
+                          <span className="text-slate-500 font-medium">Minimum Fare:</span>
+                          <strong className="text-slate-900 font-black text-xs">
+                            £{Number(v.minimumFare !== undefined ? v.minimumFare : (v.id === 'saloon' ? 38.00 : v.id === 'estate' ? 42.00 : v.id === 'executive-saloon' ? 48.00 : v.id === 'mpv' ? 52.00 : 65.00)).toFixed(2)}
+                          </strong>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-500">Passengers:</span>
                           <strong className="text-slate-900">{v.passengers} pax</strong>
@@ -2565,32 +2572,28 @@ export default function AdminPage() {
                           />
                         </div>
 
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            defaultChecked={v.isActive !== false}
-                            onChange={(e) => handleUpdateVehicle(v.id, { isActive: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                        </label>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[11px] text-slate-500 font-semibold">{v.isActive !== false ? 'Active' : 'Offline'}</span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              defaultChecked={v.isActive !== false}
+                              onChange={(e) => handleUpdateVehicle(v.id, { isActive: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                          </label>
+                        </div>
                       </div>
 
-                      {/* Edit and Delete Actions */}
-                      <div className="flex items-center space-x-2 pt-1 border-t border-slate-100">
+                      {/* Edit Details Action (Protected Fixed Fleet - No Delete) */}
+                      <div className="pt-1 border-t border-slate-100">
                         <button
                           onClick={() => openEditVehicleModal(v)}
-                          className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 min-h-[32px]"
+                          className="w-full py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5 min-h-[34px] shadow-sm"
                         >
-                          <Pencil className="w-3.5 h-3.5 text-slate-600" />
-                          <span>Edit Details</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVehicle(v.id, v.name)}
-                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition min-h-[32px] min-w-[32px] flex items-center justify-center"
-                          title="Delete Vehicle Class"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          <Pencil className="w-3.5 h-3.5 text-ots-yellow" />
+                          <span>Edit Rates &amp; Details</span>
                         </button>
                       </div>
                     </div>
@@ -5012,10 +5015,10 @@ EXIT;`}
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white">
-                    {vehicleModalMode === 'create' ? 'Add Vehicle Class' : 'Edit Vehicle Class'}
+                    Edit Vehicle Rates &amp; Fleet Details
                   </h3>
                   <p className="text-xs text-slate-400">
-                    {vehicleModalMode === 'create' ? 'Define new fleet category and pricing multiplier' : `Category: ${vehicleFormData.id}`}
+                    Category ID: <strong className="text-white font-mono">{vehicleFormData.id}</strong> &bull; Protected Official Class
                   </p>
                 </div>
               </div>
@@ -5029,17 +5032,74 @@ EXIT;`}
 
             {/* Form */}
             <form onSubmit={handleSaveVehicle} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+              {/* Highlighted Adjustable Rates Section */}
+              <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="p-1 bg-emerald-600 text-white rounded-md">
+                      <DollarSign className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      Official Rate Card Fares (Adjustable)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    GBP (£)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-800 block mb-1">
+                      Rate per Mile (£) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-slate-500 font-bold">£</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        min="0.50"
+                        max="20.00"
+                        required
+                        value={vehicleFormData.ratePerMile}
+                        onChange={(e) => setVehicleFormData({ ...vehicleFormData, ratePerMile: parseFloat(e.target.value) || 1.50 })}
+                        className="w-full pl-7 pr-3 py-2 bg-white border border-emerald-300 rounded-xl font-black text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1 block">Applied to all custom mileage journeys</span>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-800 block mb-1">
+                      Minimum Fare (£) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-slate-500 font-bold">£</span>
+                      <input
+                        type="number"
+                        step="1.00"
+                        min="5.00"
+                        max="500.00"
+                        required
+                        value={vehicleFormData.minimumFare}
+                        onChange={(e) => setVehicleFormData({ ...vehicleFormData, minimumFare: parseFloat(e.target.value) || 38.00 })}
+                        className="w-full pl-7 pr-3 py-2 bg-white border border-emerald-300 rounded-xl font-black text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1 block">Minimum charge if calculated fare is lower</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Vehicle Slug / ID *</label>
+                  <label className="font-bold text-slate-700 block mb-1">Vehicle Slug / ID (Protected)</label>
                   <input
                     type="text"
                     required
-                    disabled={vehicleModalMode === 'edit'}
+                    disabled
                     value={vehicleFormData.id}
-                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, id: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-') })}
-                    placeholder="e.g. executive-van"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl font-mono font-bold disabled:bg-slate-100 disabled:text-slate-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl font-mono font-bold bg-slate-100 text-slate-500 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -5049,7 +5109,7 @@ EXIT;`}
                     required
                     value={vehicleFormData.name}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, name: e.target.value })}
-                    placeholder="e.g. Mercedes V-Class Executive"
+                    placeholder="e.g. Standard Saloon"
                     className="w-full p-2.5 border border-slate-200 rounded-xl font-bold"
                   />
                 </div>

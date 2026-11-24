@@ -104,23 +104,6 @@ export const DEFAULT_VEHICLE_FLEET: IVehicle[] = [
     isActive: true,
     sortOrder: 5,
   },
-  {
-    id: "executive-mpv",
-    name: "Executive MPV",
-    categoryName: "Luxury Chauffeur MPV",
-    image: "https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png",
-    passengers: 7,
-    suitcases: 7,
-    handLuggage: 7,
-    ratePerMile: 2.75,
-    minimumFare: 75.00,
-    description: "The pinnacle of VIP group travel with first-class conference seating.",
-    features: ["VIP Leather Seating", "Privacy Glass", "Meet & Greet Included", "Complimentary Refreshments"],
-    multiplier: 1.85,
-    sampleVehicles: "Mercedes-Benz V-Class",
-    isActive: true,
-    sortOrder: 6,
-  },
 ];
 
 export class VehicleModel {
@@ -327,6 +310,14 @@ export class VehicleModel {
         fields.push("multiplier = ?");
         values.push(updates.multiplier);
       }
+      if (updates.ratePerMile !== undefined) {
+        fields.push("rate_per_mile = ?");
+        values.push(updates.ratePerMile);
+      }
+      if (updates.minimumFare !== undefined) {
+        fields.push("minimum_fare = ?");
+        values.push(updates.minimumFare);
+      }
       if (updates.sampleVehicles) {
         fields.push("sample_vehicles = ?");
         values.push(updates.sampleVehicles);
@@ -338,6 +329,12 @@ export class VehicleModel {
       if (updates.sortOrder !== undefined) {
         fields.push("sort_order = ?");
         values.push(updates.sortOrder);
+      }
+
+      // Keep in-memory default fleet synchronized with updates
+      const idx = DEFAULT_VEHICLE_FLEET.findIndex((v) => v.id === id);
+      if (idx !== -1) {
+        DEFAULT_VEHICLE_FLEET[idx] = { ...DEFAULT_VEHICLE_FLEET[idx], ...updates };
       }
 
       if (fields.length === 0) return true;
@@ -352,9 +349,13 @@ export class VehicleModel {
   }
 
   /**
-   * Delete vehicle model from MySQL
+   * Delete vehicle model from MySQL (Protected core categories cannot be deleted)
    */
   static async delete(id: string): Promise<boolean> {
+    const PROTECTED_VEHICLE_IDS = ["saloon", "estate", "executive-saloon", "mpv", "minibus-8"];
+    if (PROTECTED_VEHICLE_IDS.includes(id)) {
+      return false; // Core official rate card vehicle categories are permanently protected
+    }
     try {
       await dbQuery("DELETE FROM vehicles WHERE id = ?", [id]);
       return true;

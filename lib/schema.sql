@@ -130,6 +130,8 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
   `description` TEXT NOT NULL,
   `features` TEXT NOT NULL,
   `multiplier` DECIMAL(5, 2) NOT NULL DEFAULT 1.00,
+  `rate_per_mile` DECIMAL(6, 2) NOT NULL DEFAULT 1.50,
+  `minimum_fare` DECIMAL(6, 2) NOT NULL DEFAULT 38.00,
   `sample_vehicles` VARCHAR(255) NOT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `sort_order` INT NOT NULL DEFAULT 0,

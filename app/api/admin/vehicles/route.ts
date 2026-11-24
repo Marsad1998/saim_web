@@ -41,53 +41,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const {
-      id,
-      name,
-      categoryName,
-      image,
-      passengers,
-      suitcases,
-      handLuggage,
-      description,
-      features,
-      multiplier,
-      sampleVehicles,
-      isActive,
-      sortOrder,
-    } = body;
-
-    if (!id || !name || !categoryName) {
-      return NextResponse.json(
-        { status: false, message: "ID, Name, and Category Name are required." },
-        { status: 400 }
-      );
-    }
-
-    const newVehicle = {
-      id: id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
-      name: name.trim(),
-      categoryName: categoryName.trim(),
-      image: image?.trim() || "https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png",
-      passengers: Number(passengers || 4),
-      suitcases: Number(suitcases || 2),
-      handLuggage: Number(handLuggage || 2),
-      description: description?.trim() || "Reliable chauffeur and transfer vehicle.",
-      features: Array.isArray(features) ? features : ["Air Conditioning", "Fixed Price", "Flight Tracking"],
-      multiplier: Number(multiplier || 1.0),
-      sampleVehicles: sampleVehicles?.trim() || name,
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
-      sortOrder: Number(sortOrder || 0),
-    };
-
-    const success = await VehicleModel.create(newVehicle);
-
-    return NextResponse.json({
-      status: success,
-      message: success ? "Vehicle class created successfully." : "Failed to create vehicle class.",
-      vehicle: newVehicle,
-    });
+    // Vehicle fleet is fixed to the 5 official categories from the rate list
+    return NextResponse.json(
+      { 
+        status: false, 
+        message: "Vehicle fleet is fixed to the 5 official categories from your rate card. Rates and capacities can be adjusted anytime via Edit Details." 
+      },
+      { status: 400 }
+    );
   } catch (error: any) {
     console.error("POST /api/admin/vehicles error:", error.message);
     return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });
@@ -113,6 +74,8 @@ export async function PATCH(request: NextRequest) {
       description,
       features,
       multiplier, 
+      ratePerMile,
+      minimumFare,
       sampleVehicles,
       isActive,
       sortOrder,
@@ -132,6 +95,8 @@ export async function PATCH(request: NextRequest) {
     if (description !== undefined) updates.description = description;
     if (features !== undefined) updates.features = features;
     if (multiplier !== undefined) updates.multiplier = Number(multiplier);
+    if (ratePerMile !== undefined) updates.ratePerMile = Number(ratePerMile);
+    if (minimumFare !== undefined) updates.minimumFare = Number(minimumFare);
     if (sampleVehicles !== undefined) updates.sampleVehicles = sampleVehicles;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
     if (sortOrder !== undefined) updates.sortOrder = Number(sortOrder);
@@ -142,7 +107,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       status: true,
-      message: "Vehicle updated successfully",
+      message: "Vehicle details and rates updated successfully",
     });
   } catch (error: any) {
     console.error("PATCH /api/admin/vehicles error:", error.message);
@@ -157,26 +122,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ status: false, message: "Forbidden: Admin access required" }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
-    let id = searchParams.get("id");
-
-    if (!id) {
-      try {
-        const body = await request.json();
-        id = body.id;
-      } catch {}
-    }
-
-    if (!id) {
-      return NextResponse.json({ status: false, message: "Vehicle ID is required" }, { status: 400 });
-    }
-
-    const success = await VehicleModel.delete(id);
-
-    return NextResponse.json({
-      status: success,
-      message: success ? "Vehicle class deleted successfully." : "Failed to delete vehicle class.",
-    });
+    // Protect official core classes from deletion
+    return NextResponse.json(
+      { 
+        status: false, 
+        message: "Official vehicle classes from your rate card cannot be deleted. You can toggle them Active/Inactive instead." 
+      },
+      { status: 400 }
+    );
   } catch (error: any) {
     console.error("DELETE /api/admin/vehicles error:", error.message);
     return NextResponse.json({ status: false, message: "Server error" }, { status: 500 });

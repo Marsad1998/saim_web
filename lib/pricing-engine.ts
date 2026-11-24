@@ -93,21 +93,6 @@ export const VEHICLE_FLEET: VehicleFleetOption[] = [
     features: ["Up to 8-9 Passengers", "Massive Cargo Space", "Dual Climate Control", "Fixed Price Guarantee"],
     sampleVehicles: "Mercedes Vito Tourer, Ford Tourneo Custom, VW Caravelle",
   },
-  {
-    id: "executive-mpv",
-    name: "Executive MPV",
-    categoryName: "Luxury Chauffeur MPV",
-    image: "https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png",
-    passengers: 7,
-    suitcases: 7,
-    handLuggage: 7,
-    ratePerMile: 2.75,
-    minimumFare: 75.00,
-    multiplier: 1.85,
-    description: "The pinnacle of VIP group travel with first-class conference seating.",
-    features: ["VIP Leather Seating", "Privacy Glass", "Meet & Greet Included", "Complimentary Refreshments"],
-    sampleVehicles: "Mercedes-Benz V-Class",
-  },
 ];
 
 /**
@@ -131,7 +116,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 48,
       mpv: 52,
       "minibus-8": 65,
-      "executive-mpv": 75,
     },
   },
   EMA: {
@@ -144,7 +128,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 108,
       mpv: 108,
       "minibus-8": 133,
-      "executive-mpv": 155,
     },
   },
   MAN: {
@@ -157,7 +140,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 186,
       mpv: 186,
       "minibus-8": 229,
-      "executive-mpv": 265,
     },
   },
   LTN: {
@@ -170,7 +152,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 193,
       mpv: 193,
       "minibus-8": 237,
-      "executive-mpv": 275,
     },
   },
   LPL: {
@@ -183,7 +164,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 212,
       mpv: 212,
       "minibus-8": 260,
-      "executive-mpv": 300,
     },
   },
   LHR: {
@@ -196,7 +176,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 219,
       mpv: 219,
       "minibus-8": 270,
-      "executive-mpv": 310,
     },
   },
   BRS: {
@@ -209,7 +188,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 220,
       mpv: 220,
       "minibus-8": 271,
-      "executive-mpv": 315,
     },
   },
   STN: {
@@ -222,7 +200,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 237,
       mpv: 237,
       "minibus-8": 291,
-      "executive-mpv": 335,
     },
   },
   CWL: {
@@ -235,7 +212,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 253,
       mpv: 253,
       "minibus-8": 312,
-      "executive-mpv": 360,
     },
   },
   LBA: {
@@ -248,7 +224,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 265,
       mpv: 265,
       "minibus-8": 326,
-      "executive-mpv": 375,
     },
   },
   LGW: {
@@ -261,7 +236,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 276,
       mpv: 276,
       "minibus-8": 339,
-      "executive-mpv": 395,
     },
   },
   NCL: {
@@ -274,7 +248,6 @@ export const BIRMINGHAM_AIRPORT_FIXED_RATES: Record<string, BirminghamAirportFix
       "executive-saloon": 396,
       mpv: 396,
       "minibus-8": 487,
-      "executive-mpv": 560,
     },
   },
 };
