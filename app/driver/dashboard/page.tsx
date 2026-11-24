@@ -176,8 +176,38 @@ export default function DriverDashboardPage() {
   const isFullyCompleted = completionScore === 100;
   const isApproved = driver?.verification_status === 'approved';
 
+  // Document Expiry Calculations
+  const getDaysUntil = (dateStr?: string | null) => {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(dateStr);
+    exp.setHours(0, 0, 0, 0);
+    return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const pcoDays = getDaysUntil(profileForm.pcoExpiry);
+  const insuranceDays = getDaysUntil(profileForm.insuranceExpiry);
+
+  const isPcoExpired = pcoDays !== null && pcoDays <= 0;
+  const isPcoExpiringSoon = pcoDays !== null && pcoDays > 0 && pcoDays <= 30;
+  const isInsuranceExpired = insuranceDays !== null && insuranceDays <= 0;
+  const isInsuranceExpiringSoon = insuranceDays !== null && insuranceDays > 0 && insuranceDays <= 30;
+
+  const hasExpiredDocs = isPcoExpired || isInsuranceExpired;
+  const hasExpiringSoonDocs = isPcoExpiringSoon || isInsuranceExpiringSoon;
+
   // Toggle On-Duty
   const handleToggleDuty = async () => {
+    if (hasExpiredDocs) {
+      setActiveTab('onboarding');
+      setFeedback({
+        type: 'error',
+        text: `CRITICAL COMPLIANCE BLOCK: Your ${isPcoExpired ? 'PCO Licence' : 'Vehicle Insurance'} has expired. UK Private Hire regulations prohibit dispatch without valid documentation. Please upload renewal below.`,
+      });
+      return;
+    }
+
     if (!isApproved || !isFullyCompleted) {
       setActiveTab('onboarding');
       setFeedback({
@@ -353,6 +383,69 @@ export default function DriverDashboardPage() {
     <div className="bg-[#f8f9fa] min-h-screen py-6 md:py-10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         
+        {/* COMPLIANCE WARNING BANNER */}
+        {hasExpiredDocs && (
+          <div className="mb-6 p-5 bg-red-600 text-white rounded-2xl shadow-lg border border-red-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base">
+                  CRITICAL: Regulatory Document Expired
+                </h3>
+                <p className="text-xs text-red-100 mt-0.5">
+                  {isPcoExpired && isInsuranceExpired
+                    ? 'Both your PCO License and Vehicle Insurance have expired.'
+                    : isPcoExpired
+                    ? `Your PCO Driver License expired on ${profileForm.pcoExpiry}.`
+                    : `Your Vehicle Insurance policy expired on ${profileForm.insuranceExpiry}.`}
+                  {' '}Dispatch eligibility is locked until valid renewals are uploaded.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('onboarding');
+                setCurrentStep(isPcoExpired ? 2 : 4);
+              }}
+              className="px-4 py-2 bg-white text-red-700 hover:bg-neutral-100 font-extrabold text-xs rounded-xl shadow transition whitespace-nowrap self-stretch sm:self-auto text-center"
+            >
+              Upload Renewal Certificate &rarr;
+            </button>
+          </div>
+        )}
+
+        {!hasExpiredDocs && hasExpiringSoonDocs && (
+          <div className="mb-6 p-4 bg-amber-500 text-gray-950 rounded-2xl shadow border border-amber-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-black/10 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-gray-950" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm">
+                  Document Expiry Notice
+                </h4>
+                <p className="text-xs text-neutral-900 mt-0.5">
+                  {isPcoExpiringSoon
+                    ? `Your PCO License expires in ${pcoDays} days (${profileForm.pcoExpiry}).`
+                    : `Your Vehicle Insurance expires in ${insuranceDays} days (${profileForm.insuranceExpiry}).`}
+                  {' '}Please submit renewed documentation before the expiry date.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('onboarding');
+                setCurrentStep(isPcoExpiringSoon ? 2 : 4);
+              }}
+              className="px-3.5 py-1.5 bg-black text-white hover:bg-neutral-800 font-bold text-xs rounded-xl shadow transition whitespace-nowrap self-stretch sm:self-auto text-center"
+            >
+              Update Documents
+            </button>
+          </div>
+        )}
+
         {/* Top Header Card */}
         <div className="bg-[#141720] text-white rounded-3xl p-6 md:p-8 shadow-xl border border-neutral-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-800">

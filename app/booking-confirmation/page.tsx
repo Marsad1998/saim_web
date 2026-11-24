@@ -18,7 +18,8 @@ import {
   ShieldCheck, 
   Copy, 
   Check,
-  Loader2
+  Loader2,
+  Edit2
 } from 'lucide-react';
 import { StoredQuote } from '@/lib/quote-store';
 import { useApp } from '@/components/context/AppContext';
@@ -341,13 +342,23 @@ function BookingConfirmationContent() {
             <span className="whitespace-nowrap">Return to Homepage</span>
           </Link>
 
-          <button
-            onClick={handlePrint}
-            className="w-full sm:w-auto px-6 py-3 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2 whitespace-nowrap"
-          >
-            <Printer className="w-4 h-4 flex-shrink-0" />
-            <span className="whitespace-nowrap">Print / Save Booking Voucher</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <Link
+              href={`/manage-booking?ref=${encodeURIComponent(quoteRef)}&email=${encodeURIComponent(quote?.passenger?.email || '')}`}
+              className="w-full sm:w-auto px-5 py-3 border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold text-sm rounded-xl transition-colors flex items-center justify-center space-x-2 whitespace-nowrap"
+            >
+              <Edit2 className="w-4 h-4 text-gray-600" />
+              <span>Manage / Modify Booking</span>
+            </Link>
+
+            <button
+              onClick={handlePrint}
+              className="w-full sm:w-auto px-6 py-3 bg-ots-yellow hover:bg-yellow-400 text-black font-extrabold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2 whitespace-nowrap"
+            >
+              <Printer className="w-4 h-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">Print / Save Booking Voucher</span>
+            </button>
+          </div>
         </div>
 
       </div>

@@ -53,7 +53,9 @@ import {
   Pencil,
   Database,
   Server,
-  HardDrive
+  HardDrive,
+  BarChart2,
+  Download
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 
@@ -95,7 +97,7 @@ export default function AdminPage() {
 
   // Active Navigation Tab
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'bookings' | 'drivers' | 'partners' | 'users' | 'vehicles' | 'inquiries' | 'settings' | 'website_settings'
+    'dashboard' | 'bookings' | 'drivers' | 'partners' | 'users' | 'vehicles' | 'inquiries' | 'settings' | 'website_settings' | 'analytics' | 'export'
   >('dashboard');
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -385,6 +387,28 @@ export default function AdminPage() {
   });
   const [isSubmittingPartner, setIsSubmittingPartner] = useState(false);
 
+  // Analytics Date Filter
+  const [analyticsDateFilter, setAnalyticsDateFilter] = useState<'all' | 'today' | '7days' | 'month' | 'last_month'>('all');
+
+  // Driver Document Expiry Tracking & Alerts State
+  const [expiringDocs, setExpiringDocs] = useState<{
+    expiringItems: Array<{
+      driverId: string;
+      driverName: string;
+      driverEmail: string;
+      documentType: 'pco' | 'insurance' | 'mot' | 'dvla';
+      expiryDate: string;
+      daysUntilExpiry: number;
+      status: 'expired' | 'expiring_soon' | 'warning';
+    }>;
+    summary: { expired: number; expiringSoon: number; warning: number; total: number };
+  }>({
+    expiringItems: [],
+    summary: { expired: 0, expiringSoon: 0, warning: 0, total: 0 },
+  });
+  const [isSendingExpiryNotice, setIsSendingExpiryNotice] = useState<string | null>(null);
+  const [expiryNoticeResult, setExpiryNoticeResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Real-time London Clock
   useEffect(() => {
     const updateTime = () => {
@@ -463,6 +487,19 @@ export default function AdminPage() {
           if (data) setDbStatus(data);
         })
         .catch(() => {});
+
+      // Fetch driver document expiry compliance watch
+      fetch('/api/admin/drivers/expiry-check?threshold=30')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.status && data.expiringItems) {
+            setExpiringDocs({
+              expiringItems: data.expiringItems,
+              summary: data.summary || { expired: 0, expiringSoon: 0, warning: 0, total: 0 },
+            });
+          }
+        })
+        .catch(() => {});
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -473,6 +510,278 @@ export default function AdminPage() {
   useEffect(() => {
     loadAdminData();
   }, [statusFilter]);
+
+  // Dispatch Expiry Notice Email Handler
+  const handleSendExpiryAlert = async (driverId?: string) => {
+    setIsSendingExpiryNotice(driverId || 'all');
+    setExpiryNoticeResult(null);
+    try {
+      const res = await fetch('/api/admin/drivers/expiry-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threshold: 30, sendToDrivers: true, sendToAdmins: true }),
+      });
+      const data = await res.json();
+      if (data.status) {
+        setExpiryNoticeResult({
+          type: 'success',
+          text: `Compliance notice email sent successfully (${data.notificationsSent} driver notification(s) delivered).`,
+        });
+        setTimeout(() => setExpiryNoticeResult(null), 5000);
+      } else {
+        setExpiryNoticeResult({
+          type: 'error',
+          text: data.message || 'Failed to dispatch expiry notices',
+        });
+      }
+    } catch (e: any) {
+      setExpiryNoticeResult({ type: 'error', text: 'Network error while dispatching notices.' });
+    } finally {
+      setIsSendingExpiryNotice(null);
+    }
+  };
+
+  // Filtered Bookings for Analytics & Reporting
+  const filteredAnalyticsBookings = useMemo(() => {
+    if (analyticsDateFilter === 'all') return bookings;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    return bookings.filter((b) => {
+      const bDateStr = b.pickup_date || (b.created_at ? b.created_at.split('T')[0] : '');
+      if (!bDateStr) return false;
+
+      if (analyticsDateFilter === 'today') {
+        return bDateStr === todayStr;
+      }
+      if (analyticsDateFilter === '7days') {
+        const d = new Date(bDateStr);
+        const diffDays = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7;
+      }
+      if (analyticsDateFilter === 'month') {
+        const d = new Date(bDateStr);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      if (analyticsDateFilter === 'last_month') {
+        const d = new Date(bDateStr);
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+      }
+      return true;
+    });
+  }, [bookings, analyticsDateFilter]);
+
+  // Analytics Metrics Computation
+  const analyticsMetrics = useMemo(() => {
+    const total = filteredAnalyticsBookings.length;
+    let gross = 0;
+    let completed = 0;
+    let cancelled = 0;
+    let active = 0;
+
+    const vehicleBreakdown: Record<string, { count: number; revenue: number; label: string }> = {
+      saloon: { count: 0, revenue: 0, label: 'Standard Saloon' },
+      estate: { count: 0, revenue: 0, label: 'Estate Car' },
+      'executive-saloon': { count: 0, revenue: 0, label: 'Executive Saloon' },
+      mpv: { count: 0, revenue: 0, label: 'MPV 5–6 Seater' },
+      'minibus-8': { count: 0, revenue: 0, label: 'Minibus 8–9 Seater' },
+    };
+
+    const airportRoutes: Record<string, { count: number; revenue: number }> = {};
+
+    filteredAnalyticsBookings.forEach((b) => {
+      const price = Number(b.total_price || 0);
+      if (b.booking_status !== 'cancelled') {
+        gross += price;
+        active += 1;
+      }
+      if (b.booking_status === 'completed') {
+        completed += 1;
+      }
+      if (b.booking_status === 'cancelled') {
+        cancelled += 1;
+      }
+
+      // Class breakdown
+      const vCat = (b.selected_vehicle_id || 'saloon').toLowerCase().replace(/ /g, '-');
+      const normalizedCat = vCat.includes('minibus') ? 'minibus-8' : vCat.includes('exec') ? 'executive-saloon' : vCat.includes('estate') ? 'estate' : vCat.includes('mpv') ? 'mpv' : 'saloon';
+      if (!vehicleBreakdown[normalizedCat]) {
+        vehicleBreakdown[normalizedCat] = { count: 0, revenue: 0, label: normalizedCat };
+      }
+      vehicleBreakdown[normalizedCat].count += 1;
+      if (b.booking_status !== 'cancelled') {
+        vehicleBreakdown[normalizedCat].revenue += price;
+      }
+
+      // Airport Routes
+      const text = `${b.from_location || ''} ${b.to_location || ''}`.toLowerCase();
+      let airportKey = 'Regional Transfers';
+      if (text.includes('birmingham') || text.includes('bhx')) airportKey = 'Birmingham (BHX)';
+      else if (text.includes('heathrow') || text.includes('lhr')) airportKey = 'London Heathrow (LHR)';
+      else if (text.includes('gatwick') || text.includes('lgw')) airportKey = 'London Gatwick (LGW)';
+      else if (text.includes('manchester') || text.includes('man')) airportKey = 'Manchester (MAN)';
+      else if (text.includes('east midlands') || text.includes('ema')) airportKey = 'East Midlands (EMA)';
+      else if (text.includes('stansted') || text.includes('stn')) airportKey = 'London Stansted (STN)';
+      else if (text.includes('luton') || text.includes('ltn')) airportKey = 'London Luton (LTN)';
+      else if (text.includes('bristol') || text.includes('brs')) airportKey = 'Bristol (BRS)';
+
+      if (!airportRoutes[airportKey]) {
+        airportRoutes[airportKey] = { count: 0, revenue: 0 };
+      }
+      airportRoutes[airportKey].count += 1;
+      if (b.booking_status !== 'cancelled') {
+        airportRoutes[airportKey].revenue += price;
+      }
+    });
+
+    const avgTicket = active > 0 ? gross / active : 0;
+    const cancelRate = total > 0 ? (cancelled / total) * 100 : 0;
+
+    return {
+      total,
+      gross,
+      completed,
+      cancelled,
+      active,
+      avgTicket,
+      cancelRate,
+      vehicleBreakdown,
+      airportRoutes,
+    };
+  }, [filteredAnalyticsBookings]);
+
+  // CSV Exporters
+  const downloadCsv = (filename: string, csvContent: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportBookingsCsv = () => {
+    const headers = [
+      'Quote Ref',
+      'Pickup Date',
+      'Pickup Time',
+      'Passenger Name',
+      'Passenger Email',
+      'Passenger Phone',
+      'From Location',
+      'To Location',
+      'Vehicle Category',
+      'Fare (GBP)',
+      'Payment Status',
+      'Booking Status',
+      'Flight Number',
+      'Special Notes',
+      'Created At'
+    ];
+
+    const rows = filteredAnalyticsBookings.map((b) => [
+      `"${(b.quote_ref || '').replace(/"/g, '""')}"`,
+      `"${(b.pickup_date || '').replace(/"/g, '""')}"`,
+      `"${(b.pickup_time || '').replace(/"/g, '""')}"`,
+      `"${(b.passenger_name || '').replace(/"/g, '""')}"`,
+      `"${(b.passenger_email || '').replace(/"/g, '""')}"`,
+      `"${(b.passenger_phone || '').replace(/"/g, '""')}"`,
+      `"${(b.from_location || '').replace(/"/g, '""')}"`,
+      `"${(b.to_location || '').replace(/"/g, '""')}"`,
+      `"${(b.selected_vehicle_id || '').replace(/"/g, '""')}"`,
+      Number(b.total_price || 0).toFixed(2),
+      `"${(b.payment_status || '').replace(/"/g, '""')}"`,
+      `"${(b.booking_status || '').replace(/"/g, '""')}"`,
+      `"${(b.flight_number || '').replace(/"/g, '""')}"`,
+      `"${(b.special_notes || '').replace(/"/g, '""')}"`,
+      `"${(b.created_at || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`quickcar_bookings_${analyticsDateFilter}_${dateStr}.csv`, csvContent);
+  };
+
+  const exportRevenueCsv = () => {
+    const dateMap = new Map<string, { bookings: number; gross: number; completed: number; cancelled: number }>();
+
+    filteredAnalyticsBookings.forEach((b) => {
+      const d = b.pickup_date || (b.created_at ? b.created_at.split('T')[0] : 'Unknown');
+      const cur = dateMap.get(d) || { bookings: 0, gross: 0, completed: 0, cancelled: 0 };
+      cur.bookings += 1;
+      if (b.booking_status !== 'cancelled') {
+        cur.gross += Number(b.total_price || 0);
+      }
+      if (b.booking_status === 'completed') {
+        cur.completed += 1;
+      }
+      if (b.booking_status === 'cancelled') {
+        cur.cancelled += 1;
+      }
+      dateMap.set(d, cur);
+    });
+
+    const headers = ['Date', 'Bookings Count', 'Gross Revenue (GBP)', 'Completed Journeys', 'Cancelled Journeys', 'Average Fare (GBP)'];
+    const sortedDates = Array.from(dateMap.keys()).sort();
+    const rows = sortedDates.map((dateKey) => {
+      const item = dateMap.get(dateKey)!;
+      const avg = item.bookings > 0 ? (item.gross / Math.max(1, item.bookings - item.cancelled)).toFixed(2) : '0.00';
+      return [
+        `"${dateKey}"`,
+        item.bookings,
+        item.gross.toFixed(2),
+        item.completed,
+        item.cancelled,
+        avg
+      ];
+    });
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`quickcar_revenue_report_${dateStr}.csv`, csvContent);
+  };
+
+  const exportDriversCsv = () => {
+    const headers = [
+      'Driver ID',
+      'Name',
+      'Email',
+      'Phone',
+      'Vehicle Model',
+      'Vehicle Plate',
+      'Vehicle Category',
+      'PCO License Number',
+      'PCO Expiry Date',
+      'Insurance Expiry Date',
+      'Verification Status',
+      'Active On Duty',
+      'Compliance Score (%)'
+    ];
+
+    const rows = drivers.map((d) => [
+      `"${(d.id || '').replace(/"/g, '""')}"`,
+      `"${(d.driver_name || '').replace(/"/g, '""')}"`,
+      `"${(d.driver_email || '').replace(/"/g, '""')}"`,
+      `"${(d.driver_phone || '').replace(/"/g, '""')}"`,
+      `"${(d.vehicle_model || '').replace(/"/g, '""')}"`,
+      `"${(d.vehicle_plate || '').replace(/"/g, '""')}"`,
+      `"${(d.vehicle_category || '').replace(/"/g, '""')}"`,
+      `"${(d.license_number || '').replace(/"/g, '""')}"`,
+      `"${(d.pco_expiry ? String(d.pco_expiry).split('T')[0] : '').replace(/"/g, '""')}"`,
+      `"${(d.insurance_expiry ? String(d.insurance_expiry).split('T')[0] : '').replace(/"/g, '""')}"`,
+      `"${(d.verification_status || '').replace(/"/g, '""')}"`,
+      d.is_active ? 'Yes' : 'No',
+      d.completion_score !== undefined ? d.completion_score : 100
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`quickcar_drivers_compliance_${dateStr}.csv`, csvContent);
+  };
 
   // Open Driver Dossier Modal
   const openDriverDossier = (driver: any) => {
@@ -1317,7 +1626,17 @@ export default function AdminPage() {
       items: [
         { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard, badge: null },
         { id: 'bookings', label: 'Bookings & Dispatch', icon: Calendar, badge: bookings.length > 0 ? bookings.length : null },
-        { id: 'drivers', label: 'Fleet & Chauffeurs', icon: ShieldCheck, badge: pendingDriversCount > 0 ? `${pendingDriversCount} pending` : null, badgeColor: 'bg-amber-500' },
+        {
+          id: 'drivers',
+          label: 'Fleet & Chauffeurs',
+          icon: ShieldCheck,
+          badge: expiringDocs.summary.total > 0
+            ? `${expiringDocs.summary.total} alert${expiringDocs.summary.total > 1 ? 's' : ''}`
+            : pendingDriversCount > 0
+            ? `${pendingDriversCount} pending`
+            : null,
+          badgeColor: expiringDocs.summary.expired > 0 ? 'bg-red-500' : 'bg-amber-500',
+        },
       ],
     },
     {
@@ -1327,6 +1646,13 @@ export default function AdminPage() {
         { id: 'users', label: 'Users & Customers', icon: Users, badge: users.length > 0 ? users.length : null },
         { id: 'vehicles', label: 'Vehicles & Pricing', icon: Car, badge: vehicles.length > 0 ? `${vehicles.length} classes` : null },
         { id: 'inquiries', label: 'Support Inquiries', icon: MessageSquare, badge: unresolvedInquiriesCount > 0 ? unresolvedInquiriesCount : null, badgeColor: 'bg-red-500' },
+      ],
+    },
+    {
+      group: 'ANALYTICS & REPORTS',
+      items: [
+        { id: 'analytics', label: 'Analytics & Reports', icon: BarChart2, badge: null },
+        { id: 'export', label: 'Data Exports', icon: Download, badge: null },
       ],
     },
     {
@@ -2049,11 +2375,136 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {/* Compliance & Document Expiry Watch Banner / Control Panel */}
+              {expiryNoticeResult && (
+                <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center space-x-2 ${
+                  expiryNoticeResult.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {expiryNoticeResult.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
+                  <span>{expiryNoticeResult.text}</span>
+                </div>
+              )}
+
+              <div className={`p-5 rounded-2xl border ${
+                expiringDocs.summary.expired > 0 ? 'bg-red-50/60 border-red-200' : expiringDocs.summary.total > 0 ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Shield className={`w-5 h-5 ${expiringDocs.summary.expired > 0 ? 'text-red-600' : 'text-amber-600'}`} />
+                      <h3 className="text-sm font-extrabold text-slate-900">
+                        Chauffeur Compliance &amp; Document Expiry Watch
+                      </h3>
+                      {expiringDocs.summary.total > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse">
+                          {expiringDocs.summary.total} Action Required
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 max-w-2xl">
+                      Monitors TfL &amp; council PCO driver licenses, private hire vehicle insurance policies, and annual PHV MOT certificates. Automated warning notices ensure zero non-compliant journeys.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2 self-start md:self-auto flex-wrap gap-y-2">
+                    <div className="flex items-center space-x-1.5 text-xs font-black">
+                      <span className="px-2.5 py-1 bg-red-100 text-red-800 rounded-lg border border-red-200">
+                        {expiringDocs.summary.expired} Expired
+                      </span>
+                      <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg border border-amber-200">
+                        {expiringDocs.summary.expiringSoon} &le; 7 Days
+                      </span>
+                      <span className="px-2.5 py-1 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-200">
+                        {expiringDocs.summary.warning} &le; 30 Days
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => handleSendExpiryAlert()}
+                      disabled={isSendingExpiryNotice !== null || expiringDocs.summary.total === 0}
+                      className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5 disabled:opacity-40"
+                    >
+                      {isSendingExpiryNotice === 'all' ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-ots-yellow" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5 text-ots-yellow" />
+                      )}
+                      <span>Dispatch Renewal Notices</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* List of Expiring / Expired Items */}
+                {expiringDocs.expiringItems.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-200/60 overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead>
+                        <tr className="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-200">
+                          <th className="pb-2">Chauffeur</th>
+                          <th className="pb-2">Document</th>
+                          <th className="pb-2">Expiry Date</th>
+                          <th className="pb-2">Remaining</th>
+                          <th className="pb-2">Compliance Status</th>
+                          <th className="pb-2 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {expiringDocs.expiringItems.map((item, idx) => (
+                          <tr key={`${item.driverId}-${item.documentType}-${idx}`} className="hover:bg-white/50">
+                            <td className="py-2.5 font-bold text-slate-900">
+                              {item.driverName}
+                              <span className="block text-[10px] text-slate-400 font-mono">{item.driverEmail}</span>
+                            </td>
+                            <td className="py-2.5 uppercase font-mono font-bold text-slate-700">
+                              {item.documentType === 'pco' ? 'PCO License' : item.documentType === 'insurance' ? 'Fleet Insurance' : 'PHV MOT'}
+                            </td>
+                            <td className="py-2.5 font-mono">{item.expiryDate ? item.expiryDate.split('T')[0] : 'N/A'}</td>
+                            <td className="py-2.5 font-bold">
+                              {item.daysUntilExpiry < 0 ? (
+                                <span className="text-red-600">Expired {Math.abs(item.daysUntilExpiry)}d ago</span>
+                              ) : item.daysUntilExpiry === 0 ? (
+                                <span className="text-red-600">Expires Today</span>
+                              ) : (
+                                <span className="text-amber-700">{item.daysUntilExpiry} days left</span>
+                              )}
+                            </td>
+                            <td className="py-2.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                item.status === 'expired'
+                                  ? 'bg-red-600 text-white'
+                                  : item.status === 'expiring_soon'
+                                  ? 'bg-amber-500 text-black'
+                                  : 'bg-yellow-200 text-yellow-900'
+                              }`}>
+                                {item.status === 'expired' ? 'CRITICAL / EXPIRED' : item.status === 'expiring_soon' ? 'EXPIRING SOON' : 'WARNING'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 text-right">
+                              <button
+                                onClick={() => handleSendExpiryAlert(item.driverId)}
+                                disabled={isSendingExpiryNotice === item.driverId}
+                                className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold text-[11px] rounded-lg border border-slate-300 shadow-xs transition"
+                              >
+                                {isSendingExpiryNotice === item.driverId ? 'Sending...' : 'Send Alert Email'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {drivers.map((d) => {
                   const score = d.completion_score !== undefined && d.completion_score !== null ? Number(d.completion_score) : (d.license_number ? 75 : 0);
                   const isVerified = d.verification_status === 'approved';
                   const isPending = d.verification_status === 'pending_approval' || (score === 100 && !isVerified);
+
+                  const driverExpiringItems = expiringDocs.expiringItems.filter(item => item.driverId === d.id);
+                  const hasExpired = driverExpiringItems.some(i => i.status === 'expired');
+                  const hasExpiringSoon = driverExpiringItems.some(i => i.status === 'expiring_soon' || i.status === 'warning');
 
                   return (
                     <div key={d.id} className="p-5 border border-slate-200 rounded-2xl space-y-4 bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -2081,6 +2532,15 @@ export default function AdminPage() {
                                 {score}%
                               </span>
                             </div>
+                            {hasExpired ? (
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-600 text-white mt-1 uppercase tracking-wider">
+                                ⚠️ Doc Expired
+                              </span>
+                            ) : hasExpiringSoon ? (
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-black mt-1 uppercase tracking-wider">
+                                ⏳ Expiry &le; 30d
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
@@ -3988,6 +4448,399 @@ EXIT;`}
                       )}
                     </button>
                   </div>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              VIEW 9: ANALYTICS & ADVANCED REPORTING
+          ══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6 pb-12">
+              
+              {/* Header and Date Filter Toolbar */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-black uppercase tracking-wider bg-slate-900 text-white px-2.5 py-1 rounded-md">
+                      Executive Analytics
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">Real-Time Data Intelligence</span>
+                  </div>
+                  <h2 className="text-xl font-black text-slate-900 mt-1.5">
+                    Operations &amp; Revenue Analytics
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Filter by date range to audit journey volume, airport route profitability, and vehicle class utilization.
+                  </p>
+                </div>
+
+                {/* Filter and Export Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200 text-xs font-bold">
+                    {(
+                      [
+                        { id: 'all', label: 'All Time' },
+                        { id: 'today', label: 'Today' },
+                        { id: '7days', label: 'Last 7 Days' },
+                        { id: 'month', label: 'This Month' },
+                        { id: 'last_month', label: 'Last Month' },
+                      ] as const
+                    ).map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setAnalyticsDateFilter(f.id)}
+                        className={`px-3 py-1.5 rounded-lg transition ${
+                          analyticsDateFilter === f.id
+                            ? 'bg-white text-slate-900 shadow-xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={exportBookingsCsv}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center space-x-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5 text-ots-yellow" />
+                    <span>Export Bookings CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Scorecard */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-1">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">Gross Revenue</span>
+                  <div className="text-2xl font-black text-slate-900">
+                    {formatPrice(analyticsMetrics.gross)}
+                  </div>
+                  <p className="text-[11px] text-emerald-600 font-semibold">
+                    {analyticsMetrics.active} active billable bookings
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-1">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">Total Bookings</span>
+                  <div className="text-2xl font-black text-slate-900">
+                    {analyticsMetrics.total}
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {analyticsMetrics.completed} completed &bull; {analyticsMetrics.cancelled} cancelled
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-1">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">Average Ticket</span>
+                  <div className="text-2xl font-black text-slate-900">
+                    {formatPrice(analyticsMetrics.avgTicket)}
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Per fulfilled airport transfer
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-1">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">Cancellation Rate</span>
+                  <div className="text-2xl font-black text-slate-900">
+                    {analyticsMetrics.cancelRate.toFixed(1)}%
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {analyticsMetrics.cancelled} total cancellations
+                  </p>
+                </div>
+              </div>
+
+              {/* Charts Row: Revenue Trend & Vehicle Breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Visual Chart: Revenue & Volume Trend */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900">Revenue &amp; Booking Volume Trend</h3>
+                      <p className="text-[11px] text-slate-400">Daily gross booking value across the selected timeframe</p>
+                    </div>
+                    <span className="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-700">
+                      {filteredAnalyticsBookings.length} Trips
+                    </span>
+                  </div>
+
+                  {/* SVG Chart */}
+                  <div className="h-64 w-full flex items-end pt-6">
+                    {(() => {
+                      const dateMap = new Map<string, { gross: number; count: number }>();
+                      filteredAnalyticsBookings.forEach((b) => {
+                        const d = b.pickup_date || (b.created_at ? b.created_at.split('T')[0] : 'N/A');
+                        const cur = dateMap.get(d) || { gross: 0, count: 0 };
+                        if (b.booking_status !== 'cancelled') cur.gross += Number(b.total_price || 0);
+                        cur.count += 1;
+                        dateMap.set(d, cur);
+                      });
+
+                      const entries = Array.from(dateMap.entries()).slice(-10);
+                      const maxVal = Math.max(...entries.map(([, v]) => v.gross), 100);
+
+                      if (entries.length === 0) {
+                        return (
+                          <div className="h-full w-full flex flex-col items-center justify-center text-slate-400 text-xs">
+                            <BarChart2 className="w-8 h-8 mb-2 stroke-[1.5]" />
+                            <span>No bookings recorded for this filter range</span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="w-full h-full flex items-end justify-between gap-2 sm:gap-4 px-2">
+                          {entries.map(([dateKey, val], idx) => {
+                            const heightPct = Math.max(12, Math.round((val.gross / maxVal) * 100));
+                            const shortDate = dateKey.length > 5 ? dateKey.slice(5) : dateKey;
+
+                            return (
+                              <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
+                                <span className="text-[10px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition mb-1 font-mono whitespace-nowrap">
+                                  £{val.gross.toFixed(0)}
+                                </span>
+                                <div
+                                  style={{ height: `${heightPct}%` }}
+                                  className="w-full bg-slate-900 group-hover:bg-amber-400 rounded-t-lg transition-all duration-300 relative flex items-center justify-center shadow-xs"
+                                >
+                                  {heightPct > 25 && (
+                                    <span className="text-[9px] font-mono font-bold text-white group-hover:text-black transform -rotate-90 sm:rotate-0">
+                                      {val.count}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-mono mt-2 truncate w-full text-center">
+                                  {shortDate}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Vehicle Class Breakdown */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="font-extrabold text-sm text-slate-900">Vehicle Class Share</h3>
+                    <p className="text-[11px] text-slate-400">Revenue &amp; volume across 5 official categories</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {Object.entries(analyticsMetrics.vehicleBreakdown).map(([catId, val]) => {
+                      const totalGross = analyticsMetrics.gross > 0 ? analyticsMetrics.gross : 1;
+                      const pct = Math.round((val.revenue / totalGross) * 100);
+
+                      return (
+                        <div key={catId} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800 capitalize">{val.label}</span>
+                            <div className="text-right">
+                              <span className="font-mono font-black text-slate-900">£{val.revenue.toFixed(2)}</span>
+                              <span className="text-[10px] text-slate-400 ml-1.5">({val.count} trips)</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              style={{ width: `${pct}%` }}
+                              className="bg-amber-400 h-2 rounded-full transition-all duration-500"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Second Row: Top UK Airport Routes & Booking Status Distribution */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Top Airport Routes */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900">Top Airport Transfer Routes</h3>
+                      <p className="text-[11px] text-slate-400">Volume and revenue by UK destination airport</p>
+                    </div>
+                    <button
+                      onClick={exportRevenueCsv}
+                      className="text-xs font-bold text-slate-700 hover:text-black flex items-center space-x-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Export Revenue CSV</span>
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-slate-100">
+                    {Object.entries(analyticsMetrics.airportRoutes)
+                      .sort((a, b) => b[1].revenue - a[1].revenue)
+                      .map(([route, val], idx) => (
+                        <div key={route} className="py-2.5 flex items-center justify-between text-xs">
+                          <div className="flex items-center space-x-2.5">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-black text-[10px] flex items-center justify-center font-mono">
+                              {idx + 1}
+                            </span>
+                            <span className="font-bold text-slate-800">{route}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-mono font-black text-slate-900">£{val.revenue.toFixed(2)}</span>
+                            <span className="text-[10px] text-slate-400 ml-2">({val.count} transfers)</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Booking Status Distribution */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="font-extrabold text-sm text-slate-900">Dispatch Status Overview</h3>
+                    <p className="text-[11px] text-slate-400">Current state of bookings in selected timeframe</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase text-emerald-700 block">Completed Trips</span>
+                      <div className="text-2xl font-black text-emerald-900 mt-1">{analyticsMetrics.completed}</div>
+                      <span className="text-[10px] text-emerald-600">Successfully fulfilled transfers</span>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase text-blue-700 block">Active &amp; In Progress</span>
+                      <div className="text-2xl font-black text-blue-900 mt-1">
+                        {filteredAnalyticsBookings.filter(b => b.booking_status === 'in_progress' || b.booking_status === 'assigned' || b.booking_status === 'confirmed').length}
+                      </div>
+                      <span className="text-[10px] text-blue-600">Dispatched or on-route</span>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase text-amber-700 block">Pending Dispatch</span>
+                      <div className="text-2xl font-black text-amber-900 mt-1">
+                        {filteredAnalyticsBookings.filter(b => b.booking_status === 'pending').length}
+                      </div>
+                      <span className="text-[10px] text-amber-600">Awaiting driver assignment</span>
+                    </div>
+
+                    <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase text-red-700 block">Cancelled</span>
+                      <div className="text-2xl font-black text-red-900 mt-1">{analyticsMetrics.cancelled}</div>
+                      <span className="text-[10px] text-red-600">Customer or admin cancellations</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              VIEW 10: DATA EXPORTS & COMPLIANCE DOWNLOADS
+          ══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'export' && (
+            <div className="space-y-6 max-w-5xl pb-12">
+              
+              {/* Header */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-black uppercase tracking-wider bg-slate-900 text-white px-2.5 py-1 rounded-md">
+                    Audit &amp; Compliance
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">Export Center</span>
+                </div>
+                <h2 className="text-xl font-black text-slate-900 mt-1.5">
+                  Official Data Exports &amp; Reports
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Generate instant CSV spreadsheets for HMRC accounting, TfL licensing audits, partner invoicing, and fleet compliance reviews.
+                </p>
+              </div>
+
+              {/* 3 Main Export Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                
+                {/* Export 1: Bookings */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+                      <Calendar className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <h3 className="font-extrabold text-sm text-slate-900">Complete Bookings Archive</h3>
+                    <p className="text-xs text-slate-500">
+                      Export all bookings with journey dates, pickup/drop-off locations, passenger contact details, vehicle categories, and payment receipts.
+                    </p>
+                    <div className="text-xs font-mono font-bold text-slate-600 pt-1">
+                      {bookings.length} Total Bookings Available
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={exportBookingsCsv}
+                    className="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-2"
+                  >
+                    <Download className="w-4 h-4 text-ots-yellow" />
+                    <span>Download Bookings CSV</span>
+                  </button>
+                </div>
+
+                {/* Export 2: Revenue */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+                      <DollarSign className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h3 className="font-extrabold text-sm text-slate-900">Revenue &amp; Settlement Rollup</h3>
+                    <p className="text-xs text-slate-500">
+                      Daily accounting rollup: gross turnover, completed journeys, cancellations, and average ticket prices for financial auditing.
+                    </p>
+                    <div className="text-xs font-mono font-bold text-slate-600 pt-1">
+                      Gross Turnover: {formatPrice(stats.totalRevenue || analyticsMetrics.gross)}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={exportRevenueCsv}
+                    className="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-2"
+                  >
+                    <Download className="w-4 h-4 text-ots-yellow" />
+                    <span>Download Revenue CSV</span>
+                  </button>
+                </div>
+
+                {/* Export 3: Drivers */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+                      <ShieldCheck className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="font-extrabold text-sm text-slate-900">Chauffeur Fleet &amp; Compliance</h3>
+                    <p className="text-xs text-slate-500">
+                      Export driver roster, vehicle registration plates, vehicle classes, PCO licensing numbers, insurance expiry dates, and verification scores.
+                    </p>
+                    <div className="text-xs font-mono font-bold text-slate-600 pt-1">
+                      {drivers.length} Drivers in Fleet
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={exportDriversCsv}
+                    className="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-2"
+                  >
+                    <Download className="w-4 h-4 text-ots-yellow" />
+                    <span>Download Fleet CSV</span>
+                  </button>
                 </div>
 
               </div>

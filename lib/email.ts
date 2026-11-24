@@ -360,3 +360,236 @@ export async function sendTestSmtpEmail(
     return { success: false, message: error.message || 'SMTP connection failed. Check host, port, and credentials.' };
   }
 }
+
+/**
+ * Send customer booking cancellation confirmation & admin alert
+ */
+export async function sendBookingCancellationEmail(
+  booking: IBooking,
+  refundEligible: boolean
+): Promise<boolean> {
+  const { transporter, settings } = await getTransporter();
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+  const brandPhone = settings.support_phone || "+44 (0) 121 285 5000";
+
+  const passengerSubject = `Cancellation Confirmed - Booking Ref: ${booking.quote_ref} | ${brandName}`;
+  const passengerHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #141720; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #dc2626; color: #ffffff; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 20px;">Booking Cancelled</h1>
+        <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Ref: ${booking.quote_ref}</p>
+      </div>
+      <div style="padding: 24px;">
+        <p>Dear ${booking.passenger_name || 'Valued Passenger'},</p>
+        <p>Your transfer booking has been successfully cancelled per your request.</p>
+        
+        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Route:</strong> ${booking.from_location} &rarr; ${booking.to_location}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Scheduled Date:</strong> ${booking.pickup_date} at ${booking.pickup_time}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Vehicle:</strong> ${booking.selected_vehicle_id}</p>
+          <p style="margin: 0;"><strong>Refund Status:</strong> ${
+            refundEligible
+              ? 'Eligible for refund. A full refund will be credited to your original payment method within 5–10 business days.'
+              : booking.payment_status === 'unpaid'
+              ? 'No payment was made. No charges incurred.'
+              : 'Cancellation requested within 24 hours of scheduled pickup. Please contact support regarding refund terms.'
+          }</p>
+        </div>
+
+        <p style="font-size: 13px; color: #6b7280;">If you cancelled by mistake or need to re-book, please visit our website or call us directly at <strong>${brandPhone}</strong>.</p>
+      </div>
+      <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 11px; color: #6b7280;">
+        &copy; 2026 ${brandName}. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  if (transporter && booking.passenger_email) {
+    try {
+      await transporter.sendMail({
+        from: settings.smtp_from || `"${brandName}" <no-reply@quickcarmidlands.co.uk>`,
+        to: booking.passenger_email,
+        subject: passengerSubject,
+        html: passengerHtml,
+      });
+      // Also notify operations admin
+      if (settings.admin_email) {
+        await transporter.sendMail({
+          from: settings.smtp_from,
+          to: settings.admin_email,
+          subject: `🚨 [CANCELLATION] Ref: ${booking.quote_ref} - ${booking.passenger_name || 'Passenger'}`,
+          html: `<p>Booking <strong>${booking.quote_ref}</strong> was cancelled by the customer.</p><p>Route: ${booking.from_location} &rarr; ${booking.to_location}</p><p>Scheduled: ${booking.pickup_date} at ${booking.pickup_time}</p><p>Fare: £${booking.total_price}</p>`,
+        });
+      }
+      return true;
+    } catch (e: any) {
+      console.error("Failed to send cancellation email:", e.message);
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Send customer booking modification confirmation & admin notification
+ */
+export async function sendBookingModificationEmail(
+  booking: IBooking,
+  changesSummary: string
+): Promise<boolean> {
+  const { transporter, settings } = await getTransporter();
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #141720; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #0284c7; color: #ffffff; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 20px;">Booking Updated</h1>
+        <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Ref: ${booking.quote_ref}</p>
+      </div>
+      <div style="padding: 24px;">
+        <p>Dear ${booking.passenger_name || 'Valued Passenger'},</p>
+        <p>Your airport transfer booking has been successfully updated with your requested modifications.</p>
+        
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: 8px; margin: 16px 0;">
+          <strong style="color: #166534; font-size: 13px;">Updates Applied:</strong>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #15803d;">${changesSummary}</p>
+        </div>
+
+        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0; font-size: 13px;">
+          <p style="margin: 0 0 8px 0;"><strong>Pickup Date &amp; Time:</strong> ${booking.pickup_date} at ${booking.pickup_time}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Route:</strong> ${booking.from_location} &rarr; ${booking.to_location}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Vehicle:</strong> ${booking.selected_vehicle_id}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Passengers / Bags:</strong> ${booking.passengers} Pax / ${booking.suitcases} Bags</p>
+          <p style="margin: 0;"><strong>Updated Fare:</strong> £${Number(booking.total_price).toFixed(2)}</p>
+        </div>
+
+        <p style="font-size: 13px; color: #6b7280;">Your chauffeur will be dispatched according to these updated details.</p>
+      </div>
+      <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 11px; color: #6b7280;">
+        &copy; 2026 ${brandName}. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  if (transporter && booking.passenger_email) {
+    try {
+      await transporter.sendMail({
+        from: settings.smtp_from || `"${brandName}" <no-reply@quickcarmidlands.co.uk>`,
+        to: booking.passenger_email,
+        subject: `Updated Itinerary - Ref: ${booking.quote_ref} | ${brandName}`,
+        html,
+      });
+      if (settings.admin_email) {
+        await transporter.sendMail({
+          from: settings.smtp_from,
+          to: settings.admin_email,
+          subject: `✏️ [MODIFICATION] Ref: ${booking.quote_ref} - Updated by Passenger`,
+          html: `<p>Booking <strong>${booking.quote_ref}</strong> was modified.</p><p>Changes: ${changesSummary}</p><p>New Schedule: ${booking.pickup_date} at ${booking.pickup_time}</p><p>Total Fare: £${booking.total_price}</p>`,
+        });
+      }
+      return true;
+    } catch (e: any) {
+      console.error("Failed to send modification email:", e.message);
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Send chauffeur document expiry notice (PCO, Insurance, PHV MOT)
+ */
+export async function sendDriverDocumentExpiryNotice(
+  driverEmail: string,
+  driverName: string,
+  docType: string,
+  expiryDate: string,
+  daysRemaining: number
+): Promise<boolean> {
+  const { transporter, settings } = await getTransporter();
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+
+  const isExpired = daysRemaining <= 0;
+  const statusTitle = isExpired ? `CRITICAL: ${docType} Has Expired` : `URGENT: ${docType} Expiring in ${daysRemaining} Days`;
+  const headerColor = isExpired ? '#dc2626' : '#d97706';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #141720; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: ${headerColor}; color: #ffffff; padding: 24px; text-align: center;">
+        <h1 style="margin: 0; font-size: 20px;">${statusTitle}</h1>
+        <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">Chauffeur Compliance Notice</p>
+      </div>
+      <div style="padding: 24px;">
+        <p>Dear ${driverName},</p>
+        <p>${
+          isExpired
+            ? `Our compliance records indicate that your <strong>${docType}</strong> expired on <strong>${expiryDate}</strong>.`
+            : `Our records indicate that your <strong>${docType}</strong> is scheduled to expire on <strong>${expiryDate}</strong> (in ${daysRemaining} days).`
+        }</p>
+        
+        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 16px; border-radius: 8px; margin: 16px 0; color: #991b1b; font-size: 13px;">
+          <strong>Regulatory Requirement:</strong>
+          <p style="margin: 6px 0 0 0;">
+            ${isExpired
+              ? 'In accordance with UK licensing regulations, your dispatch status has been locked. You cannot receive airport transfers until an updated document has been uploaded and approved.'
+              : 'Please upload your renewed certificate into your Chauffeur Dashboard before the expiry date to ensure uninterrupted dispatch eligibility.'}
+          </p>
+        </div>
+
+        <p style="font-size: 13px;">
+          Log into your chauffeur portal to upload your renewal: <a href="https://quickcarmidlands.co.uk/driver/dashboard" style="color: #2563eb; font-weight: bold;">Chauffeur Dashboard</a>
+        </p>
+      </div>
+      <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 11px; color: #6b7280;">
+        &copy; 2026 ${brandName} Compliance Dept. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  if (transporter && driverEmail) {
+    try {
+      await transporter.sendMail({
+        from: settings.smtp_from || `"${brandName} Compliance" <compliance@quickcarmidlands.co.uk>`,
+        to: driverEmail,
+        subject: `${statusTitle} - ${brandName}`,
+        html,
+      });
+      return true;
+    } catch (e: any) {
+      console.error("Failed to send driver expiry notice:", e.message);
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Generic sendEmail function for notification routes
+ */
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}): Promise<boolean> {
+  const { transporter, fromEmail } = await getTransporter();
+  if (!transporter || !to) return false;
+  try {
+    await transporter.sendMail({
+      from: fromEmail,
+      to,
+      subject,
+      html,
+      ...(text ? { text } : {}),
+    });
+    return true;
+  } catch (error: any) {
+    console.error("sendEmail error:", error.message);
+    return false;
+  }
+}
