@@ -1,7 +1,7 @@
 {
   "name": "saim_web",
   "version": "1.0.0",
-  "description": "OTS Taxi - UK Airport Transfer & Taxi Booking Web Platform",
+  "description": "Quick Car Midlands Ltd - UK Airport Transfer & Taxi Booking Web Platform",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

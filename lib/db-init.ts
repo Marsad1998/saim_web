@@ -289,6 +289,40 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
       seededItems.push(`Default Vehicle Fleet (${DEFAULT_VEHICLE_FLEET.length} vehicle tiers)`);
     }
 
+    // Seed default system & website settings
+    const defaultSettings: [string, string][] = [
+      ['brand_name', 'QUICK CAR MIDLANDS LTD'],
+      ['brand_tagline', 'Airport Transfers & Private Hire | Based in Birmingham'],
+      ['support_email', 'qcm023@gmail.com'],
+      ['admin_email', 'qcm023@gmail.com'],
+      ['support_phone', '01212433112'],
+      ['emergency_whatsapp', '00447892609314'],
+      ['office_address', 'Birmingham, West Midlands, United Kingdom'],
+      ['account_name', 'QUICK CAR MIDLANDS LTD'],
+      ['account_type', 'Business'],
+      ['account_number', '50470328'],
+      ['sort_code', '82-19-74'],
+      ['bank_name', 'QUICK CAR MIDLANDS LTD'],
+      ['company_number', '12345678'],
+      ['vat_number', 'GB 123 4567 89'],
+      ['copyright_text', '© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.'],
+      ['primary_color', '#FFCC00'],
+      ['primary_hover_color', '#E6B800'],
+      ['secondary_color', '#141720'],
+      ['require_email_verification', 'false'],
+      ['require_driver_approval', 'true'],
+    ];
+
+    for (const [key, val] of defaultSettings) {
+      await dbQuery(
+        `INSERT INTO system_settings (key_name, key_value)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE key_value = VALUES(key_value)`,
+        [key, val]
+      );
+    }
+    seededItems.push('Official Business & Website Settings (QUICK CAR MIDLANDS LTD, 50470328, 82-19-74)');
+
     // Query all existing tables in database
     const existingTablesRows = await dbQuery<any[]>("SHOW TABLES");
     const existingTables: string[] = (existingTablesRows || []).map((r) => Object.values(r)[0] as string);

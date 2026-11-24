@@ -201,7 +201,49 @@ async function initDatabase() {
       console.log('✅ 6 Vehicle Fleet models successfully seeded into database!\n');
     }
 
-    // 5. Check table status
+    // 6. Seed System & Website Settings
+    console.log('⚙️ Seeding Official Business & Website Settings...');
+    const defaultSettings = [
+      ['brand_name', 'QUICK CAR MIDLANDS LTD'],
+      ['brand_tagline', 'Airport Transfers & Private Hire | Based in Birmingham'],
+      ['support_email', 'qcm023@gmail.com'],
+      ['admin_email', 'qcm023@gmail.com'],
+      ['support_phone', '01212433112'],
+      ['emergency_whatsapp', '00447892609314'],
+      ['office_address', 'Birmingham, West Midlands, United Kingdom'],
+      ['account_name', 'QUICK CAR MIDLANDS LTD'],
+      ['account_type', 'Business'],
+      ['account_number', '50470328'],
+      ['sort_code', '82-19-74'],
+      ['bank_name', 'QUICK CAR MIDLANDS LTD'],
+      ['company_number', '12345678'],
+      ['vat_number', 'GB 123 4567 89'],
+      ['copyright_text', '© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.'],
+      ['primary_color', '#FFCC00'],
+      ['primary_hover_color', '#E6B800'],
+      ['secondary_color', '#141720'],
+      ['require_email_verification', 'false'],
+      ['require_driver_approval', 'true'],
+    ];
+
+    for (const [key, value] of defaultSettings) {
+      await connection.query(
+        `INSERT INTO system_settings (key_name, key_value) 
+         VALUES (?, ?) 
+         ON DUPLICATE KEY UPDATE key_value = VALUES(key_value)`,
+        [key, value]
+      );
+    }
+    console.log('✅ Official Business & Bank Account Settings seeded successfully:');
+    console.log('   - Name: QUICK CAR MIDLANDS LTD');
+    console.log('   - Account Type: Business');
+    console.log('   - Account Number: 50470328');
+    console.log('   - Sort Code: 82-19-74');
+    console.log('   - Email: qcm023@gmail.com');
+    console.log('   - Tel: 00447892609314');
+    console.log('   - Office: 01212433112\n');
+
+    // 7. Check table status
     const [tables] = await connection.query('SHOW TABLES');
     console.log('📊 Active Tables in ' + database + ':');
     tables.forEach((t) => console.log('   - ' + Object.values(t)[0]));
