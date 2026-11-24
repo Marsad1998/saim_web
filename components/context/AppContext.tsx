@@ -288,16 +288,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
   }, []);
 
-  const logout = (redirectUrl: string = "/account/login") => {
+  const logout = async (redirectUrl: string = "/account/login") => {
     setUser(null);
     try {
       localStorage.removeItem("ots_user");
+      localStorage.removeItem("qcm_user");
+      sessionStorage.clear();
+      document.cookie = "qcm_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "ots_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     } catch (e) {}
-    fetch("/api/auth/logout", { method: "POST" })
-      .catch(() => {})
-      .finally(() => {
-        window.location.href = redirectUrl;
-      });
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {}
+    const separator = redirectUrl.includes("?") ? "&" : "?";
+    window.location.href = `${redirectUrl}${separator}logout=1`;
   };
 
   const customFormatPrice = useCallback(

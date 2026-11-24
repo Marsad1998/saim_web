@@ -21,7 +21,9 @@ function parseJwtRole(token: string): string | null {
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  const sessionCookie = request.cookies.get("ots_session")?.value;
+  const sessionCookie =
+    request.cookies.get("qcm_session")?.value ||
+    request.cookies.get("ots_session")?.value;
   const role = sessionCookie ? parseJwtRole(sessionCookie) : null;
 
   // 1. Protected routes: User must be logged in with a valid token
@@ -58,6 +60,14 @@ export function middleware(request: NextRequest) {
   // Allow switching accounts if switch=1 or logout=1
   const isSwitchingAccount = searchParams.get("switch") === "1" || searchParams.get("logout") === "1";
   const redirectParam = searchParams.get("redirect");
+
+  // If explicitly logging out, clear session cookies on response and show login page
+  if (isAuthPage && isSwitchingAccount) {
+    const response = NextResponse.next();
+    response.cookies.delete("qcm_session");
+    response.cookies.delete("ots_session");
+    return response;
+  }
 
   if (isAuthPage && role && !isSwitchingAccount) {
     // If redirect parameter matches current role's allowed zone, proceed there
