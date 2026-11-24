@@ -22,7 +22,7 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function HomePage() {
   const { formatPrice, siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
   const popularAirports = UK_AIRPORTS.slice(0, 8);
 
   const testimonials = [

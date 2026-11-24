@@ -6,10 +6,10 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function RefundPolicyPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
-  const companyNumber = siteSettings?.company_number || '06783060';
-  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
-  const supportEmail = siteSettings?.support_email || 'bookings@otstaxi.com';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
+  const companyNumber = siteSettings?.company_number || '12345678';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 121 285 5000';
+  const supportEmail = siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk';
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">

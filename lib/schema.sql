@@ -1,4 +1,4 @@
--- OTS Taxi UK - MySQL Database Schema
+-- Quick Car Midlands Ltd - MySQL Database Schema
 
 -- 1. Users Table (Customers, Admins, Drivers)
 CREATE TABLE IF NOT EXISTS `users` (

@@ -270,7 +270,7 @@ function ManageBookingContent() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. OTS-2026-XXXX or REF123"
+                    placeholder="e.g. QCM-2026-XXXX or REF123"
                     value={quoteRef}
                     onChange={(e) => setQuoteRef(e.target.value.toUpperCase())}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black font-mono font-bold text-gray-900 uppercase"

@@ -256,7 +256,7 @@ export default function LocationModal({
         {/* Footer info */}
         <div className="bg-neutral-50 px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
           <span>Search any UK airport, train station, address or postcode</span>
-          <span className="font-semibold text-neutral-700">{siteSettings?.brand_name || 'OTS Taxi'} System</span>
+          <span className="font-semibold text-neutral-700">{siteSettings?.brand_name || 'Quick Car Midlands Ltd'} System</span>
         </div>
 
       </div>

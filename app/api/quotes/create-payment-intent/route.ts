@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     if (stripe && pubKey) {
       try {
         const settings = await getSystemSettings();
-        const brandName = settings.brand_name || "OTS Taxi";
+        const brandName = settings.brand_name || "Quick Car Midlands Ltd";
 
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(finalAmount * 100), // in smallest currency unit (pence/cents)

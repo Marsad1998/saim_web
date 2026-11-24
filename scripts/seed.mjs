@@ -31,14 +31,14 @@ loadEnvFile(path.join(__dirname, '..', '.env.local'));
 loadEnvFile(path.join(__dirname, '..', '.env'));
 
 async function seedDatabase() {
-  console.log('🌱 Starting OTS Taxi Database Seeder...\n');
+  console.log('🌱 Starting Quick Car Midlands Database Seeder...\n');
 
   const databaseUrl = process.env.DATABASE_URL;
   let host = process.env.MYSQL_HOST || '127.0.0.1';
   let port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : 3306;
   let user = process.env.MYSQL_USER || 'root';
   let password = process.env.MYSQL_PASSWORD || '';
-  let database = process.env.MYSQL_DATABASE || 'otstaxi_db';
+  let database = process.env.MYSQL_DATABASE || 'quickcar_db';
 
   if (databaseUrl && databaseUrl.startsWith('mysql://')) {
     try {
@@ -102,7 +102,7 @@ async function seedDatabase() {
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_admin_1', 'OTS Administrator', 'admin@otstaxi.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
+        ('usr_admin_1', 'System Administrator', 'admin@quickcarmidlands.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
         ('usr_admin_2', 'System Administrator', 'admin@admin.com', '+44 20 8123 4568', '${defaultHash}', 'admin')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
@@ -110,14 +110,14 @@ async function seedDatabase() {
         password_hash = VALUES(password_hash),
         role = 'admin'
     `);
-    console.log('   ✓ admin@otstaxi.co.uk & admin@admin.com ready');
+    console.log('   ✓ admin@quickcarmidlands.co.uk & admin@admin.com ready');
 
     // 2. Seed Driver Account & Vehicle Profile
     console.log('🚖 Seeding Driver (Chauffeur) Account & Vehicle...');
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@otstaxi.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
+        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
         ('usr_driver_2', 'Alex Chauffeur', 'driver@driver.com', '+44 7911 654321', '${defaultHash}', 'driver')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
@@ -136,14 +136,14 @@ async function seedDatabase() {
         vehicle_plate = VALUES(vehicle_plate),
         is_active = 1
     `);
-    console.log('   ✓ driver@otstaxi.co.uk & driver@driver.com (LO71 ABC) ready');
+    console.log('   ✓ driver@quickcarmidlands.co.uk & driver@driver.com (LO71 ABC) ready');
 
     // 3. Seed Passenger (Customer) Account
     console.log('👤 Seeding Passenger (Customer) Account...');
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_passenger_1', 'Marsad Akbar', 'passenger@otstaxi.co.uk', '+44 7700 900123', '${defaultHash}', 'customer'),
+        ('usr_passenger_1', 'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '+44 7700 900123', '${defaultHash}', 'customer'),
         ('usr_passenger_2', 'Valued Passenger', 'passenger@example.com', '+44 7700 900124', '${defaultHash}', 'customer')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
@@ -151,7 +151,7 @@ async function seedDatabase() {
         password_hash = VALUES(password_hash),
         role = 'customer'
     `);
-    console.log('   ✓ passenger@otstaxi.co.uk & passenger@example.com ready');
+    console.log('   ✓ passenger@quickcarmidlands.co.uk & passenger@example.com ready');
 
     // 4. Seed Dispatched Sample Bookings
     console.log('📋 Seeding Sample Trips for Driver & Passenger...');
@@ -163,39 +163,39 @@ async function seedDatabase() {
         total_price, currency, payment_status, payment_method, driver_id, booking_status
       ) VALUES 
         (
-          'OTS-892104', 'usr_passenger_1', 'London Heathrow Airport (LHR), Terminal 5', 'The Savoy, Strand, London WC2R 0EZ',
+          'QCM-892104', 'usr_passenger_1', 'London Heathrow Airport (LHR), Terminal 5', 'The Savoy, Strand, London WC2R 0EZ',
           '2026-11-20', '18:30', 2, 2, 16.5, 42, 'executive-saloon',
-          'Marsad Akbar', 'passenger@otstaxi.co.uk', '+44 7700 900123', 'BA1492', 'Terminal 5',
+          'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '+44 7700 900123', 'BA1492', 'Terminal 5',
           78.50, 'GBP', 'completed', 'stripe_card', 'drv_1', 'assigned'
         ),
         (
-          'OTS-774190', 'usr_passenger_1', 'Central London (Mayfair)', 'Gatwick Airport (LGW), South Terminal',
+          'QCM-774190', 'usr_passenger_1', 'Central London (Mayfair)', 'Gatwick Airport (LGW), South Terminal',
           '2026-11-21', '07:15', 3, 3, 34.2, 65, 'executive-saloon',
-          'Marsad Akbar', 'passenger@otstaxi.co.uk', '+44 7700 900123', NULL, NULL,
+          'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '+44 7700 900123', NULL, NULL,
           112.00, 'GBP', 'completed', 'stripe_card', 'drv_1', 'in_progress'
         )
       ON DUPLICATE KEY UPDATE 
         booking_status = VALUES(booking_status),
         driver_id = VALUES(driver_id)
     `);
-    console.log('   ✓ 2 Live Bookings seeded (OTS-892104 & OTS-774190)\n');
+    console.log('   ✓ 2 Live Bookings seeded (QCM-892104 & QCM-774190)\n');
 
     console.log('================================================================');
     console.log('🎉 3 ROLE SEEDER COMPLETED SUCCESSFULLY!');
     console.log('================================================================');
     console.log('👑 ADMIN ACCOUNT:');
-    console.log('   Email:    admin@otstaxi.co.uk   (or admin@admin.com)');
+    console.log('   Email:    admin@quickcarmidlands.co.uk   (or admin@admin.com)');
     console.log('   Password: 12345678              (or Admin@123)');
     console.log('   Redirect: /admin');
     console.log('----------------------------------------------------------------');
     console.log('🚖 DRIVER (CHAUFFEUR) ACCOUNT:');
-    console.log('   Email:    driver@otstaxi.co.uk  (or driver@driver.com)');
+    console.log('   Email:    driver@quickcarmidlands.co.uk  (or driver@driver.com)');
     console.log('   Password: 12345678              (or Driver@123)');
     console.log('   Vehicle:  Mercedes-Benz E-Class • LO71 ABC (PCO-984321)');
     console.log('   Redirect: /driver/dashboard');
     console.log('----------------------------------------------------------------');
     console.log('👤 PASSENGER (CUSTOMER) ACCOUNT:');
-    console.log('   Email:    passenger@otstaxi.co.uk (or passenger@example.com)');
+    console.log('   Email:    passenger@quickcarmidlands.co.uk (or passenger@example.com)');
     console.log('   Password: 12345678              (or Passenger@123)');
     console.log('   Redirect: /account/dashboard');
     console.log('================================================================\n');

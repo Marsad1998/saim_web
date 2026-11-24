@@ -15,7 +15,7 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function PartnersPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
   const [partnerType, setPartnerType] = useState('Travel Agent');
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');

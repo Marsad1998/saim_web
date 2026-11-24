@@ -18,10 +18,10 @@ import { useApp } from '@/components/context/AppContext';
 export default function ContactUsPage() {
   const router = useRouter();
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
-  const officeAddress = siteSettings?.office_address || '83 Baker Street, Marylebone\nLondon, W1U 6AG, United Kingdom';
-  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
-  const supportEmail = siteSettings?.support_email || 'support@otstaxi.com';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
+  const officeAddress = siteSettings?.office_address || 'Birmingham, West Midlands, United Kingdom';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 121 285 5000';
+  const supportEmail = siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -209,7 +209,7 @@ export default function ContactUsPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. OTS-123456"
+                  placeholder="e.g. QCM-123456"
                   value={bookingRef}
                   onChange={(e) => setBookingRef(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-mono focus:ring-2 focus:ring-ots-yellow focus:outline-none"

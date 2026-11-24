@@ -18,11 +18,11 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function AboutUsPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
-  const companyNumber = siteSettings?.company_number || '06783060';
-  const officeAddress = siteSettings?.office_address || '83 Baker Street, Marylebone, London, W1U 6AG, United Kingdom';
-  const supportPhone = siteSettings?.support_phone || '+44 (0) 208 004 0000';
-  const supportEmail = siteSettings?.support_email || 'bookings@otstaxi.com';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
+  const companyNumber = siteSettings?.company_number || '12345678';
+  const officeAddress = siteSettings?.office_address || 'Birmingham, West Midlands, United Kingdom';
+  const supportPhone = siteSettings?.support_phone || '+44 (0) 121 285 5000';
+  const supportEmail = siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk';
 
   const stats = [
     { label: 'Years in Operation', val: '15+' },

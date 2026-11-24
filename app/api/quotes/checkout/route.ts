@@ -84,7 +84,7 @@ export async function POST(request: Request) {
           id: driver.id,
           name: driver.driver_name || "Assigned Chauffeur",
           phone: driver.driver_phone || "+44 7911 123456",
-          email: driver.driver_email || "chauffeur@otstaxi.co.uk",
+          email: driver.driver_email || "chauffeur@quickcarmidlands.co.uk",
           licenseNumber: driver.license_number || "PCO Licensed",
           vehicleModel: driver.vehicle_model || "Executive Chauffeur Vehicle",
           vehiclePlate: driver.vehicle_plate || "LO71 ABC",

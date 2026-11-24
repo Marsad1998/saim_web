@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const isDemoDriver =
       payload.userId === "usr_driver_1" ||
       payload.userId === "usr_driver_2" ||
-      payload.email?.toLowerCase().includes("driver@otstaxi.co.uk") ||
+      payload.email?.toLowerCase().includes("driver@quickcarmidlands.co.uk") ||
       payload.email?.toLowerCase().includes("driver@driver.com");
 
     // Lookup driver profile by user_id

@@ -11,7 +11,7 @@ import { getSystemSettings } from '@/lib/system-settings';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSystemSettings();
-  const brandName = settings.brand_name || 'OTS Taxi';
+  const brandName = settings.brand_name || 'Quick Car Midlands Ltd';
   const tagline = settings.brand_tagline || 'UK Airport Transfer & Taxi Booking | Fixed Price Cabs';
 
   return {

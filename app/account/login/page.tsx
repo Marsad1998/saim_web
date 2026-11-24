@@ -95,7 +95,7 @@ function LoginFormContent() {
         {/* Header */}
         <div className="text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-ots-yellow bg-black px-3 py-1 rounded">
-            {siteSettings?.brand_name || 'OTS Taxi'} Portal
+            {siteSettings?.brand_name || 'Quick Car Midlands Ltd'} Portal
           </span>
           <h1 className="text-2xl font-extrabold text-gray-900 mt-3">
             Account Login

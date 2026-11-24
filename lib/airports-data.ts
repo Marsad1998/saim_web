@@ -25,7 +25,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Terminal 2", "Terminal 3", "Terminal 4", "Terminal 5"],
     lat: 51.4700,
     lng: -0.4543,
-    image: "https://cdn.otstaxi.com/airports/london-heathrow-airport-1722614723.png",
+    image: "/images/airports/london-heathrow-airport-1722614723.png",
     description: "Heathrow Airport is situated just 14 miles (23 km) west of Central London, making it a convenient gateway for both the city and surrounding areas. Located 3 miles from Hounslow, Hayes, and Staines-upon-Thames within the London Borough of Hillingdon (TW6).",
     highlights: [
       "Timely and reliable transfers to and from London Heathrow Airport, ensuring a stress-free travel experience.",
@@ -62,7 +62,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["North Terminal", "South Terminal"],
     lat: 51.1537,
     lng: -0.1821,
-    image: "https://cdn.otstaxi.com/airports/london-gatwick-airport-1722614940.png",
+    image: "/images/airports/london-gatwick-airport-1722614940.png",
     description: "London Gatwick Airport is the UK's second busiest airport, situated 29.5 miles south of Central London near Crawley, West Sussex. Our private hire network provides reliable, comfortable transfers connecting Gatwick North and South terminals to all London boroughs and UK destinations.",
     highlights: [
       "Direct terminal pick-up and drop-off for North and South Terminals.",
@@ -90,7 +90,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 51.8860,
     lng: 0.2389,
-    image: "https://cdn.otstaxi.com/airports/london-stansted-airport-1722608674.png",
+    image: "/images/airports/london-stansted-airport-1722608674.png",
     description: "Stansted Airport is located northeast of London in Essex, serving major European and international routes. Avoid train schedules with our 24/7 direct door-to-door taxi service.",
     highlights: [
       "Fixed prices with Stansted dropoff barrier fees included.",
@@ -113,7 +113,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 51.8747,
     lng: -0.3683,
-    image: "https://cdn.otstaxi.com/airports/london-luton-airport-1722615147.png",
+    image: "/images/airports/london-luton-airport-1722615147.png",
     description: "Located 28 miles north of London, Luton Airport is a key destination for leisure and business travellers. Pre-book your transfer for guaranteed pickup with our licensed chauffeur network.",
     highlights: [
       "Reliable transfers via M1 motorway directly to Central London and the Midlands.",
@@ -136,7 +136,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 51.5048,
     lng: 0.0495,
-    image: "https://cdn.otstaxi.com/airports/london-city-airport-1722959120.png",
+    image: "/images/airports/london-city-airport-1722959120.png",
     description: "Located in the Royal Docks in Newham, London City Airport is the closest airport to the City of London and Canary Wharf. Ideal for business travelers seeking swift executive transfers.",
     highlights: [
       "Express executive transfers to Canary Wharf, the City, and West End.",
@@ -159,7 +159,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Terminal 1", "Terminal 2", "Terminal 3"],
     lat: 53.3537,
     lng: -2.2750,
-    image: "https://cdn.otstaxi.com/airports/manchester-airport-1722615411.png",
+    image: "/images/airports/manchester-airport-1722615411.png",
     description: "Manchester Airport is the global gateway for Northern England, located 9 miles south of Manchester city centre. Providing comprehensive coverage across Greater Manchester, Yorkshire, Lancashire, and Cheshire.",
     highlights: [
       "Transfers connecting Terminals 1, 2, and 3 to Manchester city centre, Leeds, Liverpool, and nationwide.",
@@ -182,7 +182,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 52.4539,
     lng: -1.7480,
-    image: "https://cdn.otstaxi.com/airports/birmingham-airport-1722615754.png",
+    image: "/images/airports/birmingham-airport-1722615754.png",
     description: "Birmingham Airport serves the West Midlands, located 8 miles east of Birmingham city centre near the NEC and Solihull. Our private hire network delivers seamless airport journeys across the Midlands.",
     highlights: [
       "Fixed rates for transfers to Birmingham City, Coventry, Leicester, and Warwick.",
@@ -205,7 +205,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 55.9508,
     lng: -3.3615,
-    image: "https://cdn.otstaxi.com/airports/edinburgh-airport-1722615594.png",
+    image: "/images/airports/edinburgh-airport-1722615594.png",
     description: "Scotland's busiest airport, situated 5.8 miles west of Edinburgh city centre. Enjoy dependable, high-comfort transfers directly to Edinburgh Old Town, New Town, Glasgow, and the Highlands.",
     highlights: [
       "Direct transfers to central Edinburgh hotels, universities, and festival venues.",
@@ -228,7 +228,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 55.8719,
     lng: -4.4331,
-    image: "https://cdn.otstaxi.com/airports/glasgow-airport-1722616116.png",
+    image: "/images/airports/glasgow-airport-1722616116.png",
     description: "Located 9 miles west of Glasgow city centre in Paisley, Renfrewshire. Providing prompt transfers to Greater Glasgow, Loch Lomond, and western Scotland.",
     highlights: [
       "Punctual service for international and domestic arrivals.",
@@ -251,7 +251,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 51.3827,
     lng: -2.7191,
-    image: "https://cdn.otstaxi.com/airports/bristol-airport-1722615943.png",
+    image: "/images/airports/bristol-airport-1722615943.png",
     description: "Bristol Airport is the commercial airport for South West England and South Wales, located in Lulsgate Bottom, North Somerset.",
     highlights: [
       "Direct transfers to Bristol, Bath, Cardiff, Newport, and Somerset.",
@@ -274,7 +274,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 55.0375,
     lng: -1.6917,
-    image: "https://cdn.otstaxi.com/airports/newcastle-international-airport-1727104817.png",
+    image: "/images/airports/newcastle-international-airport-1727104817.png",
     description: "Serving North East England, Newcastle International Airport is located 6.5 miles northwest of Newcastle upon Tyne city centre.",
     highlights: [
       "Transfers covering Newcastle, Sunderland, Durham, and Northumberland.",
@@ -297,7 +297,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 54.6575,
     lng: -6.2158,
-    image: "https://cdn.otstaxi.com/airports/belfast-international-airport-1722616284.png",
+    image: "/images/airports/belfast-international-airport-1722616284.png",
     description: "Located 13 miles northwest of Belfast near Aldergrove in County Antrim. Northern Ireland's principal airport for scheduled international flights.",
     highlights: [
       "Direct journeys across Belfast, Lisburn, Derry, and Northern Ireland.",
@@ -320,7 +320,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 54.6181,
     lng: -5.8725,
-    image: "https://cdn.otstaxi.com/airports/belfast-city-airport-1730742430.png",
+    image: "/images/airports/belfast-city-airport-1730742430.png",
     description: "Belfast City Airport is located adjacent to the Port of Belfast, just 3 miles from Belfast city centre.",
     highlights: [
       "Quick 10-15 minute transfer directly to Belfast city centre.",
@@ -343,7 +343,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 50.7344,
     lng: -3.4139,
-    image: "https://cdn.otstaxi.com/airports/exeter-airport-1744647314.jpg",
+    image: "/images/airports/exeter-airport-1744647314.jpg",
     description: "Exeter Airport serves Devon and the South West peninsula, situated in Clyst Honiton in East Devon.",
     highlights: [
       "Transfers across Devon, Torquay, Plymouth, and Cornwall.",
@@ -366,7 +366,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 53.3336,
     lng: -2.8497,
-    image: "https://cdn.otstaxi.com/airports/liverpool-john-lennon-airport-1738164839.jpg",
+    image: "/images/airports/liverpool-john-lennon-airport-1738164839.jpg",
     description: "Liverpool John Lennon Airport is located 7.5 miles southeast of Liverpool city centre adjacent to the River Mersey.",
     highlights: [
       "Fast transfers to Liverpool city centre, Anfield, Everton, and Cheshire.",
@@ -389,7 +389,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 52.8311,
     lng: -1.3281,
-    image: "https://cdn.otstaxi.com/airports/east-midlands-airport-1738165838.jpg",
+    image: "/images/airports/east-midlands-airport-1738165838.jpg",
     description: "East Midlands Airport is positioned in Castle Donington, serving Nottingham (14 miles), Derby (14 miles), and Leicester (20 miles).",
     highlights: [
       "Central access to all three East Midlands cities via M1 and A42.",
@@ -412,7 +412,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 53.8659,
     lng: -1.6606,
-    image: "https://cdn.otstaxi.com/airports/leeds-bradford-airport-1738164030.jpg",
+    image: "/images/airports/leeds-bradford-airport-1738164030.jpg",
     description: "Situated in Yeadon, Leeds Bradford Airport is the highest commercial airport in the UK, serving West Yorkshire and the Yorkshire Dales.",
     highlights: [
       "Transfers to Leeds, Bradford, Harrogate, York, and Huddersfield.",
@@ -435,7 +435,7 @@ export const UK_AIRPORTS: AirportItem[] = [
     terminals: ["Main Terminal"],
     lat: 50.9503,
     lng: -1.3568,
-    image: "https://cdn.otstaxi.com/airports/southampton-airport-1738165654.jpg",
+    image: "/images/airports/southampton-airport-1738165654.jpg",
     description: "Located 4 miles north-northeast of Southampton, ideal for connections to cruise terminals at Southampton Docks and the South Coast.",
     highlights: [
       "Direct transfers between Southampton Airport and Southampton Cruise Terminals.",

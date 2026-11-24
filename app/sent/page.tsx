@@ -7,7 +7,7 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function SentPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
 
   return (
     <div className="bg-[#f8f9fa] min-h-[70vh] flex items-center justify-center py-16 px-4">

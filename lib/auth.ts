@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "ots_taxi_secure_jwt_secret_key_2026_xyz";
-export const SESSION_COOKIE_NAME = "ots_session";
+const JWT_SECRET = process.env.JWT_SECRET || "qcm_secure_jwt_secret_key_2026_xyz";
+export const SESSION_COOKIE_NAME = "qcm_session";
 
 export interface UserSessionPayload {
   userId: string;

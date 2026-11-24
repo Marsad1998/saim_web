@@ -38,9 +38,9 @@ export default function MobileDrawer() {
   } = useApp();
   const pathname = usePathname();
 
-  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandName = siteSettings?.brand_name || "Quick Car Midlands Ltd";
   const brandWords = brandName.trim().split(/\s+/);
-  const brandFirstWord = brandWords[0] || "OTS";
+  const brandFirstWord = brandWords[0] || "Quick";
   const brandRestWords = brandWords.slice(1).join(" ");
 
   if (!isMobileMenuOpen) return null;

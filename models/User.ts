@@ -26,11 +26,11 @@ export interface CreateUserInput {
 }
 
 const DEFAULT_FALLBACK_USERS: Record<string, IUser> = {
-  "admin@otstaxi.co.uk": {
+  "admin@quickcarmidlands.co.uk": {
     id: "usr_admin_1",
-    name: "OTS Administrator",
-    email: "admin@otstaxi.co.uk",
-    phone: "+44 20 8123 4567",
+    name: "System Administrator",
+    email: "admin@quickcarmidlands.co.uk",
+    phone: "+44 (0) 121 285 5000",
     password_hash: "$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK",
     role: "admin",
   },
@@ -38,14 +38,14 @@ const DEFAULT_FALLBACK_USERS: Record<string, IUser> = {
     id: "usr_admin_2",
     name: "System Administrator",
     email: "admin@admin.com",
-    phone: "+44 20 8123 4568",
+    phone: "+44 (0) 121 285 5000",
     password_hash: "$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK",
     role: "admin",
   },
-  "driver@otstaxi.co.uk": {
+  "driver@quickcarmidlands.co.uk": {
     id: "usr_driver_1",
     name: "James Wilson (Chauffeur)",
-    email: "driver@otstaxi.co.uk",
+    email: "driver@quickcarmidlands.co.uk",
     phone: "+44 7911 123456",
     password_hash: "$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK",
     role: "driver",
@@ -58,10 +58,10 @@ const DEFAULT_FALLBACK_USERS: Record<string, IUser> = {
     password_hash: "$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK",
     role: "driver",
   },
-  "passenger@otstaxi.co.uk": {
+  "passenger@quickcarmidlands.co.uk": {
     id: "usr_passenger_1",
     name: "Marsad Akbar",
-    email: "passenger@otstaxi.co.uk",
+    email: "passenger@quickcarmidlands.co.uk",
     phone: "+44 7700 900123",
     password_hash: "$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK",
     role: "customer",

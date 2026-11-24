@@ -5,9 +5,9 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function GdprStatementPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
   const companyNumber = siteSettings?.company_number || '06783060';
-  const supportEmail = siteSettings?.support_email || 'support@otstaxi.co.uk';
+  const supportEmail = siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk';
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">

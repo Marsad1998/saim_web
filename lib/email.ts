@@ -4,10 +4,10 @@ import { getSystemSettings, SystemSettings } from "./system-settings";
 
 async function getTransporter(): Promise<{ transporter: Transporter | null; fromEmail: string; adminEmail: string; settings: SystemSettings }> {
   const settings = await getSystemSettings();
-  const brandName = settings.brand_name || "OTS Taxi";
-  const defaultFrom = `"${brandName} UK" <no-reply@otstaxi.co.uk>`;
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+  const defaultFrom = `"${brandName}" <no-reply@quickcarmidlands.co.uk>`;
   const fromEmail = settings.smtp_from || defaultFrom;
-  const adminEmail = settings.admin_email || "admin@otstaxi.co.uk";
+  const adminEmail = settings.admin_email || "admin@quickcarmidlands.co.uk";
 
   if (settings.smtp_host && settings.smtp_user && settings.smtp_pass) {
     try {
@@ -40,14 +40,14 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
   }
 
   const { transporter: transport, fromEmail, settings } = await getTransporter();
-  const brandName = settings.brand_name || "OTS Taxi";
-  const brandTagline = settings.brand_tagline || "UK Airport Transfers & Long-Distance Cabs";
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+  const brandTagline = settings.brand_tagline || "Airport Transfers & Private Hire | Based in Birmingham";
   const brandWords = brandName.trim().split(/\s+/);
-  const firstWord = brandWords[0] || "OTS";
+  const firstWord = brandWords[0] || "Quick";
   const restWords = brandWords.slice(1).join(" ");
   const primaryColor = settings.primary_color || "#FFCC00";
-  const supportPhone = settings.support_phone || "+44 (0) 208 004 0000";
-  const supportEmail = settings.support_email || "support@otstaxi.co.uk";
+  const supportPhone = settings.support_phone || "+44 (0) 121 285 5000";
+  const supportEmail = settings.support_email || "bookings@quickcarmidlands.co.uk";
 
   const passengerName = booking.passenger_name || "Valued Customer";
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -195,7 +195,7 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
  */
 export async function sendAdminBookingAlertEmail(booking: IBooking): Promise<boolean> {
   const { transporter: transport, fromEmail, adminEmail, settings } = await getTransporter();
-  const brandName = settings.brand_name || "OTS Taxi";
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
 
   const textContent = `
 🚨 NEW BOOKING ALERT: ${booking.quote_ref}
@@ -252,10 +252,10 @@ export async function sendVerificationCodeEmail(
   code: string
 ): Promise<boolean> {
   const { transporter: transport, fromEmail, settings } = await getTransporter();
-  const brandName = settings.brand_name || "OTS Taxi";
-  const brandTagline = settings.brand_tagline || "UK Airport Transfer & Chauffeur Network";
+  const brandName = settings.brand_name || "Quick Car Midlands Ltd";
+  const brandTagline = settings.brand_tagline || "Airport Transfers & Private Hire | Based in Birmingham";
   const brandWords = brandName.trim().split(/\s+/);
-  const firstWord = brandWords[0] || "OTS";
+  const firstWord = brandWords[0] || "Quick";
   const restWords = brandWords.slice(1).join(" ");
   const primaryColor = settings.primary_color || "#FFCC00";
   const officeAddress = settings.office_address || "167-169 Great Portland Street, London W1W 5PF, United Kingdom";
@@ -322,7 +322,7 @@ export async function sendTestSmtpEmail(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const sysSettings = await getSystemSettings();
-    const brandName = sysSettings.brand_name || "OTS Taxi";
+    const brandName = sysSettings.brand_name || "Quick Car Midlands Ltd";
 
     const testTransport = nodemailer.createTransport({
       host: settings.host,
@@ -337,7 +337,7 @@ export async function sendTestSmtpEmail(
     await testTransport.verify();
 
     await testTransport.sendMail({
-      from: settings.from || `"${brandName} UK" <no-reply@otstaxi.co.uk>`,
+      from: settings.from || `"${brandName}" <no-reply@quickcarmidlands.co.uk>`,
       to: toEmail,
       subject: `✅ SMTP Connection Successful - ${brandName}`,
       html: `

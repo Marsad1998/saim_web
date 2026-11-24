@@ -29,7 +29,7 @@ export function getDbConfig(): SanitizedDbConfig & { poolConfig: PoolOptions } {
   let host = '127.0.0.1';
   let port = 3306;
   let user = 'root';
-  let database = 'otstaxi_db';
+  let database = process.env.MYSQL_DATABASE || process.env.DB_NAME || 'quickcar_db';
   let hasPassword = false;
   let isSsl = false;
   let source = 'Default Localhost (No DB env vars set)';
@@ -48,7 +48,7 @@ export function getDbConfig(): SanitizedDbConfig & { poolConfig: PoolOptions } {
       user = decodeURIComponent(parsedUrl.username || 'root');
       const password = decodeURIComponent(parsedUrl.password || '');
       hasPassword = Boolean(password);
-      database = parsedUrl.pathname.replace(/^\//, '') || 'otstaxi_db';
+      database = parsedUrl.pathname.replace(/^\//, '') || 'quickcar_db';
 
       // SSL detection: check explicit env var, query param, or remote host
       const isRemoteHost = host !== 'localhost' && host !== '127.0.0.1';
@@ -119,7 +119,7 @@ export function getDbConfig(): SanitizedDbConfig & { poolConfig: PoolOptions } {
       process.env.MYSQL_DATABASE ||
       process.env.MYSQLDATABASE ||
       process.env.DB_NAME ||
-      'otstaxi_db';
+      'quickcar_db';
 
     const isRemoteHost = host !== 'localhost' && host !== '127.0.0.1' && !host.startsWith('192.168.');
     isSsl =

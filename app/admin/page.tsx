@@ -77,7 +77,7 @@ function adjustHex(hex: string, percent: number) {
 }
 
 const COLOR_PRESETS = [
-  { name: 'OTS Yellow (Default)', hex: '#FFCC00', hover: '#E6B800', isDarkText: true },
+  { name: 'Brand Gold (Default)', hex: '#FFCC00', hover: '#E6B800', isDarkText: true },
   { name: 'Prestige Gold', hex: '#D4AF37', hover: '#B89628', isDarkText: true },
   { name: 'Warm Amber', hex: '#F59E0B', hover: '#D97706', isDarkText: true },
   { name: 'Vibrant Orange', hex: '#F97316', hover: '#EA580C', isDarkText: false },
@@ -161,7 +161,7 @@ export default function AdminPage() {
   const [isInitializingDb, setIsInitializingDb] = useState(false);
   const [showDbGuide, setShowDbGuide] = useState(false);
 
-  const currentBrandName = settings.brand_name || siteSettings?.brand_name || 'OTS TAXI';
+  const currentBrandName = settings.brand_name || siteSettings?.brand_name || 'Quick Car Midlands Ltd';
   const currentLogoDark = settings.logo_dark || siteSettings?.logo_dark || '';
   const currentPrimaryColor = settings.primary_color || siteSettings?.primary_color || '#FFCC00';
 
@@ -177,9 +177,9 @@ export default function AdminPage() {
     if (siteSettings?.brand_name) {
       setSettings((prev) => ({
         ...prev,
-        brand_name: (prev.brand_name === 'OTS TAXI' || prev.brand_name === 'Quick Car Midlands Ltd') ? siteSettings.brand_name : prev.brand_name,
+        brand_name: siteSettings.brand_name || prev.brand_name,
         primary_color: prev.primary_color === '#FFCC00' ? siteSettings.primary_color : prev.primary_color,
-        logo_dark: prev.logo_dark === '/images/ots-taxi-logo.png' ? siteSettings.logo_dark : prev.logo_dark,
+        logo_dark: prev.logo_dark === '/images/quickcar-logo.png' ? siteSettings.logo_dark : prev.logo_dark,
       }));
     }
   }, [siteSettings]);
@@ -1711,12 +1711,12 @@ export default function AdminPage() {
                     style={{ backgroundColor: currentPrimaryColor }}
                     className="w-10 h-10 rounded-xl text-gray-950 font-black flex items-center justify-center text-lg shadow-md group-hover:scale-105 transition-transform flex-shrink-0"
                   >
-                    {currentBrandName.trim().split(/\s+/)[0]?.charAt(0)?.toUpperCase() || 'O'}
+                    {currentBrandName.trim().split(/\s+/)[0]?.charAt(0)?.toUpperCase() || 'Q'}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center space-x-1 whitespace-nowrap overflow-hidden">
                       <span className="font-extrabold text-white text-base tracking-wider flex-shrink-0">
-                        {currentBrandName.trim().split(/\s+/)[0] || 'OTS'}
+                        {currentBrandName.trim().split(/\s+/)[0] || 'Quick'}
                       </span>
                       {currentBrandName.trim().split(/\s+/).slice(1).join(' ') ? (
                         <span
@@ -1804,7 +1804,7 @@ export default function AdminPage() {
                 {user?.name || 'Administrator'}
               </span>
               <span className="text-[10px] text-slate-400 truncate block">
-                {user?.email || 'admin@otstaxi.co.uk'}
+                {user?.email || 'admin@quickcarmidlands.co.uk'}
               </span>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -3370,11 +3370,11 @@ export default function AdminPage() {
                         <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-[11px] mt-1 overflow-x-auto">
 {`MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
-MYSQL_USER=otstaxi_user
+MYSQL_USER=quickcar_user
 MYSQL_PASSWORD=your_secure_password
-MYSQL_DATABASE=otstaxi_db
+MYSQL_DATABASE=quickcar_db
 # Or use complete connection URL:
-DATABASE_URL="mysql://otstaxi_user:your_secure_password@127.0.0.1:3306/otstaxi_db"`}
+DATABASE_URL="mysql://quickcar_user:your_secure_password@127.0.0.1:3306/quickcar_db"`}
                         </pre>
                       </div>
 
@@ -3383,9 +3383,9 @@ DATABASE_URL="mysql://otstaxi_user:your_secure_password@127.0.0.1:3306/otstaxi_d
                         <p>SSH into your server and run in terminal:</p>
                         <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-[11px] mt-1 overflow-x-auto">
 {`sudo mysql -u root
-CREATE DATABASE IF NOT EXISTS otstaxi_db;
-CREATE USER IF NOT EXISTS 'otstaxi_user'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'your_secure_password';
-GRANT ALL PRIVILEGES ON otstaxi_db.* TO 'otstaxi_user'@'localhost';
+CREATE DATABASE IF NOT EXISTS quickcar_db;
+CREATE USER IF NOT EXISTS 'quickcar_user'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON quickcar_db.* TO 'quickcar_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;`}
                         </pre>
@@ -3477,7 +3477,7 @@ EXIT;`}
                       type="text"
                       value={settings.smtp_user}
                       onChange={(e) => setSettings({ ...settings, smtp_user: e.target.value })}
-                      placeholder="e.g. notifications@otstaxi.co.uk"
+                      placeholder="e.g. notifications@quickcarmidlands.co.uk"
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs"
                     />
                   </div>
@@ -3825,9 +3825,9 @@ EXIT;`}
                           style={{ backgroundColor: settings.primary_color }}
                           className="w-8 h-8 rounded-lg text-gray-950 flex items-center justify-center text-xs font-black shadow"
                         >
-                          {settings.brand_name?.charAt(0) || 'O'}
+                          {settings.brand_name?.charAt(0) || 'Q'}
                         </div>
-                        <span className="text-white font-extrabold">{settings.brand_name || 'OTS TAXI'}</span>
+                        <span className="text-white font-extrabold">{settings.brand_name || 'Quick Car Midlands Ltd'}</span>
                       </div>
                     )}
                   </div>
@@ -4319,7 +4319,7 @@ EXIT;`}
                       type="text"
                       value={settings.brand_name}
                       onChange={(e) => setSettings({ ...settings, brand_name: e.target.value })}
-                      placeholder="e.g. OTS TAXI or City Transfers"
+                      placeholder="e.g. Quick Car Midlands or City Transfers"
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs font-bold text-slate-900"
                     />
                   </div>
@@ -4352,7 +4352,7 @@ EXIT;`}
                       type="email"
                       value={settings.support_email}
                       onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
-                      placeholder="e.g. support@otstaxi.co.uk"
+                      placeholder="e.g. bookings@quickcarmidlands.co.uk"
                       className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white text-xs text-slate-900"
                     />
                   </div>
@@ -5422,7 +5422,7 @@ EXIT;`}
                     required
                     value={driverFormData.email}
                     onChange={(e) => setDriverFormData({ ...driverFormData, email: e.target.value })}
-                    placeholder="driver@otstaxi.co.uk"
+                    placeholder="driver@quickcarmidlands.co.uk"
                     className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 font-medium"
                   />
                 </div>

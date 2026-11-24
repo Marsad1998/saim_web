@@ -28,7 +28,7 @@ export default async function AirportDetailPage({
   params: { slug: string };
 }) {
   const settings = await getSystemSettings();
-  const brandName = settings.brand_name || 'OTS Taxi';
+  const brandName = settings.brand_name || 'Quick Car Midlands Ltd';
   const airport = UK_AIRPORTS.find(
     (a) => a.slug.toLowerCase() === params.slug.toLowerCase()
   ) || UK_AIRPORTS[0];

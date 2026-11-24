@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const isDemoDriver =
       payload.userId === "usr_driver_1" ||
       payload.userId === "usr_driver_2" ||
-      payload.email?.toLowerCase().includes("driver@otstaxi.co.uk") ||
+      payload.email?.toLowerCase().includes("driver@quickcarmidlands.co.uk") ||
       payload.email?.toLowerCase().includes("driver@driver.com");
 
     const driver = await DriverModel.findByUserId(payload.userId);
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (trips.length === 0 && isDemoDriver) {
       trips = [
         {
-          quote_ref: "OTS-892104",
+          quote_ref: "QCM-892104",
           from_location: "London Heathrow Airport (LHR), Terminal 5",
           to_location: "The Savoy, Strand, London WC2R 0EZ",
           from_location_type: 1,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           booking_status: "assigned",
         },
         {
-          quote_ref: "OTS-774190",
+          quote_ref: "QCM-774190",
           from_location: "Central London (Mayfair)",
           to_location: "Gatwick Airport (LGW), South Terminal",
           from_location_type: 2,

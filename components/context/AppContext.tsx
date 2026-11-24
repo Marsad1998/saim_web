@@ -129,8 +129,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const brand = siteSettings.brand_name.trim();
       const tagline = siteSettings.brand_tagline ? siteSettings.brand_tagline.trim() : "";
       
-      // Update document title if it still reflects defaults or home pattern
-      if (!document.title || document.title.includes("OTS Taxi") || document.title.includes(" - ")) {
+      // Update document title to reflect dynamic brand name and tagline
+      if (!document.title || !document.title.includes(brand)) {
         document.title = tagline ? `${brand} - ${tagline}` : brand;
       }
 

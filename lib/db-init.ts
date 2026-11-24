@@ -221,13 +221,13 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
          VALUES (?, ?, ?, ?, ?, 'admin', 1)`,
         [
           'usr_admin_default',
-          'OTS Administrator',
-          'admin@otstaxi.co.uk',
-          '+44 20 8090 4992',
+          'System Administrator',
+          'admin@quickcarmidlands.co.uk',
+          '+44 (0) 121 285 5000',
           '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK', // 'admin'
         ]
       );
-      seededItems.push('Default Admin User (admin@otstaxi.co.uk / admin)');
+      seededItems.push('Default Admin User (admin@quickcarmidlands.co.uk / admin)');
     }
 
     // Seed default chauffeur if drivers table is empty
@@ -239,7 +239,7 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
         [
           'usr_driver_1',
           'James Wilson (Executive Chauffeur)',
-          'driver@otstaxi.co.uk',
+          'driver@quickcarmidlands.co.uk',
           '+44 7911 123456',
           '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK',
         ]

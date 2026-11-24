@@ -33,14 +33,14 @@ loadEnvFile(path.join(__dirname, '..', '.env.local'));
 loadEnvFile(path.join(__dirname, '..', '.env'));
 
 async function initDatabase() {
-  console.log('🚀 Starting OTS Taxi MySQL Database Initialization...\n');
+  console.log('🚀 Starting Quick Car Midlands MySQL Database Initialization...\n');
 
   const databaseUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
   let host = process.env.MYSQL_HOST || process.env.MYSQLHOST || '127.0.0.1';
   let port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : (process.env.MYSQLPORT ? parseInt(process.env.MYSQLPORT, 10) : 3306);
   let user = process.env.MYSQL_USER || process.env.MYSQLUSER || 'root';
   let password = process.env.MYSQL_PASSWORD ?? process.env.MYSQLPASSWORD ?? '';
-  let database = process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'otstaxi_db';
+  let database = process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'quickcar_db';
 
   if (databaseUrl && databaseUrl.startsWith('mysql://')) {
     try {
@@ -112,7 +112,7 @@ async function initDatabase() {
       console.error('     MYSQL_PORT=3306');
       console.error('     MYSQL_USER=root');
       console.error('     MYSQL_PASSWORD=your_password');
-      console.error('     MYSQL_DATABASE=otstaxi_db\n');
+      console.error('     MYSQL_DATABASE=quickcar_db\n');
       process.exit(1);
     }
   }
@@ -126,7 +126,7 @@ async function initDatabase() {
     console.error('     MYSQL_PORT=3306');
     console.error('     MYSQL_USER=root');
     console.error('     MYSQL_PASSWORD=your_password');
-    console.error('     MYSQL_DATABASE=otstaxi_db\n');
+    console.error('     MYSQL_DATABASE=quickcar_db\n');
     process.exit(1);
   }
 
@@ -155,10 +155,10 @@ async function initDatabase() {
     await connection.query(`
       INSERT INTO users (id, name, email, phone, password_hash, role)
       VALUES 
-        ('usr_admin_1', 'OTS Administrator', 'admin@otstaxi.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
+        ('usr_admin_1', 'System Administrator', 'admin@quickcarmidlands.co.uk', '+44 20 8123 4567', '${defaultHash}', 'admin'),
         ('usr_admin_2', 'System Administrator', 'admin@admin.com', '+44 20 8123 4568', '${defaultHash}', 'admin'),
-        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@otstaxi.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
-        ('usr_passenger_1', 'Marsad Akbar', 'passenger@otstaxi.co.uk', '+44 7700 900123', '${defaultHash}', 'customer')
+        ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '+44 7911 123456', '${defaultHash}', 'driver'),
+        ('usr_passenger_1', 'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '+44 7700 900123', '${defaultHash}', 'customer')
       ON DUPLICATE KEY UPDATE 
         name = VALUES(name),
         password_hash = VALUES(password_hash),
@@ -172,21 +172,21 @@ async function initDatabase() {
       ON DUPLICATE KEY UPDATE vehicle_plate = VALUES(vehicle_plate), is_active = 1
     `);
 
-    console.log('✅ Admin: admin@otstaxi.co.uk (Pass: 12345678)');
-    console.log('✅ Driver: driver@otstaxi.co.uk (Pass: 12345678, Mercedes LO71 ABC)');
-    console.log('✅ Passenger: passenger@otstaxi.co.uk (Pass: 12345678)\n');
+    console.log('✅ Admin: admin@quickcarmidlands.co.uk (Pass: 12345678)');
+    console.log('✅ Driver: driver@quickcarmidlands.co.uk (Pass: 12345678, Mercedes LO71 ABC)');
+    console.log('✅ Passenger: passenger@quickcarmidlands.co.uk (Pass: 12345678)\n');
 
     // 5. Seed Vehicles Fleet if empty
     const [existingVehicles] = await connection.query('SELECT COUNT(*) as count FROM vehicles');
     if (existingVehicles[0].count === 0) {
       console.log('🚗 Seeding initial Vehicle Fleet into MySQL...');
       const fleet = [
-        ['saloon', 'Standard Saloon', 'Saloon Car', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 4, 2, 2, 'Ideal for everyday airport transfers, solo travelers, and couples.', JSON.stringify(["Air Conditioning", "Flight Tracking", "45 Mins Free Waiting", "Fixed Price"]), 1.00, 'VW Passat, Ford Mondeo, Skoda Octavia', 1],
-        ['estate', 'Estate Car', 'Estate Vehicle', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 4, 4, 3, 'Extended boot capacity for travelers with bulky luggage, skis or strollers.', JSON.stringify(["Extra Luggage Capacity", "Air Conditioning", "Flight Tracking", "Fixed Price"]), 1.15, 'Skoda Superb Estate, VW Passat Estate', 2],
-        ['executive-saloon', 'Executive Saloon', 'Executive Chauffeur', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 3, 2, 2, 'Premium luxury comfort for corporate executives and discerning travelers.', JSON.stringify(["Luxury Leather Interior", "Bottled Water & Wi-Fi", "Meet & Greet Included", "Professional Chauffeur"]), 1.45, 'Mercedes-Benz E-Class, BMW 5 Series, Audi A6', 3],
-        ['mpv', 'People Carrier / MPV', 'People Carrier (MPV-5/6)', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 5, 4, 4, 'Designed for small groups and families requiring extra seating room.', JSON.stringify(["Spacious Seating", "Air Conditioning", "Child Seats Available", "Fixed Price"]), 1.40, 'VW Touran, Ford Galaxy, Citroen Spacetourer', 4],
-        ['minibus-8', '8-Seater Minibus', 'Minibus (8 Seater)', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 8, 8, 8, 'Large capacity transport for larger families, corporate groups, and sports tours.', JSON.stringify(["Up to 8 Passengers", "Massive Cargo Space", "Dual Air Conditioning", "Fixed Price"]), 1.85, 'Mercedes Vito Tourer, Ford Tourneo Custom', 5],
-        ['executive-mpv', 'Executive MPV', 'Luxury Chauffeur MPV', 'https://cdn.otstaxi.com/assets/img/icon/hdiw/2-1.png', 7, 7, 7, 'The pinnacle of VIP group travel with first-class conference seating.', JSON.stringify(["VIP Leather Seating", "Privacy Glass", "Meet & Greet Included", "Complimentary Refreshments"]), 2.20, 'Mercedes-Benz V-Class', 6]
+        ['saloon', 'Standard Saloon', 'Saloon Car', '/images/vehicles/standard-saloon.png', 4, 2, 2, 'Ideal for everyday airport transfers, solo travelers, and couples.', JSON.stringify(["Air Conditioning", "Flight Tracking", "45 Mins Free Waiting", "Fixed Price"]), 1.00, 'VW Passat, Ford Mondeo, Skoda Octavia', 1],
+        ['estate', 'Estate Car', 'Estate Vehicle', '/images/vehicles/standard-saloon.png', 4, 4, 3, 'Extended boot capacity for travelers with bulky luggage, skis or strollers.', JSON.stringify(["Extra Luggage Capacity", "Air Conditioning", "Flight Tracking", "Fixed Price"]), 1.15, 'Skoda Superb Estate, VW Passat Estate', 2],
+        ['executive-saloon', 'Executive Saloon', 'Executive Chauffeur', '/images/vehicles/standard-saloon.png', 3, 2, 2, 'Premium luxury comfort for corporate executives and discerning travelers.', JSON.stringify(["Luxury Leather Interior", "Bottled Water & Wi-Fi", "Meet & Greet Included", "Professional Chauffeur"]), 1.45, 'Mercedes-Benz E-Class, BMW 5 Series, Audi A6', 3],
+        ['mpv', 'People Carrier / MPV', 'People Carrier (MPV-5/6)', '/images/vehicles/standard-saloon.png', 5, 4, 4, 'Designed for small groups and families requiring extra seating room.', JSON.stringify(["Spacious Seating", "Air Conditioning", "Child Seats Available", "Fixed Price"]), 1.40, 'VW Touran, Ford Galaxy, Citroen Spacetourer', 4],
+        ['minibus-8', '8-Seater Minibus', 'Minibus (8 Seater)', '/images/vehicles/standard-saloon.png', 8, 8, 8, 'Large capacity transport for larger families, corporate groups, and sports tours.', JSON.stringify(["Up to 8 Passengers", "Massive Cargo Space", "Dual Air Conditioning", "Fixed Price"]), 1.85, 'Mercedes Vito Tourer, Ford Tourneo Custom', 5],
+        ['executive-mpv', 'Executive MPV', 'Luxury Chauffeur MPV', '/images/vehicles/standard-saloon.png', 7, 7, 7, 'The pinnacle of VIP group travel with first-class conference seating.', JSON.stringify(["VIP Leather Seating", "Privacy Glass", "Meet & Greet Included", "Complimentary Refreshments"]), 2.20, 'Mercedes-Benz V-Class', 6]
       ];
 
       for (const v of fleet) {

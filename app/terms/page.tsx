@@ -5,9 +5,9 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function TermsPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
-  const companyNumber = siteSettings?.company_number || '06783060';
-  const officeAddress = siteSettings?.office_address || '83 Baker Street, London, W1U 6AG, United Kingdom';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
+  const companyNumber = siteSettings?.company_number || '12345678';
+  const officeAddress = siteSettings?.office_address || 'Birmingham, West Midlands, United Kingdom';
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">

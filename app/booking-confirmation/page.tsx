@@ -27,7 +27,7 @@ import { useApp } from '@/components/context/AppContext';
 function BookingConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const quoteRef = searchParams.get('ref') || 'OTS-DEMO123';
+  const quoteRef = searchParams.get('ref') || 'QCM-DEMO123';
   const { formatPrice, siteSettings } = useApp();
 
   const [quote, setQuote] = useState<StoredQuote | null>(null);
@@ -74,7 +74,7 @@ function BookingConfirmationContent() {
             Booking Confirmed!
           </h1>
           <p className="text-gray-600 text-sm mt-2 max-w-md mx-auto">
-            Thank you for booking with {siteSettings?.brand_name || 'OTS Taxi'}. A confirmation email with your journey voucher and receipt has been sent to your email address.
+            Thank you for booking with {siteSettings?.brand_name || 'Quick Car Midlands Ltd'}. A confirmation email with your journey voucher and receipt has been sent to your email address.
           </p>
 
           {/* Reference pill */}
@@ -105,12 +105,12 @@ function BookingConfirmationContent() {
                   {siteSettings?.logo_light ? (
                     <img
                       src={siteSettings.logo_light}
-                      alt={siteSettings.brand_name || "OTS Taxi"}
+                      alt={siteSettings.brand_name || "Quick Car Midlands Ltd"}
                       className="h-8 w-auto object-contain"
                     />
                   ) : null}
                   <span className="text-xs uppercase font-extrabold text-ots-yellow bg-black px-2.5 py-1 rounded print:bg-black print:text-ots-yellow">
-                    {siteSettings?.brand_name || "OTS TAXI"} VOUCHER
+                    {siteSettings?.brand_name || "QUICK CAR MIDLANDS"} VOUCHER
                   </span>
                   <span className="text-xs font-mono font-bold bg-gray-100 text-gray-800 px-2.5 py-1 rounded border border-gray-300 print:bg-gray-100 print:text-black">
                     REF: {quoteRef}
@@ -320,12 +320,12 @@ function BookingConfirmationContent() {
             {/* Official Travel Voucher Footer */}
             <div className="border-t border-gray-200 pt-4 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 gap-2 print:text-gray-600">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span><strong>24/7 Helpline:</strong> {siteSettings?.support_phone || '+44 (0) 208 090 4992'}</span>
+                <span><strong>24/7 Helpline:</strong> {siteSettings?.support_phone || '+44 (0) 121 285 5000'}</span>
                 <span className="hidden sm:inline">•</span>
-                <span><strong>Email:</strong> {siteSettings?.support_email || 'dispatch@otstaxi.co.uk'}</span>
+                <span><strong>Email:</strong> {siteSettings?.support_email || 'bookings@quickcarmidlands.co.uk'}</span>
               </div>
               <div className="text-gray-400 print:text-gray-500 text-[10px]">
-                {siteSettings?.brand_name || 'OTS Taxi'} Ltd • Licensed UK Private Hire Operator
+                {siteSettings?.brand_name || 'Quick Car Midlands Ltd'} • Licensed UK Private Hire Operator
               </div>
             </div>
 

@@ -10,9 +10,9 @@ export default function Footer() {
   const pathname = usePathname();
   const { siteSettings } = useApp();
 
-  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandName = siteSettings?.brand_name || "Quick Car Midlands Ltd";
   const brandWords = brandName.trim().split(/\s+/);
-  const brandFirstWord = brandWords[0] || "OTS";
+  const brandFirstWord = brandWords[0] || "Quick";
   const brandRestWords = brandWords.slice(1).join(" ");
 
   if (pathname?.startsWith("/admin")) {
@@ -78,15 +78,15 @@ export default function Footer() {
                 <Mail className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
                   <strong className="text-neutral-400">Email:</strong>{" "}
-                  <a href={`mailto:${siteSettings?.support_email || "support@otstaxi.com"}`} className="hover:text-ots-yellow transition">
-                    {siteSettings?.support_email || "support@otstaxi.com"}
+                  <a href={`mailto:${siteSettings?.support_email || "bookings@quickcarmidlands.co.uk"}`} className="hover:text-ots-yellow transition">
+                    {siteSettings?.support_email || "bookings@quickcarmidlands.co.uk"}
                   </a>
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-ots-yellow mt-0.5 flex-shrink-0" />
                 <span>
-                  <strong className="text-neutral-400">Address:</strong> {siteSettings?.office_address || "167-169 Great Portland Street, 5th Floor, London W1W 5PF, United Kingdom"}
+                  <strong className="text-neutral-400">Address:</strong> {siteSettings?.office_address || "Birmingham, West Midlands, United Kingdom"}
                 </span>
               </li>
             </ul>
@@ -94,7 +94,7 @@ export default function Footer() {
             {/* Social Links */}
             <div className="flex items-center space-x-3 pt-2">
               <a
-                href="https://www.facebook.com/otstaxicom/"
+                href="https://www.facebook.com/quickcarmidlands/"
                 target="_blank"
                 rel="noreferrer"
                 className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-ots-yellow hover:text-black flex items-center justify-center text-xs transition font-bold"
@@ -103,7 +103,7 @@ export default function Footer() {
                 f
               </a>
               <a
-                href="https://x.com/ots_taxi"
+                href="https://x.com/quickcarmidlands"
                 target="_blank"
                 rel="noreferrer"
                 className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-ots-yellow hover:text-black flex items-center justify-center text-xs transition font-bold"
@@ -112,7 +112,7 @@ export default function Footer() {
                 𝕏
               </a>
               <a
-                href="https://www.linkedin.com/company/ots-taxi"
+                href="https://www.linkedin.com/company/quickcarmidlands"
                 target="_blank"
                 rel="noreferrer"
                 className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-ots-yellow hover:text-black flex items-center justify-center text-xs transition font-bold"

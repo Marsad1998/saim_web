@@ -212,7 +212,7 @@ export default function DriverDashboardPage() {
       setActiveTab('onboarding');
       setFeedback({
         type: 'error',
-        text: `Compliance Required: You cannot go On-Duty until all 4 profile steps are completed and approved by ${siteSettings?.brand_name || 'OTS Taxi'} Admin (Current Score: ${completionScore}%).`,
+        text: `Compliance Required: You cannot go On-Duty until all 4 profile steps are completed and approved by ${siteSettings?.brand_name || 'Quick Car Midlands Ltd'} Admin (Current Score: ${completionScore}%).`,
       });
       return;
     }

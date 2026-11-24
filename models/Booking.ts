@@ -154,7 +154,12 @@ export class BookingModel {
    */
   static async create(input: CreateBookingInput): Promise<IBooking> {
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const quoteRef = `OTS-${randomSuffix}`;
+    const { getCachedSystemSettings } = await import("@/lib/system-settings");
+    const settings = getCachedSystemSettings();
+    const brandPrefix = settings?.brand_name
+      ? settings.brand_name.replace(/[^a-zA-Z]/g, ' ').trim().split(/\s+/).map((w: string) => w[0].toUpperCase()).join('').slice(0, 4)
+      : 'QCM';
+    const quoteRef = `${brandPrefix || 'QCM'}-${randomSuffix}`;
 
     const fleet = await VehicleModel.getAll();
 
@@ -270,7 +275,7 @@ export class BookingModel {
   }
 
   /**
-   * Find booking by its unique Quote Reference (e.g. OTS-123456)
+   * Find booking by its unique Quote Reference (e.g. QCM-123456)
    * Joined with assigned driver and vehicle details
    */
   static async getByRef(quoteRef: string): Promise<(IBooking & { assignedDriver?: any }) | null> {
@@ -300,7 +305,7 @@ export class BookingModel {
             id: row.driver_id,
             name: row.driver_name || "Assigned Chauffeur",
             phone: row.driver_phone || "+44 7911 123456",
-            email: row.driver_email || "chauffeur@otstaxi.co.uk",
+            email: row.driver_email || "chauffeur@quickcarmidlands.co.uk",
             licenseNumber: row.driver_license_number || "PCO Licensed",
             vehicleModel: row.driver_vehicle_model || "Executive Chauffeur Vehicle",
             vehiclePlate: row.driver_vehicle_plate || "LO71 ABC",

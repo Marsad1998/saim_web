@@ -5,8 +5,8 @@ import { useApp } from '@/components/context/AppContext';
 
 export default function DataProcessingAgreementPage() {
   const { siteSettings } = useApp();
-  const brandName = siteSettings?.brand_name || 'OTS Taxi';
-  const companyNumber = siteSettings?.company_number || '06783060';
+  const brandName = siteSettings?.brand_name || 'Quick Car Midlands Ltd';
+  const companyNumber = siteSettings?.company_number || '12345678';
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen py-10 md:py-16">

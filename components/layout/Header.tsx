@@ -69,9 +69,9 @@ export default function Header() {
     { label: "CONTACT US", href: "/contact-us" },
   ];
 
-  const brandName = siteSettings?.brand_name || "OTS Taxi";
+  const brandName = siteSettings?.brand_name || "Quick Car Midlands Ltd";
   const brandWords = brandName.trim().split(/\s+/);
-  const brandFirstWord = brandWords[0] || "OTS";
+  const brandFirstWord = brandWords[0] || "Quick";
   const brandRestWords = brandWords.slice(1).join(" ");
 
   if (pathname?.startsWith("/admin")) {
@@ -89,7 +89,7 @@ export default function Header() {
               {siteSettings?.logo_dark ? (
                 <img
                   src={siteSettings.logo_dark}
-                  alt={siteSettings.brand_name || "OTS Taxi"}
+                  alt={siteSettings?.brand_name || "Quick Car Midlands Ltd"}
                   className="h-10 md:h-12 w-auto max-w-[180px] sm:max-w-[220px] object-contain transition-transform group-hover:scale-105 flex-shrink-0"
                 />
               ) : (
