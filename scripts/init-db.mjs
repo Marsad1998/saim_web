@@ -151,27 +151,21 @@ async function initDatabase() {
     // 4. Seed initial default users (Admin, Driver, Passenger)
     const defaultHash = '$2b$10$7Lmgdocq8Nm78gEfTqSn7.2yfNZNpZbQk.V3mV3/p1awZ8Du3kZoK'; // 12345678 / Admin@123
 
-    console.log('🌱 Seeding 3 default roles (Admin, Driver, Passenger)...');
+    console.log('🌱 Ensuring default roles exist (Admin, Driver, Passenger)...');
     await connection.query(`
-      INSERT INTO users (id, name, email, phone, password_hash, role)
+      INSERT IGNORE INTO users (id, name, email, phone, password_hash, role)
       VALUES 
         ('usr_admin_1', 'QUICK CAR MIDLANDS LTD', 'qcm023@gmail.com', '00447892609314', '${defaultHash}', 'admin'),
         ('usr_admin_2', 'System Administrator', 'admin@admin.com', '01212433112', '${defaultHash}', 'admin'),
         ('usr_admin_3', 'System Administrator', 'admin@quickcarmidlands.co.uk', '01212433112', '${defaultHash}', 'admin'),
         ('usr_driver_1', 'James Wilson (Chauffeur)', 'driver@quickcarmidlands.co.uk', '00447892609314', '${defaultHash}', 'driver'),
         ('usr_passenger_1', 'Marsad Akbar', 'passenger@quickcarmidlands.co.uk', '00447892609314', '${defaultHash}', 'customer')
-      ON DUPLICATE KEY UPDATE 
-        name = VALUES(name),
-        phone = VALUES(phone),
-        password_hash = VALUES(password_hash),
-        role = VALUES(role)
     `);
 
     // Seed Driver profile
     await connection.query(`
-      INSERT INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, bank_name, sort_code, account_number, is_active)
-      VALUES ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 'QUICK CAR MIDLANDS LTD', '82-19-74', '50470328', 1)
-      ON DUPLICATE KEY UPDATE vehicle_plate = VALUES(vehicle_plate), bank_name = VALUES(bank_name), sort_code = VALUES(sort_code), account_number = VALUES(account_number), is_active = 1
+      INSERT IGNORE INTO drivers (id, user_id, license_number, vehicle_model, vehicle_plate, vehicle_category, bank_name, sort_code, account_number, is_active)
+      VALUES ('drv_1', 'usr_driver_1', 'PCO-984321', 'Mercedes-Benz E-Class', 'LO71 ABC', 'executive-saloon', 'Clydesdale Bank / Virgin Money UK', '82-19-74', '50470328', 1)
     `);
 
     console.log('✅ Admin: qcm023@gmail.com (Pass: 12345678)');
@@ -230,9 +224,8 @@ async function initDatabase() {
 
     for (const [key, value] of defaultSettings) {
       await connection.query(
-        `INSERT INTO system_settings (key_name, key_value) 
-         VALUES (?, ?) 
-         ON DUPLICATE KEY UPDATE key_value = VALUES(key_value)`,
+        `INSERT IGNORE INTO system_settings (key_name, key_value) 
+         VALUES (?, ?)`,
         [key, value]
       );
     }

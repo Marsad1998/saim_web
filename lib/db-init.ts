@@ -317,9 +317,8 @@ export async function initDatabaseSchema(): Promise<InitDbResult> {
 
     for (const [key, val] of defaultSettings) {
       await dbQuery(
-        `INSERT INTO system_settings (key_name, key_value)
-         VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE key_value = VALUES(key_value)`,
+        `INSERT IGNORE INTO system_settings (key_name, key_value)
+         VALUES (?, ?)`,
         [key, val]
       );
     }

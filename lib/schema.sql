@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS `partner_applications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 9. Default Website & System Settings Seed
-INSERT INTO `system_settings` (`key_name`, `key_value`) VALUES
+INSERT IGNORE INTO `system_settings` (`key_name`, `key_value`) VALUES
   ('brand_name', 'QUICK CAR MIDLANDS LTD'),
   ('brand_tagline', 'Airport Transfers & Private Hire | Based in Birmingham'),
   ('support_email', 'qcm023@gmail.com'),
@@ -187,7 +187,6 @@ INSERT INTO `system_settings` (`key_name`, `key_value`) VALUES
   ('primary_hover_color', '#E6B800'),
   ('secondary_color', '#141720'),
   ('require_email_verification', 'false'),
-  ('require_driver_approval', 'true')
-ON DUPLICATE KEY UPDATE `key_value` = VALUES(`key_value`);
+  ('require_driver_approval', 'true');
 
 
