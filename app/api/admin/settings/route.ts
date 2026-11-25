@@ -44,13 +44,22 @@ export async function GET(request: NextRequest) {
         logo_icon: settings.logo_icon || "",
 
         // Support & Contact
-        support_phone: settings.support_phone || "+44 (0) 121 285 5000",
-        support_email: settings.support_email || "bookings@quickcarmidlands.co.uk",
-        emergency_whatsapp: settings.emergency_whatsapp || "+44 7123 456789",
+        support_phone: settings.support_phone || "01212433112",
+        support_email: settings.support_email || "qcm023@gmail.com",
+        emergency_whatsapp: settings.emergency_whatsapp || "00447892609314",
         office_address: settings.office_address || "Birmingham, West Midlands, United Kingdom",
         company_number: settings.company_number || "12345678",
         vat_number: settings.vat_number || "GB 123 4567 89",
-        copyright_text: settings.copyright_text || "© 2026 Quick Car Midlands Ltd. All Rights Reserved.",
+        copyright_text: settings.copyright_text || "© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.",
+
+        // Bank Account Details
+        bank_name: settings.bank_name || "Clydesdale Bank / Virgin Money UK",
+        account_name: settings.account_name || "QUICK CAR MIDLANDS LTD",
+        account_type: settings.account_type || "Business",
+        account_number: settings.account_number || "50470328",
+        sort_code: settings.sort_code || "82-19-74",
+        iban: settings.iban || "GB91CLYD82197450470328",
+        bic: settings.bic || "CLYDGB21974",
       },
     });
   } catch (error: any) {
@@ -104,6 +113,15 @@ export async function POST(request: NextRequest) {
     if (body.company_number !== undefined) updates.company_number = String(body.company_number).trim();
     if (body.vat_number !== undefined) updates.vat_number = String(body.vat_number).trim();
     if (body.copyright_text !== undefined) updates.copyright_text = String(body.copyright_text).trim();
+
+    // Bank Account Details
+    if (body.bank_name !== undefined) updates.bank_name = String(body.bank_name).trim();
+    if (body.account_name !== undefined) updates.account_name = String(body.account_name).trim();
+    if (body.account_type !== undefined) updates.account_type = String(body.account_type).trim();
+    if (body.account_number !== undefined) updates.account_number = String(body.account_number).trim();
+    if (body.sort_code !== undefined) updates.sort_code = String(body.sort_code).trim();
+    if (body.iban !== undefined) updates.iban = String(body.iban).trim();
+    if (body.bic !== undefined) updates.bic = String(body.bic).trim();
 
     const updated = await updateSystemSettings(updates);
 

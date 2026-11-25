@@ -13,7 +13,12 @@ import {
   Smartphone,
   Banknote,
   Sparkles,
-  Info
+  Info,
+  Landmark,
+  Building2,
+  Copy,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '@/components/context/AppContext';
 import { StoredQuote } from '@/lib/quote-store';
@@ -37,14 +42,22 @@ export default function StepPayment({
   onBack,
 }: StepPaymentProps) {
   const router = useRouter();
-  const { currency, formatPrice } = useApp();
+  const { currency, formatPrice, siteSettings } = useApp();
 
   const vehicleTier = quote.pricing?.vehicles?.find((v: any) => v.id === selectedVehicleId) || quote.pricing?.vehicles?.[0];
   const totalAmount = vehicleTier?.finalPrice || vehicleTier?.totalPrice || 45;
 
   // Payment method selection
-  const [paymentMethod, setPaymentMethod] = useState<'stripe_card' | 'stripe_wallet' | 'cash_to_driver'>('stripe_card');
+  const [paymentMethod, setPaymentMethod] = useState<'pay_by_bank' | 'stripe_card' | 'stripe_wallet' | 'cash_to_driver'>('pay_by_bank');
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, field: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   // Stripe real element state
   const [isStripeLoading, setIsStripeLoading] = useState(true);
@@ -206,8 +219,32 @@ export default function StepPayment({
       )}
 
       {/* Payment Method Selector Tabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Option 1: Card via Stripe */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Option 1: Pay by Bank App (Open Banking / Faster Payments) */}
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('pay_by_bank')}
+          className={`p-4 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+            paymentMethod === 'pay_by_bank'
+              ? 'border-ots-yellow bg-yellow-50/30 shadow-md ring-1 ring-ots-yellow'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className={`p-2 rounded-xl ${paymentMethod === 'pay_by_bank' ? 'bg-ots-yellow text-black' : 'bg-gray-100 text-gray-600'}`}>
+              <Landmark className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-900 text-white px-2 py-0.5 rounded">
+              Direct Bank
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-sm font-bold text-gray-900">Pay by Bank App</div>
+            <div className="text-xs text-gray-500 mt-0.5">Instant Faster Payments</div>
+          </div>
+        </button>
+
+        {/* Option 2: Card via Stripe */}
         <button
           type="button"
           onClick={() => setPaymentMethod('stripe_card')}
@@ -231,7 +268,7 @@ export default function StepPayment({
           </div>
         </button>
 
-        {/* Option 2: Digital Wallets */}
+        {/* Option 3: Digital Wallets */}
         <button
           type="button"
           onClick={() => setPaymentMethod('stripe_wallet')}
@@ -255,7 +292,7 @@ export default function StepPayment({
           </div>
         </button>
 
-        {/* Option 3: Pay Cash to Driver */}
+        {/* Option 4: Pay Cash to Driver */}
         <button
           type="button"
           onClick={() => setPaymentMethod('cash_to_driver')}
@@ -298,8 +335,228 @@ export default function StepPayment({
           </div>
         </div>
 
-        {/* CASE 1: Live Real Stripe Elements (Card + Wallets) */}
-        {stripeConfigured && clientSecret && stripePromise && paymentMethod === 'stripe_card' ? (
+        {/* CASE 0: Instant UK Bank Transfer / Open Banking Faster Payments */}
+        {paymentMethod === 'pay_by_bank' ? (
+          <div className="space-y-5 py-1">
+            {/* Trust & UK Open Banking Banner */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-5 sm:p-6 rounded-2xl space-y-3 shadow-md border border-slate-800">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs uppercase tracking-wider text-ots-yellow font-extrabold flex items-center gap-1.5">
+                  <Landmark className="w-4 h-4 text-ots-yellow" />
+                  <span>UK Open Banking &amp; Faster Payments</span>
+                </span>
+                <span className="text-[11px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                  Direct Settlement • 0% Surcharge
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black">
+                Direct UK Bank Transfer
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Send your fare directly from your UK mobile banking app (Barclays, Monzo, Lloyds, NatWest, HSBC, Halifax, Santander, Revolut, etc.) to <strong>{siteSettings?.account_name || 'QUICK CAR MIDLANDS LTD'}</strong>. Funds transfer in seconds via UK Faster Payments.
+              </p>
+
+              {/* Supported UK Banks Badges */}
+              <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] font-bold text-slate-300">
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Barclays</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Lloyds Bank</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Monzo</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">NatWest</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">HSBC UK</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Halifax</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Santander</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Revolut</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded-md">Virgin Money</span>
+              </div>
+            </div>
+
+            {/* Official Beneficiary Bank Account Details Card */}
+            <div className="bg-amber-50/60 border border-amber-200/90 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-amber-200/60 pb-3 flex-wrap gap-2">
+                <div className="flex items-center space-x-2">
+                  <Building2 className="w-4 h-4 text-amber-700" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-950">
+                    Official Beneficiary Bank Account Details
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allDetails = `Beneficiary: ${siteSettings?.account_name || 'QUICK CAR MIDLANDS LTD'}\nBank: ${siteSettings?.bank_name || 'Clydesdale Bank / Virgin Money UK'}\nSort Code: ${siteSettings?.sort_code || '82-19-74'}\nAccount Number: ${siteSettings?.account_number || '50470328'}\nIBAN: ${siteSettings?.iban || 'GB91CLYD82197450470328'}\nBIC: ${siteSettings?.bic || 'CLYDGB21974'}\nReference: ${quote.quoteRef}\nAmount: ${formatPrice(totalAmount)}`;
+                    handleCopy(allDetails, 'all');
+                  }}
+                  className="text-[11px] font-bold text-amber-900 hover:text-black bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition flex items-center space-x-1"
+                >
+                  {copiedField === 'all' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedField === 'all' ? 'All Details Copied!' : 'Copy All Details'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                {/* Account Name */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Account Name / Payee</span>
+                    <span className="text-xs font-black text-slate-900">{siteSettings?.account_name || 'QUICK CAR MIDLANDS LTD'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(siteSettings?.account_name || 'QUICK CAR MIDLANDS LTD', 'name')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy Name"
+                  >
+                    {copiedField === 'name' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Bank Name */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Bank / Institution</span>
+                    <span className="text-xs font-bold text-slate-900">{siteSettings?.bank_name || 'Clydesdale Bank / Virgin Money UK'}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">UK Clearing</span>
+                </div>
+
+                {/* Account Type */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Account Type</span>
+                    <span className="text-xs font-bold text-slate-900">{siteSettings?.account_type || 'Business'}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">Commercial</span>
+                </div>
+
+                {/* Sort Code */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Sort Code</span>
+                    <span className="text-sm font-black font-mono text-slate-900 tracking-wider">{siteSettings?.sort_code || '82-19-74'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(siteSettings?.sort_code || '82-19-74', 'sort_code')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy Sort Code"
+                  >
+                    {copiedField === 'sort_code' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Account Number */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Account Number</span>
+                    <span className="text-sm font-black font-mono text-slate-900 tracking-wider">{siteSettings?.account_number || '50470328'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(siteSettings?.account_number || '50470328', 'account_number')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy Account Number"
+                  >
+                    {copiedField === 'account_number' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Exact Amount */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Exact Fare Due</span>
+                    <span className="text-sm font-black text-emerald-700">{formatPrice(totalAmount)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(String(totalAmount), 'amount')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy Amount"
+                  >
+                    {copiedField === 'amount' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* IBAN */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs sm:col-span-2">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">IBAN (International / EU Transfers)</span>
+                    <span className="text-xs font-bold font-mono text-slate-900">{siteSettings?.iban || 'GB91CLYD82197450470328'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(siteSettings?.iban || 'GB91CLYD82197450470328', 'iban')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy IBAN"
+                  >
+                    {copiedField === 'iban' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* BIC */}
+                <div className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">BIC / SWIFT</span>
+                    <span className="text-xs font-bold font-mono text-slate-900">{siteSettings?.bic || 'CLYDGB21974'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(siteSettings?.bic || 'CLYDGB21974', 'bic')}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition"
+                    title="Copy BIC"
+                  >
+                    {copiedField === 'bic' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Crucial Reference Callout */}
+              <div className="bg-amber-100/80 border-2 border-dashed border-amber-300 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-950 block">
+                    Payment Reference (Mandatory)
+                  </span>
+                  <span className="text-base font-black font-mono text-slate-900 tracking-wider">
+                    {quote.quoteRef}
+                  </span>
+                  <p className="text-[11px] text-amber-900">
+                    Please paste this Quote Ref into your banking app reference field so our automated accounting reconciles your payment immediately.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(quote.quoteRef, 'ref')}
+                  className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 shrink-0 shadow"
+                >
+                  {copiedField === 'ref' ? <Check className="w-3.5 h-3.5 text-ots-yellow" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedField === 'ref' ? 'Reference Copied!' : 'Copy Reference'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Confirmation CTA */}
+            <form onSubmit={handleFallbackSubmit} className="space-y-3">
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full py-4 bg-slate-900 hover:bg-black text-white font-extrabold text-base rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-ots-yellow" />
+                    <span>Confirming Bank Transfer Reservation...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-ots-yellow" />
+                    <span>Confirm Booking &amp; Pay by Bank Transfer ({formatPrice(totalAmount)})</span>
+                  </>
+                )}
+              </button>
+              <p className="text-center text-[11px] text-slate-500">
+                Clicking confirm secures your chauffeur reservation immediately. An official digital voucher with your driver details and full payment invoice will be dispatched to your email.
+              </p>
+            </form>
+          </div>
+        ) : stripeConfigured && clientSecret && stripePromise && paymentMethod === 'stripe_card' ? (
           <div className="space-y-4">
             <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex items-center space-x-2 border border-emerald-200">
               <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />

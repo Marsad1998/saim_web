@@ -91,6 +91,9 @@ export interface UpdateBookingInput {
   specialNotes?: string;
   currency?: string;
   totalPrice?: number;
+  paymentMethod?: string;
+  bookingStatus?: string;
+  paymentStatus?: string;
 }
 
 export class BookingModel {
@@ -414,6 +417,18 @@ export class BookingModel {
       if (updates.currency) {
         fields.push("currency = ?");
         values.push(updates.currency);
+      }
+      if (updates.paymentMethod !== undefined) {
+        fields.push("payment_method = ?");
+        values.push(updates.paymentMethod);
+      }
+      if (updates.bookingStatus !== undefined) {
+        fields.push("booking_status = ?");
+        values.push(updates.bookingStatus);
+      }
+      if (updates.paymentStatus !== undefined) {
+        fields.push("payment_status = ?");
+        values.push(updates.paymentStatus);
       }
 
       if (fields.length > 0) {

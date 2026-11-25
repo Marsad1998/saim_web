@@ -19,7 +19,8 @@ import {
   Copy, 
   Check,
   Loader2,
-  Edit2
+  Edit2,
+  Building2
 } from 'lucide-react';
 import { StoredQuote } from '@/lib/quote-store';
 import { useApp } from '@/components/context/AppContext';
@@ -128,10 +129,18 @@ function BookingConfirmationContent() {
                 <span className={`inline-flex items-center space-x-1 text-xs font-extrabold px-3 py-1 rounded-full border ${
                   quote?.paymentMethod === 'cash_to_driver'
                     ? 'text-amber-800 bg-amber-50 border-amber-300 print:bg-amber-50 print:text-amber-900'
+                    : quote?.paymentMethod === 'pay_by_bank' || quote?.paymentMethod === 'bacs_transfer'
+                    ? 'text-indigo-800 bg-indigo-50 border-indigo-300 print:bg-indigo-50 print:text-indigo-900'
                     : 'text-green-700 bg-green-50 border-green-300 print:bg-green-50 print:text-green-900'
                 }`}>
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>{quote?.paymentMethod === 'cash_to_driver' ? 'CASH UPON ARRIVAL' : 'PAID & CONFIRMED'}</span>
+                  <span>
+                    {quote?.paymentMethod === 'cash_to_driver'
+                      ? 'CASH UPON ARRIVAL'
+                      : quote?.paymentMethod === 'pay_by_bank' || quote?.paymentMethod === 'bacs_transfer'
+                      ? 'PAY BY BANK (FASTER PAYMENTS)'
+                      : 'PAID & CONFIRMED'}
+                  </span>
                 </span>
                 <div className="mt-1 text-xl font-black text-gray-900">
                   {formatPrice(quote?.paidAmount || quote?.pricing?.totalPrice || 45)}
@@ -303,6 +312,50 @@ function BookingConfirmationContent() {
                 )}
               </div>
             </div>
+
+            {/* Direct Bank Transfer Settlement Details (if Pay by Bank) */}
+            {(quote?.paymentMethod === 'pay_by_bank' || quote?.paymentMethod === 'bacs_transfer') && (
+              <div className="bg-indigo-50/70 border-2 border-indigo-200 rounded-xl p-4 text-xs space-y-3 print:bg-indigo-50 print:border-indigo-300">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="font-bold text-indigo-950 flex items-center space-x-1.5 text-sm">
+                    <Building2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                    <span>Direct Bank Transfer Details (BACS / Faster Payments):</span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-indigo-200/60 text-indigo-900 px-2.5 py-0.5 rounded-full">
+                    Awaiting Faster Payment Confirmation
+                  </span>
+                </div>
+                <p className="text-indigo-900 text-[11px] leading-relaxed">
+                  Please complete your transfer via your mobile banking app using the details below. Our operations desk will match your payment reference automatically.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">Payee</span>
+                    <strong className="text-gray-900 text-xs block truncate">{siteSettings?.account_name || 'QUICK CAR MIDLANDS LTD'}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">Sort Code</span>
+                    <strong className="text-gray-900 text-xs font-mono block">{siteSettings?.sort_code || '82-19-74'}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">Account No.</span>
+                    <strong className="text-gray-900 text-xs font-mono block">{siteSettings?.account_number || '50470328'}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">Reference</span>
+                    <strong className="text-indigo-700 text-xs font-mono block truncate">{quoteRef}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100 sm:col-span-2">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">Bank / Institution</span>
+                    <strong className="text-gray-900 text-xs block">{siteSettings?.bank_name || 'Clydesdale Bank / Virgin Money UK'}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-indigo-100 sm:col-span-2">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold block">IBAN</span>
+                    <strong className="text-gray-900 text-xs font-mono block">{siteSettings?.iban || 'GB91CLYD82197450470328'}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Airport Instructions Banner */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-gray-800 space-y-2 print:bg-amber-50 print:border-amber-300">

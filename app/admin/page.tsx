@@ -153,11 +153,13 @@ export default function AdminPage() {
     company_number: '12345678',
     vat_number: 'GB 123 4567 89',
     copyright_text: '© 2026 QUICK CAR MIDLANDS LTD. All rights reserved.',
-    bank_name: 'QUICK CAR MIDLANDS LTD',
+    bank_name: 'Clydesdale Bank / Virgin Money UK',
     account_name: 'QUICK CAR MIDLANDS LTD',
     account_type: 'Business',
     account_number: '50470328',
     sort_code: '82-19-74',
+    iban: 'GB91CLYD82197450470328',
+    bic: 'CLYDGB21974',
   });
 
   // Database Connection & Diagnostics State
@@ -4469,12 +4471,12 @@ EXIT;`}
                         />
                       </div>
                       <div>
-                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Account Type</label>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Bank / Provider</label>
                         <input
                           type="text"
-                          value={settings.account_type || 'Business'}
-                          onChange={(e) => setSettings({ ...settings, account_type: e.target.value })}
-                          placeholder="Business"
+                          value={settings.bank_name || 'Clydesdale Bank / Virgin Money UK'}
+                          onChange={(e) => setSettings({ ...settings, bank_name: e.target.value })}
+                          placeholder="Clydesdale Bank / Virgin Money UK"
                           className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-900"
                         />
                       </div>
@@ -4496,6 +4498,36 @@ EXIT;`}
                           onChange={(e) => setSettings({ ...settings, sort_code: e.target.value })}
                           placeholder="82-19-74"
                           className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">IBAN</label>
+                        <input
+                          type="text"
+                          value={settings.iban || 'GB91CLYD82197450470328'}
+                          onChange={(e) => setSettings({ ...settings, iban: e.target.value })}
+                          placeholder="GB91CLYD82197450470328"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">BIC / SWIFT</label>
+                        <input
+                          type="text"
+                          value={settings.bic || 'CLYDGB21974'}
+                          onChange={(e) => setSettings({ ...settings, bic: e.target.value })}
+                          placeholder="CLYDGB21974"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 text-[11px]">Account Type</label>
+                        <input
+                          type="text"
+                          value={settings.account_type || 'Business'}
+                          onChange={(e) => setSettings({ ...settings, account_type: e.target.value })}
+                          placeholder="Business"
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-900"
                         />
                       </div>
                     </div>

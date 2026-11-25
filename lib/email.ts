@@ -136,10 +136,33 @@ export async function sendBookingConfirmationEmail(booking: IBooking): Promise<b
                 : ""
             }
             <tr>
-              <td>Total Fare Paid</td>
+              <td>Total Fare ${booking.payment_method === 'cash_to_driver' ? 'Due on Arrival' : booking.payment_method === 'pay_by_bank' ? 'Due via Transfer' : 'Paid'}</td>
               <td style="color: #137333; font-size: 16px;">${booking.currency || "£"}${booking.total_price.toFixed(2)}</td>
             </tr>
           </table>
+
+          ${
+            booking.payment_method === 'pay_by_bank' || booking.payment_method === 'bacs_transfer'
+              ? `
+              <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; color: #1e1b4b;">
+                <strong style="color: #312e81; font-size: 14px;">🏦 Direct Bank Transfer (Faster Payments) Details:</strong><br>
+                <table style="width: 100%; margin-top: 8px; font-size: 13px; border-collapse: collapse;">
+                  <tr><td style="padding: 4px 0; width: 40%;"><strong>Beneficiary Name:</strong></td><td>${settings.account_name || 'QUICK CAR MIDLANDS LTD'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>Bank / Institution:</strong></td><td>${settings.bank_name || 'Clydesdale Bank / Virgin Money UK'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>Sort Code:</strong></td><td style="font-family: monospace; font-weight: bold;">${settings.sort_code || '82-19-74'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>Account Number:</strong></td><td style="font-family: monospace; font-weight: bold;">${settings.account_number || '50470328'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>IBAN:</strong></td><td style="font-family: monospace;">${settings.iban || 'GB91CLYD82197450470328'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>BIC / SWIFT:</strong></td><td style="font-family: monospace;">${settings.bic || 'CLYDGB21974'}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>Payment Reference:</strong></td><td style="font-family: monospace; color: #312e81; font-weight: bold;">${booking.quote_ref}</td></tr>
+                  <tr><td style="padding: 4px 0;"><strong>Exact Fare:</strong></td><td style="color: #137333; font-weight: bold;">${booking.currency || "£"}${booking.total_price.toFixed(2)}</td></tr>
+                </table>
+                <p style="margin: 8px 0 0 0; font-size: 12px; color: #4338ca;">
+                  Please quote booking reference <strong>${booking.quote_ref}</strong> on your transfer so we can automatically match your reservation.
+                </p>
+              </div>
+              `
+              : ""
+          }
 
           <div style="background: #fff8e1; border-radius: 8px; padding: 14px; font-size: 13px; color: #856404; line-height: 1.4;">
             <strong>ℹ️ Meet &amp; Greet Instructions:</strong><br>

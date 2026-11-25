@@ -67,7 +67,8 @@ export async function POST(request: Request) {
     }
 
     const isCash = paymentMethod === "cash_to_driver";
-    const paymentStatus = isCash ? "unpaid" : "completed";
+    const isPayByBank = paymentMethod === "pay_by_bank" || paymentMethod === "bacs_transfer";
+    const paymentStatus = (isCash || isPayByBank) ? "unpaid" : "completed";
     const finalCurrency = (requestedCurrency || quote.currency || "GBP").toUpperCase();
 
     // Auto-dispatch: assign random available driver matching selected vehicle category
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
       selectedVehicleId: vehId,
       selectedExtras: extrasList,
       passenger: finalPassenger,
-      paymentStatus: isCash ? "cancelled" : "completed",
+      paymentStatus: isCash ? "cancelled" : isPayByBank ? "unpaid" : "completed",
       paidAmount: finalPaidAmount,
       currency: finalCurrency,
       paymentMethod,
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
 
     // Update MySQL booking record if connected
     try {
-      if (isCash) {
+      if (isCash || isPayByBank) {
         await BookingModel.updateDetails(quoteRef, {
           selectedVehicleId: vehId,
           selectedExtras: extrasList,
@@ -123,6 +124,9 @@ export async function POST(request: Request) {
           specialNotes: finalPassenger?.specialNotes,
           currency: finalCurrency,
           totalPrice: finalPaidAmount,
+          paymentMethod: isPayByBank ? "pay_by_bank" : "cash_to_driver",
+          bookingStatus: "confirmed",
+          paymentStatus: "unpaid",
         });
       } else {
         await BookingModel.markPaymentCompleted(quoteRef, {
@@ -144,6 +148,13 @@ export async function POST(request: Request) {
       }
     }).catch(() => {});
 
+    let confirmationMessage = "Payment authorized and booking confirmed successfully via Stripe.";
+    if (isCash) {
+      confirmationMessage = "Booking confirmed! You can pay the driver directly upon arrival.";
+    } else if (isPayByBank) {
+      confirmationMessage = "Booking confirmed via Direct Bank Transfer (Faster Payments). Details sent to your email.";
+    }
+
     return NextResponse.json({
       status: true,
       quoteRef,
@@ -152,9 +163,7 @@ export async function POST(request: Request) {
       paymentMethod,
       paymentStatus,
       assignedDriver,
-      message: isCash
-        ? "Booking confirmed! You can pay the driver directly upon arrival."
-        : "Payment authorized and booking confirmed successfully via Stripe.",
+      message: confirmationMessage,
     });
   } catch (error: any) {
     console.error("quotes/checkout error:", error);

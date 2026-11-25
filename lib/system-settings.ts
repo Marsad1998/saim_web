@@ -38,6 +38,8 @@ export interface SystemSettings {
   account_type: string;
   account_number: string;
   sort_code: string;
+  iban: string;
+  bic: string;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -70,11 +72,13 @@ const DEFAULT_SETTINGS: SystemSettings = {
   vat_number: 'GB 123 4567 89',
   copyright_text: '© 2026 QUICK CAR MIDLANDS LTD. All Rights Reserved.',
 
-  bank_name: 'QUICK CAR MIDLANDS LTD',
+  bank_name: 'Clydesdale Bank / Virgin Money UK',
   account_name: 'QUICK CAR MIDLANDS LTD',
   account_type: 'Business',
   account_number: '50470328',
   sort_code: '82-19-74',
+  iban: 'GB91CLYD82197450470328',
+  bic: 'CLYDGB21974',
 };
 
 let inMemorySettings: SystemSettings = { ...DEFAULT_SETTINGS };
